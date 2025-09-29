@@ -116,7 +116,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Execute(asm);
         }
 
-        public bool ReadFlag(int flag)
+        public bool ReadEventFlag(int flag)
         {
             var resultMemory = Allocate(8);
             byte[] asm = (byte[])DS3Assembly.ReadFlag.Clone();
@@ -137,7 +137,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             return result;
         }
 
-        public void WriteFlag(int flag, bool active)
+        public void WriteEventFlag(int flag, bool active)
         {
             byte[] asm = (byte[])DS3Assembly.WriteFlag.Clone();
 

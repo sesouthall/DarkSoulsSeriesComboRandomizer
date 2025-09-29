@@ -8,6 +8,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public const string ChrClassWarpAOB = "48 8B 05 ? ? ? ? 66 0F 7F 80 ? ? ? ? 0F 28 02 66 0F 7F 80 ? ? ? ? C6 80";
         public const int ChrClassWarpOffset1 = 0;
+
+        public const string EventFlagsAOB = "48 8B 0D ? ? ? ? 99 33 C2 45 33 C0 2B C2 8D 50 F6";
+        public const int EventFlagsOffset1 = 0;
+        public const int EventFlagsOffset2 = 0;
+
         public enum ChrClassWarp
         {
             LastBonfire = 0xB34,
