@@ -14,7 +14,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public const string SprjLuaEventManAOB = "48 83 3D ? ? ? ? 00 48 8B F9 0F 84 ? ? ? ? 48";
 
-        public const string BonfireWarpAOB = "48 8B C4 55 41 54 41 55 41 56 41 57 48 8D A8 08 FB FF FF 48 81 EC D0 05 00 00 48 C7 44 24 20 FE FF FF FF 48 89 58 10 48 89 70 18 48 89 78 20 48 8B 05 5A F7 2A 04";
+        public const string SprjEventFlagManAOB = "48 8B 0D ? ? ? ? 44 0F B6 CB 41 B8 07 00 00 00 8B D6";
+
+        public const string ReadEventFlagAOB = "40 53 48 83 EC ? 80 B9 ? ? ? ? 00 8B DA";
+
+        public const string WriteEventFlagAOB = "40 55 57 41 54 41 57 48 83 EC ? 80 B9 ? ? ? ? 00 45 0F B6 F9 45 0F B6 E0";
 
         public const int GameDataManOffset1 = 0;
 

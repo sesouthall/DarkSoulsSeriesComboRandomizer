@@ -4,14 +4,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
     public class DS3Hook : PHook
     {
-        public readonly PHPointer GameDataManBasePtr;
-        public readonly PHPointer GameMan;
-        public readonly PHPointer SprjLuaEventMan;
-        public readonly PHPointer PlayerDataPtr;
+        private readonly PHPointer GameDataManBasePtr;
+        private readonly PHPointer GameMan;
+        private readonly PHPointer SprjLuaEventMan;
+        private readonly PHPointer SprjEventFlagMan;
+        private readonly PHPointer PlayerDataPtr;
         private readonly PHPointer InventoryPtr;
-        private readonly PHPointer ItemGetAddr;
+        private readonly PHPointer ItemGet_Call;
         private readonly PHPointer MapItemManAddr;
-        public readonly PHPointer BonfireWarp_Call;
+        private readonly PHPointer ReadEventFlag_Call;
+        private readonly PHPointer WriteEventFlag_Call;
 
         public DS3Hook(int refreshInterval, int minLifetime) :
             base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS III")
@@ -19,11 +21,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             GameDataManBasePtr = RegisterRelativeAOB(DS3Offsets.GameDataManAOB, 3, 7);
             GameMan = RegisterRelativeAOB(DS3Offsets.GameManAOB, 3, 7, 0);
             SprjLuaEventMan = RegisterRelativeAOB(DS3Offsets.SprjLuaEventManAOB, 3, 8, 0);
+            SprjEventFlagMan = RegisterRelativeAOB(DS3Offsets.SprjEventFlagManAOB, 3, 7, 0);
             PlayerDataPtr = CreateChildPointer(GameDataManBasePtr, DS3Offsets.GameDataManOffset1, (int)DS3Offsets.GameDataMan.PlayerGameData);
             InventoryPtr = CreateChildPointer(PlayerDataPtr, (int)DS3Offsets.PlayerGameData.InventoryPointer);
-            ItemGetAddr = RegisterAbsoluteAOB(DS3Offsets.ItemGetAOB);
+            ItemGet_Call = RegisterAbsoluteAOB(DS3Offsets.ItemGetAOB);
             MapItemManAddr = RegisterRelativeAOB(DS3Offsets.MapItemManAOB, 3, 7);
-            BonfireWarp_Call = RegisterAbsoluteAOB(DS3Offsets.BonfireWarpAOB);
+            ReadEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.ReadEventFlagAOB);
+            WriteEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.WriteEventFlagAOB);
         }
 
         public List<DS3InventoryItem> GetCurrentInventory()
@@ -75,7 +79,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x10, 8);
             bytes = BitConverter.GetBytes((ulong)itemToGive);
             Array.Copy(bytes, 0, asm, 0x1A, 8);
-            bytes = BitConverter.GetBytes((ulong)ItemGetAddr.Resolve()-0x2F);
+            bytes = BitConverter.GetBytes((ulong)ItemGet_Call.Resolve()-0x2F);
             Array.Copy(bytes, 0, asm, 0x24, 8);
 
             Execute(asm);
@@ -108,6 +112,43 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x19, 8);
             bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + 0x475F00);
             Array.Copy(bytes, 0, asm, 0x29, 8);
+
+            Execute(asm);
+        }
+
+        public bool ReadFlag(int flag)
+        {
+            var resultMemory = Allocate(8);
+            byte[] asm = (byte[])DS3Assembly.ReadFlag.Clone();
+
+            byte[] bytes = BitConverter.GetBytes((ulong)SprjEventFlagMan.Resolve());
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            bytes = BitConverter.GetBytes(flag);
+            Array.Copy(bytes, 0, asm, 0xF, 4);
+            bytes = BitConverter.GetBytes((ulong)ReadEventFlag_Call.Resolve());
+            Array.Copy(bytes, 0, asm, 0x15, 8);
+            bytes = BitConverter.GetBytes((ulong)resultMemory);
+            Array.Copy(bytes, 0, asm, 0x21, 8);
+
+            Execute(asm);
+            var result = Kernel32.ReadInt32(Handle, resultMemory) > 0;
+            Free(resultMemory);
+
+            return result;
+        }
+
+        public void WriteFlag(int flag, bool active)
+        {
+            byte[] asm = (byte[])DS3Assembly.WriteFlag.Clone();
+
+            byte[] bytes = BitConverter.GetBytes((ulong)SprjEventFlagMan.Resolve());
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            bytes = BitConverter.GetBytes(flag);
+            Array.Copy(bytes, 0, asm, 0xF, 4);
+            bytes = BitConverter.GetBytes(active);
+            Array.Copy(bytes, 0, asm, 0x15, 1);
+            bytes = BitConverter.GetBytes((ulong)WriteEventFlag_Call.Resolve());
+            Array.Copy(bytes, 0, asm, 0x1B, 8);
 
             Execute(asm);
         }
