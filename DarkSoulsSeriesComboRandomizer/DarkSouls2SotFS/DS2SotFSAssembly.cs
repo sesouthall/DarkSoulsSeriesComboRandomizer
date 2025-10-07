@@ -50,5 +50,33 @@ e:  ff ff ff
 43: 41 ff d6                call   r14
 46: 48 81 c4 10 01 00 00    add    rsp,0x110
 4d: c3                      ret ";
+
+        public static byte[] ReadEventFlag = CommentedAssemblyParser.LoadDefuseOutput(ReadEventFlagAssembly);
+
+        private const string ReadEventFlagAssembly = @"0:  48 83 ec 1c             sub    rsp,0x1c
+4:  48 b9 fe fe fe fe fe    movabs rcx,0xfefefefefefefefe
+b:  fe fe fe
+e:  ba fe fe fe fe          mov    edx,0xfefefefe
+13: 48 b8 fe fe fe fe fe    movabs rax,0xfefefefefefefefe
+1a: fe fe fe
+1d: ff d0                   call   rax
+1f: 48 bb fe fe fe fe fe    movabs rbx,0xfefefefefefefefe
+26: fe fe fe
+29: 88 03                   mov    BYTE PTR [rbx],al
+2b: 48 83 c4 1c             add    rsp,0x1c
+2f: c3                      ret";
+
+        public static byte[] WriteEventFlag = CommentedAssemblyParser.LoadDefuseOutput(WriteEventFlagAssembly);
+
+        private const string WriteEventFlagAssembly = @"0:  48 83 ec 1c             sub    rsp,0x1c
+4:  48 b9 fe fe fe fe fe    movabs rcx,0xfefefefefefefefe
+b:  fe fe fe
+e:  ba fe fe fe fe          mov    edx,0xfefefefe
+13: 41 b8 fe 00 00 00       mov    r8d,0xfe
+19: 48 b8 fe fe fe fe fe    movabs rax,0xfefefefefefefefe
+20: fe fe fe
+23: ff d0                   call   rax
+25: 48 83 c4 1c             add    rsp,0x1c
+29: c3                      ret";
     }
 }

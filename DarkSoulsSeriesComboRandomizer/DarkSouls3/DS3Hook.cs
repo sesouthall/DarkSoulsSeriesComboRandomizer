@@ -110,7 +110,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x10, 4);
             bytes = BitConverter.GetBytes((ulong)GameMan.Resolve() + 0xACC);
             Array.Copy(bytes, 0, asm, 0x19, 8);
-            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + 0x475F00);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS3Offsets.BonfireWarpMethodOffset);
             Array.Copy(bytes, 0, asm, 0x29, 8);
 
             Execute(asm);
@@ -118,7 +118,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public bool ReadEventFlag(int flag)
         {
-            var resultMemory = Allocate(8);
+            var resultMemory = Allocate(sizeof(bool));
             byte[] asm = (byte[])DS3Assembly.ReadFlag.Clone();
 
             byte[] bytes = BitConverter.GetBytes((ulong)SprjEventFlagMan.Resolve());
@@ -131,7 +131,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x21, 8);
 
             Execute(asm);
-            var result = Kernel32.ReadInt32(Handle, resultMemory) > 0;
+            var result = Kernel32.ReadBoolean(Handle, resultMemory);
             Free(resultMemory);
 
             return result;

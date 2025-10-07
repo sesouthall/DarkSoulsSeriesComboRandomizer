@@ -21,6 +21,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         public const string WriteEventFlagAOB = "40 55 57 41 54 41 57 48 83 EC ? 80 B9 ? ? ? ? 00 45 0F B6 F9 45 0F B6 E0";
 
         public const int GameDataManOffset1 = 0;
+        public const int BonfireWarpMethodOffset = 0x475F00;
 
         public enum GameDataMan
         {

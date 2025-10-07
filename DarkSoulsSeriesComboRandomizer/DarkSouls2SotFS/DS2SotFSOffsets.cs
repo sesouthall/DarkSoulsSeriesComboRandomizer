@@ -12,12 +12,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public const string WarpFuncAOB = "40 53 48 83 EC 60 8B 02 48 8B D9 89 01 8B 42 04";
 
         public const int EventManagerOffset = 0x70;
+        public const int EventFlagManagerOffset = 0x20;
         public const int WarpManagerOffset = 0x70;
 
         // BaseA in public ce table
         public const string GameManagerImpAOB = "48 8B 05 ? ? ? ? 48 8B 58 38 48 85 DB 74 ? F6";
 
         public const int GameManagerImpOffset1 = 0;
+
+        public const int ReadEventFlagMethodOffset = 0x474230;
+        public const int WriteEventFlagMethodOffset = 0x4750B0;
 
         public enum GameDataMan
         {

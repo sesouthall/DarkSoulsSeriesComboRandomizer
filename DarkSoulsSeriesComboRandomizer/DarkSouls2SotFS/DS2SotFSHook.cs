@@ -1,4 +1,6 @@
+using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using PropertyHook;
+using System;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
@@ -8,26 +10,28 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private readonly PHPointer PlayerDataPtr;
         private readonly PHPointer ItemBag;
         private readonly PHPointer InventoryList;
-        private readonly PHPointer ItemGiveFunc;
-        private readonly PHPointer ItemRemoveFunc;
-        private readonly PHPointer SetWarpTargetFunc;
-        private readonly PHPointer WarpFunc;
+        private readonly PHPointer ItemGive_Call;
+        private readonly PHPointer ItemRemove_Call;
+        private readonly PHPointer SetWarpTarget_Call;
+        private readonly PHPointer Warp_Call;
         private readonly PHPointer EventManager;
         private readonly PHPointer WarpManager;
+        private readonly PHPointer EventFlagManager;
 
         public DS2SotFSHook(int refreshInterval, int minLifetime) :
             base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS II")
         {
-            GameManagerImp = RegisterRelativeAOB(DS2SotFSOffsets.GameManagerImpAOB, 3, 7);
-            PlayerDataPtr = CreateChildPointer(GameManagerImp, DS2SotFSOffsets.GameManagerImpOffset1, (int)DS2SotFSOffsets.GameDataMan.PlayerName);
+            GameManagerImp = RegisterRelativeAOB(DS2SotFSOffsets.GameManagerImpAOB, 3, 7, DS2SotFSOffsets.GameManagerImpOffset1);
+            PlayerDataPtr = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameDataMan.PlayerName);
             ItemBag = CreateChildPointer(PlayerDataPtr, 0x10, 0x10);
             InventoryList = CreateChildPointer(PlayerDataPtr, 0x10, 0xD0);
-            ItemGiveFunc = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemGiveAOB);
-            ItemRemoveFunc = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemRemoveAOB);
-            SetWarpTargetFunc = RegisterAbsoluteAOB(DS2SotFSOffsets.SetWarpTargetFuncAOB);
-            WarpFunc = RegisterAbsoluteAOB(DS2SotFSOffsets.WarpFuncAOB);
-            EventManager = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.EventManagerOffset);
-            WarpManager = CreateChildPointer(EventManager, (int)DS2SotFSOffsets.WarpManagerOffset);
+            ItemGive_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemGiveAOB);
+            ItemRemove_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemRemoveAOB);
+            SetWarpTarget_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.SetWarpTargetFuncAOB);
+            Warp_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.WarpFuncAOB);
+            EventManager = CreateChildPointer(GameManagerImp, DS2SotFSOffsets.EventManagerOffset);
+            WarpManager = CreateChildPointer(EventManager, DS2SotFSOffsets.WarpManagerOffset);
+            EventFlagManager = CreateChildPointer(EventManager, DS2SotFSOffsets.EventFlagManagerOffset);
         }
 
         public List<DS2SotFSInventoryItem> GetCurrentInventory()
@@ -72,7 +76,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Array.Copy(bytes, 0, asm, 0xC, 8);
             bytes = BitConverter.GetBytes(ItemBag.Resolve().ToInt64());
             Array.Copy(bytes, 0, asm, 0x19, 8);
-            bytes = BitConverter.GetBytes(ItemGiveFunc.Resolve().ToInt64());
+            bytes = BitConverter.GetBytes(ItemGive_Call.Resolve().ToInt64());
             Array.Copy(bytes, 0, asm, 0x26, 8);
 
             Execute(asm);
@@ -87,7 +91,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Array.Copy(bytes, 0, asm, 0x6, 8);
             bytes = BitConverter.GetBytes(InventoryList.ReadInt32((index+1) * 0x28 + 0x1C));
             Array.Copy(bytes, 0, asm, 0xF, 4);
-            bytes = BitConverter.GetBytes(ItemRemoveFunc.Resolve().ToInt64());
+            bytes = BitConverter.GetBytes(ItemRemove_Call.Resolve().ToInt64());
             Array.Copy(bytes, 0, asm, 0x1B, 8);
 
             Execute(asm);
@@ -101,15 +105,52 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             var asm = (byte[])DS2SotFSAssembly.BonfireWarp.Clone();
             var bytes = BitConverter.GetBytes(value.ToInt64());
             Array.Copy(bytes, 0x0, asm, 0x9, bytes.Length);
-            bytes = BitConverter.GetBytes(SetWarpTargetFunc.Resolve().ToInt64());
+            bytes = BitConverter.GetBytes(SetWarpTarget_Call.Resolve().ToInt64());
             Array.Copy(bytes, 0x0, asm, 0x21, bytes.Length);
             bytes = BitConverter.GetBytes(WarpManager.Resolve().ToInt64());
             Array.Copy(bytes, 0x0, asm, 0x2E, bytes.Length);
-            bytes = BitConverter.GetBytes(WarpFunc.Resolve().ToInt64());
+            bytes = BitConverter.GetBytes(Warp_Call.Resolve().ToInt64());
             Array.Copy(bytes, 0x0, asm, 0x3B, bytes.Length);
 
             Execute(asm);
             Free(value);
+        }
+
+        public bool ReadEventFlag(int flag)
+        {
+            var resultMemory = Allocate(sizeof(long));
+            var asm = (byte[])DS2SotFSAssembly.ReadEventFlag.Clone();
+
+            var bytes = BitConverter.GetBytes(EventFlagManager.Resolve().ToInt64());
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            bytes = BitConverter.GetBytes(flag);
+            Array.Copy(bytes, 0, asm, 0xF, 4);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS2SotFSOffsets.ReadEventFlagMethodOffset);
+            Array.Copy(bytes, 0, asm, 0x15, 8);
+            bytes = BitConverter.GetBytes((ulong)resultMemory);
+            Array.Copy(bytes, 0, asm, 0x21, 8);
+
+            Execute(asm);
+            var result = Kernel32.ReadInt64(Handle, resultMemory) > 0;
+            Free(resultMemory);
+
+            return result;
+        }
+
+        public void WriteEventFlag(int flag, bool active)
+        {
+            var asm = (byte[])DS2SotFSAssembly.WriteEventFlag.Clone();
+
+            var bytes = BitConverter.GetBytes(EventFlagManager.Resolve().ToInt64());
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            bytes = BitConverter.GetBytes(flag);
+            Array.Copy(bytes, 0, asm, 0xF, 4);
+            bytes = BitConverter.GetBytes(active);
+            Array.Copy(bytes, 0, asm, 0x15, 1);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS2SotFSOffsets.WriteEventFlagMethodOffset);
+            Array.Copy(bytes, 0, asm, 0x1B, 8);
+
+            Execute(asm);
         }
     }
 }
