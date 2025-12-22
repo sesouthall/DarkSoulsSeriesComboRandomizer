@@ -1,13 +1,12 @@
-using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using PropertyHook;
-using System;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
     public class DS2SotFSHook : PHook
     {
         private readonly PHPointer GameManagerImp;
-        private readonly PHPointer PlayerDataPtr;
+        private readonly PHPointer GameDataManager;
+        private readonly PHPointer PlayerData;
         private readonly PHPointer ItemBag;
         private readonly PHPointer InventoryList;
         private readonly PHPointer ItemGive_Call;
@@ -18,20 +17,33 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private readonly PHPointer WarpManager;
         private readonly PHPointer EventFlagManager;
 
+        public bool CharacterLoaded { get; private set; } = false;
+
         public DS2SotFSHook(int refreshInterval, int minLifetime) :
             base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS II")
         {
             GameManagerImp = RegisterRelativeAOB(DS2SotFSOffsets.GameManagerImpAOB, 3, 7, DS2SotFSOffsets.GameManagerImpOffset1);
-            PlayerDataPtr = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameDataMan.PlayerName);
-            ItemBag = CreateChildPointer(PlayerDataPtr, 0x10, 0x10);
-            InventoryList = CreateChildPointer(PlayerDataPtr, 0x10, 0xD0);
+            GameDataManager = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameManagerImp.GameDataManager);
+            PlayerData = CreateChildPointer(GameDataManager, (int)DS2SotFSOffsets.GameDataMan.PlayerData);
+            ItemBag = CreateChildPointer(GameDataManager, 0x10, 0x10);
+            InventoryList = CreateChildPointer(GameDataManager, 0x10, 0xD0);
             ItemGive_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemGiveAOB);
             ItemRemove_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.ItemRemoveAOB);
             SetWarpTarget_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.SetWarpTargetFuncAOB);
             Warp_Call = RegisterAbsoluteAOB(DS2SotFSOffsets.WarpFuncAOB);
-            EventManager = CreateChildPointer(GameManagerImp, DS2SotFSOffsets.EventManagerOffset);
-            WarpManager = CreateChildPointer(EventManager, DS2SotFSOffsets.WarpManagerOffset);
-            EventFlagManager = CreateChildPointer(EventManager, DS2SotFSOffsets.EventFlagManagerOffset);
+            EventManager = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameManagerImp.EventManager);
+            WarpManager = CreateChildPointer(EventManager, (int)DS2SotFSOffsets.EventManager.WarpManager);
+            EventFlagManager = CreateChildPointer(EventManager, (int)DS2SotFSOffsets.EventManager.EventFlagManager);
+            base.OnHooked += FinishSetup;
+        }
+
+        public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
+        {
+            while (PlayerData.ReadString((int)DS2SotFSOffsets.PlayerData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            {
+                Thread.Sleep(1000);
+            }
+            CharacterLoaded = true;
         }
 
         public List<DS2SotFSInventoryItem> GetCurrentInventory()

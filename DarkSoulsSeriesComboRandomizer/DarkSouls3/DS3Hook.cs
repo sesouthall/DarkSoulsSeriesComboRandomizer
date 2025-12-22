@@ -15,6 +15,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private readonly PHPointer ReadEventFlag_Call;
         private readonly PHPointer WriteEventFlag_Call;
 
+        public bool CharacterLoaded { get; private set; } = false;
+
         public DS3Hook(int refreshInterval, int minLifetime) :
             base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS III")
         {
@@ -28,6 +30,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             MapItemManAddr = RegisterRelativeAOB(DS3Offsets.MapItemManAOB, 3, 7);
             ReadEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.ReadEventFlagAOB);
             WriteEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.WriteEventFlagAOB);
+        }
+
+        public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
+        {
+            while (PlayerDataPtr.ReadString((int)DS3Offsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            {
+                Thread.Sleep(1000);
+            }
+            CharacterLoaded = true;
         }
 
         public List<DS3InventoryItem> GetCurrentInventory()

@@ -11,7 +11,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private readonly PHPointer ChrClassWarp;
         private readonly PHPointer BonfireWarp_Call;
         private readonly PHPointer EventFlags;
-        
+
+        public bool CharacterLoaded { get; private set; } = false;
+
         public DSRHook(int refreshInterval, int minLifetime) :
             base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS™: REMASTERED")
         {
@@ -22,6 +24,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             ChrClassWarp = RegisterRelativeAOB(DSROffsets.ChrClassWarpAOB, 3, 7, DSROffsets.ChrClassWarpOffset1);
             BonfireWarp_Call = RegisterAbsoluteAOB(DSROffsets.BonfireWarpAOB);
             EventFlags = RegisterRelativeAOB(DSROffsets.EventFlagsAOB, 3, 7, DSROffsets.EventFlagsOffset1, DSROffsets.EventFlagsOffset2);
+            base.OnHooked += FinishSetup;
+        }
+
+        public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
+        {
+            while (PlayerDataPtr.ReadString((int)DSROffsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            {
+                Thread.Sleep(1000);
+            }
+            CharacterLoaded = true;
         }
 
         public List<DSRInventoryItem> GetCurrentInventory()
