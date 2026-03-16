@@ -249,7 +249,7 @@ bool Begin(uint64_t qModuleHandle)
     FUN_140e60160Address = Game::base_address + 0xe60160;
     FUN_140e5f650Address = Game::base_address + 0xe5f650;
     DAT_144799990Address = Game::base_address + 0x4799990;
-    InsertJMP((BYTE*)(Game::base_address + 0xe5e47b), (int64_t)custom_texture_load, 13);
+    //InsertJMP((BYTE*)(Game::base_address + 0xe5e47b), (int64_t)custom_texture_load, 13);
 #endif // DS3
 
     char mappingFile[MAX_PATH] = "%LOCALAPPDATA%\\DarkSoulsSeriesComboRandomizer\\BonfireMappings.txt";
