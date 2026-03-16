@@ -416,3 +416,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+/DS2DllMod/dinput8_wrapper/libs
+/DSRAndDS3DllMod/dinput8_wrapper/libs

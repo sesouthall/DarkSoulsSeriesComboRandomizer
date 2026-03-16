@@ -1,6 +1,7 @@
 using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
 using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
+using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
@@ -16,22 +17,29 @@ namespace DarkSoulsSeriesComboRandomizer
         [STAThread]
         static void Main()
         {
+            var mappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
+            if (!File.Exists(mappingsFile))
+            {
+                File.WriteAllText(mappingsFile, "Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash");
+            }
+
+            StartPipeServers();
+
             dsrWrapper = new DSRWrapper(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\DarkSoulsRemastered.exe");
             ds2Wrapper = new DS2Wrapper(@"C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game\DarkSoulsII.exe");
             ds3Wrapper = new DS3Wrapper(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\DarkSoulsIII.exe");
 
-            dsrWrapper.OnModEventSet += RespondToDSREvent;
-            ds2Wrapper.OnModEventSet += RespondToDS2Event;
-            ds3Wrapper.OnModEventSet += RespondToDS3Event;
-
             dsrWrapper.Start();
+            Thread.Sleep(5000);
+            dsrWrapper.Pause();
             ds2Wrapper.Start();
-            ds3Wrapper.Start();
-
-            Thread.Sleep(1);
-
+            Thread.Sleep(5000);
             ds2Wrapper.Pause();
+            ds3Wrapper.Start();
+            Thread.Sleep(5000);
             ds3Wrapper.Pause();
+
+            dsrWrapper.Resume();
 
             while (true)
             {
@@ -44,58 +52,101 @@ namespace DarkSoulsSeriesComboRandomizer
             Application.Run(new Form1());
         }
 
-        static void RespondToDSREvent(int eventId)
+        static void StartPipeServers()
         {
-            if (eventId == 71810001) // Warp to Cemetary of Ashes
+            Task.Factory.StartNew(() =>
             {
-                dsrWrapper.SetEventFlag(71810001, false);
-                dsrWrapper.Pause();
-                ds3Wrapper.Resume();
-                ds3Wrapper.Warp(4002951);
-            }
-            if (eventId == 71810002)
-            {
-                dsrWrapper.SetEventFlag(71810002, false);
-                dsrWrapper.Pause();
-                ds2Wrapper.Resume();
-                ds2Wrapper.Warp(2650);
-            }
-        }
+                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS1", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
+                server.WaitForConnection();
+                StreamReader reader = new StreamReader(server);
+                while (true)
+                {
+                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
+                    if (int.TryParse(line, out var destinationBonfire))
+                    {
+                        dsrWrapper.Pause();
 
-        static void RespondToDS2Event(int eventId)
-        {
-            if (eventId == 104901) // Warp to Northern Undead Asylum
-            {
-                ds2Wrapper.SetEventFlag(104901, false);
-                ds2Wrapper.Pause();
-                dsrWrapper.Resume();
-                dsrWrapper.Warp(1812960);
-            }
-            if (eventId == 104902) // Warp to Cemetary of Ash
-            {
-                ds2Wrapper.SetEventFlag(104902, false);
-                ds2Wrapper.Pause();
-                ds3Wrapper.Resume();
-                ds3Wrapper.Warp(4002951);
-            }
-        }
+                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
+                        {
+                            dsrWrapper.Resume();
+                            dsrWrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
+                        {
+                            ds2Wrapper.Resume();
+                            ds2Wrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
+                        {
+                            ds3Wrapper.Resume();
+                            ds3Wrapper.Warp(destinationBonfire);
+                        }
+                    }
+                }
+            });
 
-        static void RespondToDS3Event(int eventId)
-        {
-            if (eventId == 74000001) // Warp to Northern Undead Asylum
+            Task.Factory.StartNew(() =>
             {
-                ds3Wrapper.SetEventFlag(74000001, false);
-                ds3Wrapper.Pause();
-                dsrWrapper.Resume();
-                dsrWrapper.Warp(1812960);
-            }
-            if (eventId == 74000002) // Warp to Northern Undead Asylum
+                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS2", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
+                server.WaitForConnection();
+                StreamReader reader = new StreamReader(server);
+                while (true)
+                {
+                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
+                    if (int.TryParse(line, out var destinationBonfire))
+                    {
+                        ds2Wrapper.Pause();
+
+                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
+                        {
+                            dsrWrapper.Resume();
+                            dsrWrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
+                        {
+                            ds2Wrapper.Resume();
+                            ds2Wrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
+                        {
+                            ds3Wrapper.Resume();
+                            ds3Wrapper.Warp(destinationBonfire);
+                        }
+                    }
+                }
+            });
+
+            Task.Factory.StartNew(() =>
             {
-                ds3Wrapper.SetEventFlag(74000002, false);
-                ds3Wrapper.Pause();
-                ds2Wrapper.Resume();
-                ds2Wrapper.Warp(2650);
-            }
+                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS3", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
+                server.WaitForConnection();
+                StreamReader reader = new StreamReader(server);
+                while (true)
+                {
+                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
+                    if (int.TryParse(line, out var destinationBonfire))
+                    {
+                        Thread.Sleep(500);
+                        ds3Wrapper.Pause();
+
+                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
+                        {
+                            dsrWrapper.Resume();
+                            dsrWrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
+                        {
+                            ds2Wrapper.Resume();
+                            ds2Wrapper.Warp(destinationBonfire);
+                        }
+                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
+                        {
+                            ds3Wrapper.Resume();
+                            ds3Wrapper.Warp(destinationBonfire);
+                        }
+                    }
+                }
+            });
         }
     }
 
@@ -104,27 +155,18 @@ namespace DarkSoulsSeriesComboRandomizer
 
     public class DSRWrapper : WindowsGameWrapper, IDisposable
     {
-        public readonly IReadOnlyList<int> Events = new List<int>
-        {
-            71810001, // Warp to Cemetary of Ash
-            71810002, // Warp to Fire Keepers' Dwelling
-        };
-
         private DSRHook hook;
         private Thread itemWatchThread;
-        private Thread eventWatchThread;
 
         private bool shutdown = false;
         private bool disposedValue;
 
-        public override event EventFlagReactor? OnModEventSet;
         public override event ItemReactor? OnModItemPickUp;
 
         public DSRWrapper(string exePath) : base(exePath)
         {
             hook = new DSRHook(5000, 5000);
             itemWatchThread = new Thread(this.WatchItems);
-            eventWatchThread = new Thread(this.WatchEvents);
         }
 
         public override void Start()
@@ -138,12 +180,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
 
             itemWatchThread.Start();
-            eventWatchThread.Start();
-        }
-
-        public void SetEventFlag(int flagId, bool active)
-        {
-            hook.WriteEventFlag(flagId, active);
         }
 
         public void Warp(int bonfireId)
@@ -165,21 +201,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        private void WatchEvents()
-        {
-            while (!shutdown)
-            {
-                foreach (var eventId in Events)
-                {
-                    if (hook.ReadEventFlag(eventId))
-                    {
-                        OnModEventSet?.Invoke(eventId);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -188,7 +209,6 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     shutdown = true;
                     itemWatchThread.Join();
-                    eventWatchThread.Join();
                     hook.Stop();
                 }
 
@@ -208,27 +228,18 @@ namespace DarkSoulsSeriesComboRandomizer
 
     public class DS2Wrapper : WindowsGameWrapper, IDisposable
     {
-        public readonly IReadOnlyList<int> Events = new List<int>
-        {
-            104901, // Warp to Northern Undead Asylum
-            104902, // Warp to Cemetary of Ash
-        };
-
         private DS2SotFSHook hook;
         private Thread itemWatchThread;
-        private Thread eventWatchThread;
 
         private bool shutdown = false;
         private bool disposedValue;
 
-        public override event EventFlagReactor? OnModEventSet;
         public override event ItemReactor? OnModItemPickUp;
 
         public DS2Wrapper(string exePath) : base(exePath)
         {
             hook = new DS2SotFSHook(5000, 5000);
             itemWatchThread = new Thread(this.WatchItems);
-            eventWatchThread = new Thread(this.WatchEvents);
         }
 
         public override void Start()
@@ -243,12 +254,6 @@ namespace DarkSoulsSeriesComboRandomizer
             base.RefreshProcess("DarkSoulsII"); // DS2 has a weird system where the initial process closes almost immediately, but spawns a new one that is the actual game
 
             itemWatchThread.Start();
-            eventWatchThread.Start();
-        }
-
-        public void SetEventFlag(int flagId, bool active)
-        {
-            hook.WriteEventFlag(flagId, active);
         }
 
         public void Warp(int bonfireId)
@@ -270,21 +275,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        private void WatchEvents()
-        {
-            while (!shutdown)
-            {
-                foreach (var eventId in Events)
-                {
-                    if (hook.ReadEventFlag(eventId))
-                    {
-                        OnModEventSet?.Invoke(eventId);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -293,7 +283,6 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     shutdown = true;
                     itemWatchThread.Join();
-                    eventWatchThread.Join();
                     hook.Stop();
                 }
 
@@ -313,27 +302,18 @@ namespace DarkSoulsSeriesComboRandomizer
 
     public class DS3Wrapper : WindowsGameWrapper, IDisposable
     {
-        public readonly IReadOnlyList<int> Events = new List<int>
-        {
-            74000001, // Warp to Northern Undead Asylum
-            74000002, // Warp to Fire Keepers' Dwelling
-        };
-
         private DS3Hook hook;
         private Thread itemWatchThread;
-        private Thread eventWatchThread;
 
         private bool shutdown = false;
         private bool disposedValue;
 
-        public override event EventFlagReactor? OnModEventSet;
         public override event ItemReactor? OnModItemPickUp;
 
         public DS3Wrapper(string exePath) : base(exePath)
         {
             hook = new DS3Hook(5000, 5000);
             itemWatchThread = new Thread(this.WatchItems);
-            eventWatchThread = new Thread(this.WatchEvents);
         }
 
         public override void Start()
@@ -347,12 +327,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
 
             itemWatchThread.Start();
-            eventWatchThread.Start();
-        }
-
-        public void SetEventFlag(int flagId, bool active)
-        {
-            hook.WriteEventFlag(flagId, active);
         }
 
         public void Warp(int bonfireId)
@@ -374,21 +348,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        private void WatchEvents()
-        {
-            while (!shutdown)
-            {
-                foreach (var eventId in Events)
-                {
-                    if (hook.ReadEventFlag(eventId))
-                    {
-                        OnModEventSet?.Invoke(eventId);
-                    }
-                }
-                Thread.Sleep(1000);
-            }
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -397,7 +356,6 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     shutdown = true;
                     itemWatchThread.Join();
-                    eventWatchThread.Join();
                     hook.Stop();
                 }
 

@@ -35,7 +35,6 @@ namespace DarkSoulsSeriesComboRandomizer
         private Process gameProcess;
         private bool disposedValue;
 
-        public abstract event EventFlagReactor? OnModEventSet;
         public abstract event ItemReactor? OnModItemPickUp;
 
         public WindowsGameWrapper(string exePath)

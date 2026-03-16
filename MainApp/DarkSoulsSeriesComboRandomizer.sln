@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36408.4 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DarkSoulsSeriesComboRandomizer", "DarkSoulsSeriesComboRandomizer\DarkSoulsSeriesComboRandomizer.csproj", "{3130B15A-5171-41A5-897C-AF8BBB8A893A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropertyHook", "..\PropertyHook\PropertyHook\PropertyHook.csproj", "{18EFF8D2-C4D5-4E18-9A31-38E106BA1CF7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PropertyHook", "..\..\PropertyHook\PropertyHook\PropertyHook.csproj", "{18EFF8D2-C4D5-4E18-9A31-38E106BA1CF7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

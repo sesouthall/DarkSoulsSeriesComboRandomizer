@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "revision": 0,
+    "rules": [
+        {
+            "primary-output": "DarkSouls3\\DS2Reimplementations.obj",
+            "outputs": [
+                "DarkSouls3\\DS2Reimplementations.h_8E7B9E8C46C203B8.ifc.dt.module.json",
+                "DarkSouls3\\DS2Reimplementations.h_8E7B9E8C46C203B8.ifc.dt.d.json",
+                "DarkSouls3\\DS2Reimplementations.h.ifc"
+            ],
+            "provides": [
+                {
+                    "logical-name": "C:\\Users\\sesou\\OneDrive\\CodeProjects\\DSRWarpConfigDllMod\\dinput8_wrapper\\DS2Reimplementations.h",
+                    "source-path": "c:\\users\\sesou\\onedrive\\codeprojects\\dsrwarpconfigdllmod\\dinput8_wrapper\\ds2reimplementations.h",
+                    "lookup-method": "absolute"
+                }
+            ],
+            "requires": []
+        }
+    ]
+}

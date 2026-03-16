@@ -30,6 +30,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             MapItemManAddr = RegisterRelativeAOB(DS3Offsets.MapItemManAOB, 3, 7);
             ReadEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.ReadEventFlagAOB);
             WriteEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.WriteEventFlagAOB);
+            base.OnHooked += FinishSetup;
         }
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
