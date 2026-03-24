@@ -1,229 +1,104 @@
-﻿using SoulsFormats;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using SoulsFormats.Cryptography;
-using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-
-namespace DarkSoulsItemMigrator
+﻿namespace DarkSoulsItemMigrator
 {
+
     class Program
     {
+        const int DSRBaseGoodsParamId = 10000;
+        const int DS2BaseGoodsParamId = 66000000;
         const int DS3BaseGoodsParamId = 4000000;
-        const int DS3BaseKnowledgeId = 7000;
-        const int DS3BaseIconId = 288;
 
-        const string dsrMsgPath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\msg\ENGLISH\item.msgbnd.dcx";
-        const string ds3MsgPath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\msg\engus\item_dlc2.msgbnd.dcx";
+        const string dsrRoot = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED";
+        const string ds2Root = @"C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game";
+        const string ds3Root = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game";
 
-        const string dsrParambndPath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\param\GameParam\GameParam.parambnd.dcx";
-        const string ds3Data0BdtPath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\Data0.bdt";
+        const string dsrMsgPath = $@"{dsrRoot}\msg\ENGLISH\item.msgbnd.dcx";
+        const string ds2MsgPath = $@"{ds2Root}\menu\text\english";  // loose FMG files, not a BND
+        const string ds3MsgPath = $@"{ds3Root}\msg\engus\item_dlc2.msgbnd.dcx";
 
-        const string dsrMenu0Path = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\menu\menu_0.tpf.dcx";
-        const string dsrMenu3Path = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\menu\menu_3.tpf.dcx";
+        const string dsrParambndPath = $@"{dsrRoot}\param\GameParam\GameParam.parambnd.dcx";
+        const string ds2RegulationPath = $@"{ds2Root}\enc_regulation.bnd.dcx";
+        const string ds3Data0BdtPath = $@"{ds3Root}\Data0.bdt";
 
-        const string ds3MenuCommonPath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\menu\01_common.tpf.dcx";
+        const string dsrMenu3Path = $@"{dsrRoot}\menu\menu_3.tpf.dcx";
+        const string ds3MenuCommonPath = $@"{ds3Root}\menu\01_common.tpf.dcx";
+        const string ds2MenuPath = $@"{ds2Root}\menu\tex\icon\ic_0064330000.tpf";
 
-        const string ds3KnowledgePath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\menu\knowledge";
-        const string CustomDS1IconSheetsFolder = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\mod\icons\EditedDSRIcons\";
-        const string iconSheetWithCustomIcons = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\mod\icons\MENU_Icon_00000\MENU_Icon_00000.dds";
+        // Exposed as internal so DSRGameData and DS3GameData can reference it
+        internal const string SmithboxRoot = @"C:\Users\sesou\Downloads\Smithbox-2-0-5-10-06-2025\Assets\PARAM";
+
+        const string ReportOutputFolder = @".";
 
         static void Main(string[] args)
         {
             Console.WriteLine("=== Dark Souls Item Migrator ===\n");
 
-            //var iconSheetMapping = MigrateTextureSheets();
-            MigrateItemNames();
+            var dsrMsg = new Bnd3File(dsrMsgPath);
+            var dsrParambnd = new Bnd3File(dsrParambndPath);
+            var dsrIcons = new TpfFile(dsrMenu3Path);
+
+            var ds2Msg = new FmgDirectoryFile(ds2MsgPath);
+            var ds2Reg = new Bnd4File(ds2RegulationPath);
+            var ds2Icons = new TpfFile(ds2MenuPath);
+
+            var ds3Msg = new Bnd4File(ds3MsgPath);
+            var ds3Reg = new DS3RegulationFile(ds3Data0BdtPath);
+            var ds3Icons = new TpfFile(ds3MenuCommonPath);
+
+            List<GameFile> files = [dsrMsg, dsrParambnd, dsrIcons, ds2Reg, ds2Icons, ds3Msg, ds3Reg, ds3Icons];
+            List<FmgDirectoryFile> fmgDirs = [ds2Msg];
+
+            Console.WriteLine("Reverting existing changes...");
+            RevertAll(files, fmgDirs);
+
+            var dsrData = new DSRGameData(dsrMsg, dsrParambnd, dsrIcons, DSRBaseGoodsParamId);
+            var ds2Data = new DS2GameData(ds2Msg, ds2Reg, ds2Icons, DS2BaseGoodsParamId);
+            var ds3Data = new DS3GameData(ds3Msg, ds3Reg, ds3Icons, DS3BaseGoodsParamId);
+
+            MigrateItems(source: dsrData, target: ds3Data, label: "[1/6] Migrating DSR items into DS3...");
+            MigrateItems(source: dsrData, target: ds2Data, label: "[2/6] Migrating DSR items into DS2...");
+            MigrateItems(source: ds2Data, target: dsrData, label: "[3/6] Migrating DS2 items into DSR...");
+            MigrateItems(source: ds2Data, target: ds3Data, label: "[4/6] Migrating DS2 items into DS3...");
+            MigrateItems(source: ds3Data, target: dsrData, label: "[5/6] Migrating DS3 items into DSR...");
+            MigrateItems(source: ds3Data, target: ds2Data, label: "[6/6] Migrating DS3 items into DS2...");
+
+            Console.WriteLine("Writing reports...");
+            dsrData.WriteReport(ReportOutputFolder);
+            ds3Data.WriteReport(ReportOutputFolder);
+            ds2Data.WriteReport(ReportOutputFolder);
+
+            Console.WriteLine("Saving files...");
+            SaveAll(files, fmgDirs);
 
             Console.WriteLine("\nDone! Remember to back up your files before testing.");
         }
 
-        // ---------------------------------------------------------------
-        // ITEM NAMES
-        // DSR stores names in FMG (fmessage) files inside a msgbnd archive.
-        // DS3 uses the same format, so we can directly map row IDs.
-        // ---------------------------------------------------------------
-        static void MigrateItemNames()
+        static void RevertAll(List<GameFile> files, List<FmgDirectoryFile> fmgDirs)
         {
-            Console.WriteLine("[1/2] Migrating item names...");
-
-            // Load DSR text and params
-            var dsrMsgBnd = BND3.Read(dsrMsgPath);
-            var dsrParamBnd = BND3.Read(dsrParambndPath);
-
-            // Load DS3 text and params
-            var ds3MsgBnd = BND4.Read(ds3MsgPath);
-            var ds3Bnd = RegulationDecryptor.DecryptDS3Regulation(ds3Data0BdtPath);
-
-            var ds3Param = PARAM.Read(ds3Bnd.Files.Single(file => file.Name.Contains("EquipParamGoods")).Bytes);
-            ds3Param.ApplyParamdef(PARAMDEF.XmlDeserialize(@"C:\Users\sesou\Downloads\Smithbox-2-0-5-10-06-2025\Assets\PARAM\DS3\Defs\EquipParamGoods.xml"));
-            var defaultDs3Item = ds3Param.Rows.Single(row => row.ID == 117); // Sunlight Medal
-
-            var ds3ItemNamesFmg = FMG.Read(ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテム名.fmg")).Bytes);
-            var ds3ItemDescriptionsFmg = FMG.Read(ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテム説明.fmg")).Bytes);
-            var ds3ItemLongDescriptionsFmg = FMG.Read(ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテムうんちく.fmg")).Bytes);
-
-            // Load DS3 icon sheets
-            var ds3SmallIcons = TPF.Read(ds3MenuCommonPath);
-
-            // FMG file names we care about
-            var itemTypes = new[]
-            {
-                "Weapon",
-                "Armor",
-                "Accessory",
-                "Item",
-            };
-
-            var currentItemId = DS3BaseGoodsParamId;
-            var copiedIconIds = new Dictionary<int, int>();
-            foreach (var itemType in itemTypes)
-            {
-                var paramName = itemType == "Armor" ? "Protector" : itemType == "Item" ? "Goods" : itemType;
-                var ds1rParam = PARAM.Read(dsrParamBnd.Files.Single(file => file.Name.Contains($"EquipParam{paramName}")).Bytes);
-                ds1rParam.ApplyParamdef(PARAMDEF.XmlDeserialize($@"C:\Users\sesou\Downloads\Smithbox-2-0-5-10-06-2025\Assets\PARAM\DS1R\Defs\EquipParam{paramName}.xml"));
-                var nameFmg = FMG.Read(dsrMsgBnd.Files.First(file => file.Name.Contains($"\\{itemType}_name_.fmg")).Bytes);
-                var descriptionFmg = FMG.Read(dsrMsgBnd.Files.First(file => file.Name.Contains($"\\{itemType}_description_.fmg")).Bytes);
-                var longDescriptionFmg = FMG.Read(dsrMsgBnd.Files.First(file => file.Name.Contains($"\\{itemType}_long_desc_.fmg")).Bytes);
-
-                foreach (var itemParam in ds1rParam.Rows)
-                {
-                    ds3ItemNamesFmg.Entries.Add(new FMG.Entry(currentItemId, nameFmg[itemParam.ID]));
-                    ds3ItemDescriptionsFmg.Entries.Add(new FMG.Entry(currentItemId, descriptionFmg[itemParam.ID]));
-                    ds3ItemLongDescriptionsFmg.Entries.Add(new FMG.Entry(currentItemId, longDescriptionFmg[itemParam.ID]));
-
-                    var newItem = new PARAM.Row(defaultDs3Item);
-                    newItem.ID = currentItemId;
-                    //var iconIdFieldName = itemType == "Armor" ? "iconIdM" : "iconId";
-                    //var ds1IconId = (UInt16)itemParam[iconIdFieldName].Value;
-                    //if (itemType == "Item" && ds1IconId >= 7000)
-                    //{
-                    //    ds1IconId -= 3904; // Offset from gestures' virtual texture sheet, to the actual location.
-                    //}
-                    newItem["iconId"].Value = 20; //CalculateNewIconId(ds1IconId, iconSheetMapping);
-
-                    ds3Param.Rows.Add(newItem);
-                    currentItemId++;
-                }
-            }
-
-            // Replace Menu_Icon_00000 with my version containing DS1 and DS2 icons
-
-            var customDS1Icons = File.ReadAllBytes(iconSheetWithCustomIcons);
-            var oldIconSheet = ds3SmallIcons.Textures.Single(texture => texture.Name.Contains("MENU_Icon_00000"));
-            var oldIconIndex = ds3SmallIcons.Textures.IndexOf(oldIconSheet);
-            ds3SmallIcons.Textures.Remove(oldIconSheet);
-            ds3SmallIcons.Textures.Insert(oldIconIndex, new TPF.Texture($"MENU_Icon_00000", oldIconSheet.Format, oldIconSheet.Flags1, customDS1Icons, oldIconSheet.Platform));
-
-            // Save DS3 msgbnd
-
-            ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテム名.fmg")).Bytes = ds3ItemNamesFmg.Write();
-            ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテム説明.fmg")).Bytes = ds3ItemDescriptionsFmg.Write();
-            ds3MsgBnd.Files.Single(file => file.Name.Contains("\\アイテムうんちく.fmg")).Bytes = ds3ItemLongDescriptionsFmg.Write();
-
-            string msgBackupPath = ds3MsgPath + ".bak_original";
-            if (!File.Exists(msgBackupPath)) File.Copy(ds3MsgPath, msgBackupPath); // backup
-            ds3MsgBnd.Write(ds3MsgPath);
-
-            // Save DS3 EquipParam
-
-            ds3Bnd.Files.Single(file => file.Name.Contains("EquipParamGoods")).Bytes = ds3Param.Write();
-
-            string bndBackupPath = ds3Data0BdtPath + ".bak_original";
-            if (!File.Exists(bndBackupPath)) File.Copy(ds3Data0BdtPath, bndBackupPath); // backup
-            RegulationDecryptor.EncryptDS3Regulation(ds3Data0BdtPath, ds3Bnd);
-
-            // Save DS3 icons
-
-            string menuCommonBackup = ds3MenuCommonPath + ".bak_original";
-            if (!File.Exists(menuCommonBackup)) File.Copy(ds3MenuCommonPath, menuCommonBackup); // backup
-            ds3SmallIcons.Write(ds3MenuCommonPath);
-
-            Console.WriteLine("  Saved item names.");
+            foreach (var file in files) file.Revert();
+            foreach (var dir in fmgDirs) dir.Revert();
         }
 
-        //private static int CalculateNewIconId(UInt16 oldIconId, Dictionary<int, int> iconSheetMapping)
-        //{
-        //    var oldIconSheetGroup = oldIconId / 1000;
-        //    var oldIconIndexInGroup = oldIconId % 1000;
-        //    var iconIndexOnSheet = oldIconIndexInGroup % 131;
-        //    if (oldIconId == 204) //Gough's Great Arrows are weird
-        //    {
-        //        iconIndexOnSheet = 120;
-        //    }
-        //    var oldIconSheetId = (oldIconSheetGroup * 10) + (oldIconIndexInGroup / 131);
-        //    var newIconSheetId = iconSheetMapping[oldIconSheetId];
-        //    var newIconSheetGroup = newIconSheetId / 1000;
-        //    var newIconSheetNumberInGroup = newIconSheetId % 1000;
-        //    return newIconSheetGroup * 1000 + newIconSheetNumberInGroup * 144 + iconIndexOnSheet;
-        //}
+        static void SaveAll(List<GameFile> files, List<FmgDirectoryFile> fmgDirs)
+        {
+            foreach (var file in files) file.Save();
+            foreach (var dir in fmgDirs) dir.Save();
+        }
 
-        //private static Dictionary<int, int> MigrateTextureSheets()
-        //{
-        //    var iconSheetMapping = new Dictionary<int, int>();
-        //    var ds3SmallIcons = TPF.Read(ds3MenuCommonPath);
-        //    var ds1IconSheetRegex = new Regex("Icon(?<sheetNumber>\\d\\d)");
-        //    foreach (var ds1IconSheet in Directory.GetFiles(CustomDS1IconSheetsFolder))
-        //    {
-        //        var customDS1Icons = File.ReadAllBytes(ds1IconSheet);
-        //        var match = ds1IconSheetRegex.Match(ds1IconSheet);
-        //        var oldSheetNumber = int.Parse(match.Groups["sheetNumber"].Value);
-        //        var newSheetNumber = GetNextEmptySheetNumber(ds3SmallIcons);
-        //        iconSheetMapping[oldSheetNumber] = newSheetNumber;
-        //        ds3SmallIcons.Textures.Add(new TPF.Texture($"MENU_Icon_{newSheetNumber:D5}", ds3SmallIcons.Textures[0].Format, ds3SmallIcons.Textures[0].Flags1, customDS1Icons, ds3SmallIcons.Textures[0].Platform));
-        //    }
-        //    string menuCommonBackup = ds3MenuCommonPath + ".bak_original";
-        //    if (!File.Exists(menuCommonBackup)) File.Copy(ds3MenuCommonPath, menuCommonBackup); // backup
-        //    ds3SmallIcons.Write(ds3MenuCommonPath);
-        //    return iconSheetMapping;
-        //}
+        // ---------------------------------------------------------------
+        // MigrateItems — iterates source.GetAllItems() and hands each one
+        // to target.AddNewGood(), then flushes the target's accumulated
+        // changes back into its in-memory BNDs.
+        // ---------------------------------------------------------------
+        static void MigrateItems(GameData source, GameData target, string label)
+        {
+            Console.WriteLine(label);
 
-        //private static int GetNextEmptySheetNumber(TPF textures)
-        //{
-        //    int nextSheetNumber = 0;
-        //    while (textures.Textures.Any(texture => texture.Name.Contains($"MENU_Icon_{nextSheetNumber:D5}")))
-        //    {
-        //        nextSheetNumber++;
-        //        if (nextSheetNumber % 1000 > 6)
-        //        {
-        //            nextSheetNumber += 993;
-        //        }
-        //        if (nextSheetNumber >= 10000)
-        //        {
-        //            throw new Exception("No available sheet number");
-        //        }
-        //    }
-        //    return nextSheetNumber;
-        //}
+            foreach (var item in source.GetAllItems())
+                target.AddNewGood(item);
+
+            target.Flush();
+
+            Console.WriteLine("  Done.");
+        }
     }
-
-    //if (!copiedIconIds.ContainsKey(iconId))
-    //{
-    //    var textureSheet = dsrMenu0.Textures.Find(texture => texture.Name == $"Icon{textureSheetId:D2}") ?? dsrMenu3.Textures.Find(texture => texture.Name == $"Icon{textureSheetId:D2}") ?? throw new Exception();
-    //    var iconRow = iconIndex / 12;
-    //    var iconCol = iconIndex % 12;
-    //    if (nameEntry == "Gough's Great Arrow")
-    //    {
-    //        iconRow = 11;
-    //        iconCol = 0;
-    //    }
-    //    using (var parsedTextureSheet = Pfim.Dds.Create(textureSheet.Bytes, new Pfim.PfimConfig()))
-    //    {
-    //        using var icon = Image.LoadPixelData<Bgra32>(parsedTextureSheet.Data, parsedTextureSheet.Width, parsedTextureSheet.Height);
-    //        icon.Configuration.PreferContiguousImageBuffers = true;
-    //        icon.Mutate(x => x.Crop(new Rectangle(164 * iconCol, 184 * iconRow, 164, 184)).Resize(512, 512, KnownResamplers.Spline));
-    //        using var bmpMemoryStream = new MemoryStream();
-    //        icon.SaveAsBmp(bmpMemoryStream);
-    //        bmpMemoryStream.Position = 0;
-    //        var iconData = SharpDX.Toolkit.Graphics.Image.Load(bmpMemoryStream);
-    //        using var ddsMemoryStream = new MemoryStream();
-    //        iconData.Save(ddsMemoryStream, SharpDX.Toolkit.Graphics.ImageFileType.Dds);
-    //        var newIcon = new TPF();
-    //        newIcon.Textures.Add(new TPF.Texture($"MENU_Knowledge_{currentKnowledgeId:D5}", defaultDs3Icon.Textures[0].Format, defaultDs3Icon.Textures[0].Flags1, ddsMemoryStream.GetBuffer(), TPF.TPFPlatform.PC));
-    //        newIcon.Write($"{ds3KnowledgePath}\\menu_knowledge_{currentKnowledgeId:D5}.tpf.dcx");
-    //    }
-    //    copiedIconIds[iconId] = currentKnowledgeId;
-    //    currentKnowledgeId++;
-    //}
 }
