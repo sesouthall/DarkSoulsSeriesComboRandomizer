@@ -11,6 +11,19 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\PropertyHook\PropertyHook\PropertyHook.csproj" />
+    <ProjectReference Include="..\..\..\SoulsFormatsNEXT\SoulsFormats\SoulsFormats.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ConfigFiles\DS2S_injected_items.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ConfigFiles\DS3_injected_items.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ConfigFiles\DSR_injected_items.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
