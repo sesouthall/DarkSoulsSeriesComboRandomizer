@@ -3,7 +3,7 @@
     public enum SoulsGame
     {
         DSR,
-        DS2,
+        DS2S,
         DS3,
     }
 }

@@ -72,13 +72,13 @@ namespace DarkSoulsItemMigrator
                 [SoulsItemType.Weapon] = 0x00000000,
                 [SoulsItemType.Armor] = 0x10000000,
                 [SoulsItemType.Accessory] = 0x20000000,
-                [SoulsItemType.Good] = 0x40000000,
+                [SoulsItemType.Goods] = 0x40000000,
             },
         }.Build();
 
         public static readonly GameLotConfig DS2 = new GameLotConfig
         {
-            Game = SoulsGame.DS2,
+            Game = SoulsGame.DS2S,
             SlotCount = 9,
             ItemIdFieldPattern = "item_lot_{0}",
             ItemCategoryFieldPattern = null,  // DS2 has no category field — all items treated as Good
@@ -86,7 +86,7 @@ namespace DarkSoulsItemMigrator
             ItemAmountFieldPattern = "amount_lot_{0}",
             CategoryValues = new Dictionary<SoulsItemType, int>
             {
-                [SoulsItemType.Good] = 0,  // unused for DS2 but required by the type
+                [SoulsItemType.Goods] = 0,  // unused for DS2 but required by the type
             },
         }.Build();
 
@@ -95,15 +95,15 @@ namespace DarkSoulsItemMigrator
             Game = SoulsGame.DS3,
             SlotCount = 8,   // verify against ItemLotParam paramdef
             ItemIdFieldPattern = "ItemLotId{0}",
-            ItemCategoryFieldPattern = "lotItemCategory0{0}",
-            ItemWeightFieldPattern = "lotItemBasePoint0{0}",
+            ItemCategoryFieldPattern = "LotItemCategory0{0}",
+            ItemWeightFieldPattern = "LotItemBasePoint0{0}",
             ItemAmountFieldPattern = "LotItemNum{0}",
             CategoryValues = new Dictionary<SoulsItemType, int>
             {
                 [SoulsItemType.Weapon] = 0x00000000,
                 [SoulsItemType.Armor] = 0x10000000,
                 [SoulsItemType.Accessory] = 0x20000000,
-                [SoulsItemType.Good] = 0x40000000,
+                [SoulsItemType.Goods] = 0x40000000,
             },
         }.Build();
     }
@@ -167,19 +167,22 @@ namespace DarkSoulsItemMigrator
                         _param[row.ID][string.Format(_config.ItemAmountFieldPattern, i)].Value);
 
                     // DS2 marks empty slots with item ID 60510000 and amount 0
-                    if (itemId == 0 || (_config.Game == SoulsGame.DS2 && itemId == 60510000 && amount == 0)) continue;
+                    if (itemId == 0 || (_config.Game == SoulsGame.DS2S && itemId == 60510000 && amount == 0)) continue;
 
                     var weight = Convert.ToInt32(
                         _param[row.ID][string.Format(_config.ItemWeightFieldPattern, i)].Value);
 
-                    var itemType = SoulsItemType.Good;
-                    if (_config.ItemCategoryFieldPattern != null)
+                    var itemType = SoulsItemType.Goods;
+                    // DS3's ItemLotParam row 5630 has ItemLotId1=379 to get through the first check, but LotItemCategory01=0xFFFFFFFF, which breaks the int parsing.
+                    // I'm not sure if I should skip this line or treat it as Filianore's Spear Ornament, which it seems to be trying to reference.
+                    // For now, let the category default to Goods.
+                    if (_config.ItemCategoryFieldPattern != null && _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, i)].Value.ToString() != "4294967295")
                     {
                         var categoryInt = Convert.ToInt32(
                             _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, i)].Value);
                         itemType = _config.CategoryByValue.TryGetValue(categoryInt, out var t)
                             ? t
-                            : SoulsItemType.Good;
+                            : SoulsItemType.Goods;
                     }
 
                     rowSlots.Add(new LotSlot(_config.Game, itemId, itemType, weight, amount));
@@ -205,6 +208,13 @@ namespace DarkSoulsItemMigrator
                 var row = _param.Rows[rowIndex];
                 var rowSlots = rows[rowIndex];
                 var slotIndex = 1;
+                // Slots seem to be contiguous, but don't always start at 1
+                // Use the same indicies as the original item lot
+                while (_param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value.ToString() == "0" || 
+                    (_config.Game == SoulsGame.DS2S && _param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value.ToString() == "60510000"))
+                {
+                    slotIndex++;
+                }
 
                 foreach (var slot in rowSlots)
                 {
@@ -227,11 +237,11 @@ namespace DarkSoulsItemMigrator
                                 $"  Warning: no injection record for {slot.SourceGame} item " +
                                 $"{slot.ItemId} in {_config.Game} — slot zeroed.");
                             resolvedId = 0;
-                            resolvedType = SoulsItemType.Good;
+                            resolvedType = SoulsItemType.Goods;
                         }
                         else
                         {
-                            resolvedType = SoulsItemType.Good;
+                            resolvedType = SoulsItemType.Goods;
                         }
                     }
 
@@ -253,7 +263,7 @@ namespace DarkSoulsItemMigrator
                 for (; slotIndex <= _config.SlotCount; slotIndex++)
                 {
                     _param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value
-                        = _config.Game == SoulsGame.DS2 ? 60510000 : 0;
+                        = _config.Game == SoulsGame.DS2S ? 60510000 : 0;
                     if (_config.ItemCategoryFieldPattern != null)
                         _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, slotIndex)].Value = 0;
                     _param[row.ID][string.Format(_config.ItemWeightFieldPattern, slotIndex)].Value = 0;
@@ -277,33 +287,31 @@ namespace DarkSoulsItemMigrator
         private readonly string _dsrRoot;
         private readonly string _ds2Root;
         private readonly string _ds3Root;
-        private readonly string _reportFolder;
+        private readonly Dictionary<int, SoulsItem> dsrInjected;
+        private readonly Dictionary<int, SoulsItem> ds2Injected;
+        private readonly Dictionary<int, SoulsItem> ds3Injected;
         private readonly Random _rng;
 
         public ItemLotRandomizer(
             string dsrRoot,
             string ds2Root,
             string ds3Root,
-            string reportFolder,
+            Dictionary<int, SoulsItem> dsrInjected,
+            Dictionary<int, SoulsItem> ds2Injected,
+            Dictionary<int, SoulsItem> ds3Injected,
             int? seed = null)
         {
             _dsrRoot = dsrRoot;
             _ds2Root = ds2Root;
             _ds3Root = ds3Root;
-            _reportFolder = reportFolder;
+            this.dsrInjected = dsrInjected;
+            this.ds2Injected = ds2Injected;
+            this.ds3Injected = ds3Injected;
             _rng = seed.HasValue ? new Random(seed.Value) : new Random();
         }
 
         public void Randomize(string paramdefRoot)
         {
-            Console.WriteLine("Loading injection maps...");
-            var dsrInjected = SoulsItemCsvParser.ParseFile(
-                Path.Combine(_reportFolder, "DSR_injected_items.csv"));
-            var ds2Injected = SoulsItemCsvParser.ParseFile(
-                Path.Combine(_reportFolder, "DS2_injected_items.csv"));
-            var ds3Injected = SoulsItemCsvParser.ParseFile(
-                Path.Combine(_reportFolder, "DS3_injected_items.csv"));
-
             Console.WriteLine("Loading lot params...");
 
             // DSR — BND3 parambnd
@@ -317,14 +325,14 @@ namespace DarkSoulsItemMigrator
             var ds2Reg = BND4.Read(
                 Path.Combine(_ds2Root, "enc_regulation.bnd.dcx"));
             var ds2LotChr = LoadParam(
-                ds2Reg, "ItemLotParam_Chr",
-                Path.Combine(paramdefRoot, @"DS2S\Defs\ItemLotParam_Chr.xml"));
+                ds2Reg, "ItemLotParam2_Chr",
+                Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
             var ds2LotOther = LoadParam(
-                ds2Reg, "ItemLotParam_Other",
-                Path.Combine(paramdefRoot, @"DS2S\Defs\ItemLotParam_Other.xml"));
+                ds2Reg, "ItemLotParam2_Other",
+                Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
             var ds2LotSvr = LoadParam(
-                ds2Reg, "ItemLotParam_SvrEvent",
-                Path.Combine(paramdefRoot, @"DS2S\Defs\ItemLotParam_SvrEvent.xml"));
+                ds2Reg, "ItemLotParam2_SvrEvent",
+                Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
 
             // DS3 — encrypted regulation
             var ds3Reg = RegulationDecryptor.DecryptDS3Regulation(
@@ -380,18 +388,36 @@ namespace DarkSoulsItemMigrator
             Console.WriteLine("Writing lot params...");
 
             dsrParambnd.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = dsrTable.Write();
+            File.Copy(Path.Combine(_dsrRoot, @"param\GameParam\GameParam.parambnd.dcx"), Path.Combine(_dsrRoot, @"param\GameParam\GameParam.parambnd.dcx.unrandomized"), true);
             dsrParambnd.Write(Path.Combine(_dsrRoot, @"param\GameParam\GameParam.parambnd.dcx"));
 
-            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam_Chr")).Bytes = ds2ChrTable.Write();
-            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam_Other")).Bytes = ds2OtherTable.Write();
-            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam_SvrEvent")).Bytes = ds2SvrTable.Write();
+            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam2_Chr")).Bytes = ds2ChrTable.Write();
+            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam2_Other")).Bytes = ds2OtherTable.Write();
+            ds2Reg.Files.Single(f => f.Name.Contains("ItemLotParam2_SvrEvent")).Bytes = ds2SvrTable.Write();
+            File.Copy(Path.Combine(_ds2Root, "enc_regulation.bnd.dcx"), Path.Combine(_ds2Root, "enc_regulation.bnd.dcx.unrandomized"), true);
             ds2Reg.Write(Path.Combine(_ds2Root, "enc_regulation.bnd.dcx"));
 
             ds3Reg.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = ds3Table.Write();
-            RegulationDecryptor.EncryptDS3Regulation(
-                Path.Combine(_ds3Root, "Data0.bdt"), ds3Reg);
+            File.Copy(Path.Combine(_ds3Root, "Data0.bdt"), Path.Combine(_ds3Root, "Data0.bdt.unrandomized"), true);
+            RegulationDecryptor.EncryptDS3Regulation(Path.Combine(_ds3Root, "Data0.bdt"), ds3Reg);
 
             Console.WriteLine("Done.");
+        }
+
+        public void RemoveRandomization()
+        {
+            RevertFile(Path.Combine(_dsrRoot, @"param\GameParam\GameParam.parambnd.dcx"));
+            RevertFile(Path.Combine(_ds2Root, "enc_regulation.bnd.dcx"));
+            RevertFile(Path.Combine(_ds3Root, "Data0.bdt"));
+        }
+
+        private void RevertFile(string path)
+        {
+            if (File.Exists($"{path}.unrandomized"))
+            {
+                File.Delete(path);
+                File.Move($"{path}.unrandomized", path);
+            }
         }
 
         private static PARAM LoadParam(IBinder bnd, string nameContains, string paramdefPath)

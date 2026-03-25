@@ -45,7 +45,8 @@ namespace DarkSoulsSeriesComboRandomizer
                 var modItems = inventory.Where(item => item.id >= 66000000);
                 foreach (var item in modItems)
                 {
-                    OnModItemPickUp?.Invoke(SoulsGame.DS2, (int)item.id, (int)item.quantityOrDurability < 10 ? item.quantityOrDurability : 1);
+                    hook.RemoveItem(item.inventoryIndex);
+                    OnModItemPickUp?.Invoke(SoulsGame.DS2S, (int)item.id, (int)item.quantityOrDurability < 10 ? item.quantityOrDurability : 1);
                 }
                 Thread.Sleep(1000);
             }
