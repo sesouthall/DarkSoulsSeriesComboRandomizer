@@ -41,9 +41,9 @@ namespace DarkSoulsItemMigrator
 
             ItemTypes = new List<ItemType>
             {
-                new("Weapon",    $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamWeapon.xml",    "武器名",       null,            "武器うんちく",       baseInjectedId, new Regex("EquipParamWeapon")),
-                new("Armor", $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamProtector.xml", "防具名",       null,            "防具うんちく",       baseInjectedId, new Regex("EquipParamProtector")),
-                new("Accessory", $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamAccessory.xml", "アクセサリ名", "アクセサリ説明", "アクセサリうんちく", baseInjectedId, new Regex("EquipParamAccessory")),
+                new("Weapon",    $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamWeapon.xml",    "武器名",       null,            "武器うんちく",       int.MaxValue, new Regex("EquipParamWeapon")),
+                new("Armor", $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamProtector.xml", "防具名",       null,            "防具うんちく",       int.MaxValue, new Regex("EquipParamProtector")),
+                new("Accessory", $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamAccessory.xml", "アクセサリ名", "アクセサリ説明", "アクセサリうんちく", int.MaxValue, new Regex("EquipParamAccessory")),
                 new("Goods",     $@"{Program.SmithboxRoot}\DS3\Defs\EquipParamGoods.xml",     "アイテム名",   "アイテム説明",   "アイテムうんちく",   baseInjectedId, new Regex("EquipParamGoods")),
             };
         }

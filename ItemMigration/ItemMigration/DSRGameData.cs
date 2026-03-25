@@ -39,9 +39,9 @@ namespace DarkSoulsItemMigrator
 
             ItemTypes = new List<ItemType>
             {
-                new("Weapon",    $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamWeapon.xml",    "Weapon_name_",    "Weapon_description_",    "Weapon_long_desc_", baseInjectedId, new Regex("EquipParamWeapon")),
-                new("Armor", $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamProtector.xml", "Armor_name_",     "Armor_description_",     "Armor_long_desc_", baseInjectedId, new Regex("EquipParamProtector")),
-                new("Accessory", $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamAccessory.xml", "Accessory_name_", "Accessory_description_", "Accessory_long_desc_", baseInjectedId, new Regex("EquipParamAccessory")),
+                new("Weapon",    $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamWeapon.xml",    "Weapon_name_",    "Weapon_description_",    "Weapon_long_desc_", int.MaxValue, new Regex("EquipParamWeapon")),
+                new("Armor", $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamProtector.xml", "Armor_name_",     "Armor_description_",     "Armor_long_desc_", int.MaxValue, new Regex("EquipParamProtector")),
+                new("Accessory", $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamAccessory.xml", "Accessory_name_", "Accessory_description_", "Accessory_long_desc_", int.MaxValue, new Regex("EquipParamAccessory")),
                 new("Goods",     $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamGoods.xml",     "Item_name_",      "Item_description_",      "Item_long_desc_", baseInjectedId, new Regex("EquipParamGoods")),
             };
         }

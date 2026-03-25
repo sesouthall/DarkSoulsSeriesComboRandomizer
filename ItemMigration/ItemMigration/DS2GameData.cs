@@ -13,14 +13,14 @@ using System.Text.RegularExpressions;
 
 class DS2GameData : GameData
 {
-    private readonly Bnd4File _paramBnd;
+    private readonly DS2RegulationFile _paramBnd;
     private readonly FmgDirectoryFile _msgBnd;
 
     protected override SourceGame GameName => SourceGame.DS2S;
     protected override IBinder ParamBnd => _paramBnd.Bnd;
     protected override IBinder MsgBnd => _msgBnd.Bnd;
 
-    public DS2GameData(FmgDirectoryFile msgBnd, Bnd4File paramBnd, TpfFile icons, int baseInjectedId)
+    public DS2GameData(FmgDirectoryFile msgBnd, DS2RegulationFile paramBnd, TpfFile icons, int baseInjectedId)
     {
         _msgBnd = msgBnd;
         _paramBnd = paramBnd;

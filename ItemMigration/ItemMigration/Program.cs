@@ -24,7 +24,7 @@
         const string ds2MenuPath = $@"{ds2Root}\menu\tex\icon\ic_0064330000.tpf";
 
         // Exposed as internal so DSRGameData and DS3GameData can reference it
-        internal const string SmithboxRoot = @"C:\Users\sesou\Downloads\Smithbox-2-0-5-10-06-2025\Assets\PARAM";
+        internal const string SmithboxRoot = @"C:\Users\sesou\Downloads\Smithbox\Assets\PARAM";
 
         const string ReportOutputFolder = @".";
 
@@ -37,7 +37,7 @@
             var dsrIcons = new TpfFile(dsrMenu3Path);
 
             var ds2Msg = new FmgDirectoryFile(ds2MsgPath);
-            var ds2Reg = new Bnd4File(ds2RegulationPath);
+            var ds2Reg = new DS2RegulationFile(ds2RegulationPath);
             var ds2Icons = new TpfFile(ds2MenuPath);
 
             var ds3Msg = new Bnd4File(ds3MsgPath);
@@ -93,10 +93,16 @@
         {
             Console.WriteLine(label);
 
+            var itemCount = 0;
             foreach (var item in source.GetAllItems())
+            {
                 target.AddNewGood(item);
+                itemCount++;
+            }
 
             target.Flush();
+
+            Console.WriteLine($"  Migrated {itemCount} items");
 
             Console.WriteLine("  Done.");
         }
