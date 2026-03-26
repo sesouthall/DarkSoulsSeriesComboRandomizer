@@ -64,7 +64,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 //dsrWrapper.GiveSunlightMedals();
                 //ds2Wrapper.GiveSunlightMedals();
                 //ds3Wrapper.GiveSunlightMedals();
-                Thread.Sleep(10000);
+                     Thread.Sleep(10000);
             }
 
             dsrWrapper.OnModItemPickUp -= SendItemToCorrectGame;

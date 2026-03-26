@@ -30,19 +30,17 @@ namespace DarkSoulsItemMigrator
     {
         public SoulsGame Game { get; init; }
 
-        // Number of item slots per lot row (DSR=8, DS2=5, DS3=8 — verify)
-        public int SlotCount { get; init; }
+        public int MaxSlotIndex { get; init; }
+        public int SlotStartingIndex { get; init; }
 
-        // Field name patterns. {0} is replaced with the 1-based slot index.
+        // Field name patterns. {0} is replaced with the SlotStartingIndex-based slot index.
         // e.g. "lotItemId0{0}" → "lotItemId01", "lotItemId02", ...
         public string ItemIdFieldPattern { get; init; } = null!;
         public string? ItemCategoryFieldPattern { get; init; }
         public string ItemWeightFieldPattern { get; init; } = null!;
         public string ItemAmountFieldPattern { get; init; } = null!;
 
-        // Maps SoulsItemType → the integer the game stores in the category field.
-        // Cross-game items are always migrated as goods, so only Good is strictly
-        // required for cross-game writes, but all types are listed for completeness.
+        // Maps SoulsItemType → the integer the game stores in the category field
         public IReadOnlyDictionary<SoulsItemType, int> CategoryValues { get; init; } = null!;
 
         // Reverse map built automatically from CategoryValues
@@ -62,7 +60,8 @@ namespace DarkSoulsItemMigrator
         public static readonly GameLotConfig DSR = new GameLotConfig
         {
             Game = SoulsGame.DSR,
-            SlotCount = 8,   // verify against ItemLotParam paramdef
+            MaxSlotIndex = 8,
+            SlotStartingIndex = 1,
             ItemIdFieldPattern = "lotItemId0{0}",
             ItemCategoryFieldPattern = "lotItemCategory0{0}",
             ItemWeightFieldPattern = "lotItemBasePoint0{0}",
@@ -79,7 +78,8 @@ namespace DarkSoulsItemMigrator
         public static readonly GameLotConfig DS2 = new GameLotConfig
         {
             Game = SoulsGame.DS2S,
-            SlotCount = 9,
+            MaxSlotIndex = 9,
+            SlotStartingIndex = 0,
             ItemIdFieldPattern = "item_lot_{0}",
             ItemCategoryFieldPattern = null,  // DS2 has no category field — all items treated as Good
             ItemWeightFieldPattern = "chance_lot_{0}",
@@ -93,7 +93,8 @@ namespace DarkSoulsItemMigrator
         public static readonly GameLotConfig DS3 = new GameLotConfig
         {
             Game = SoulsGame.DS3,
-            SlotCount = 8,   // verify against ItemLotParam paramdef
+            MaxSlotIndex = 8,
+            SlotStartingIndex = 1,
             ItemIdFieldPattern = "ItemLotId{0}",
             ItemCategoryFieldPattern = "LotItemCategory0{0}",
             ItemWeightFieldPattern = "LotItemBasePoint0{0}",
@@ -158,25 +159,21 @@ namespace DarkSoulsItemMigrator
             {
                 var rowSlots = new List<LotSlot>();
 
-                for (int i = 1; i <= _config.SlotCount; i++)
+                for (int i = _config.SlotStartingIndex; i <= _config.MaxSlotIndex; i++)
                 {
+                    if (!IsValidItem(row, i)) continue;
+
                     var itemId = Convert.ToInt32(
                         _param[row.ID][string.Format(_config.ItemIdFieldPattern, i)].Value);
 
                     var amount = Convert.ToInt32(
                         _param[row.ID][string.Format(_config.ItemAmountFieldPattern, i)].Value);
 
-                    // DS2 marks empty slots with item ID 60510000 and amount 0
-                    if (itemId == 0 || (_config.Game == SoulsGame.DS2S && itemId == 60510000 && amount == 0)) continue;
-
                     var weight = Convert.ToInt32(
                         _param[row.ID][string.Format(_config.ItemWeightFieldPattern, i)].Value);
 
                     var itemType = SoulsItemType.Goods;
-                    // DS3's ItemLotParam row 5630 has ItemLotId1=379 to get through the first check, but LotItemCategory01=0xFFFFFFFF, which breaks the int parsing.
-                    // I'm not sure if I should skip this line or treat it as Filianore's Spear Ornament, which it seems to be trying to reference.
-                    // For now, let the category default to Goods.
-                    if (_config.ItemCategoryFieldPattern != null && _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, i)].Value.ToString() != "4294967295")
+                    if (_config.ItemCategoryFieldPattern != null)
                     {
                         var categoryInt = Convert.ToInt32(
                             _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, i)].Value);
@@ -207,11 +204,10 @@ namespace DarkSoulsItemMigrator
             {
                 var row = _param.Rows[rowIndex];
                 var rowSlots = rows[rowIndex];
-                var slotIndex = 1;
+                var slotIndex = _config.SlotStartingIndex;
                 // Slots seem to be contiguous, but don't always start at 1
                 // Use the same indicies as the original item lot
-                while (_param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value.ToString() == "0" || 
-                    (_config.Game == SoulsGame.DS2S && _param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value.ToString() == "60510000"))
+                while (slotIndex < rowSlots.Count && !IsValidItem(row, slotIndex))
                 {
                     slotIndex++;
                 }
@@ -260,7 +256,7 @@ namespace DarkSoulsItemMigrator
 
                 // Zero out any remaining slot positions in this row.
                 // DS2 uses item ID 60510000 with amount 0 to mark empty slots.
-                for (; slotIndex <= _config.SlotCount; slotIndex++)
+                for (; slotIndex <= _config.MaxSlotIndex; slotIndex++)
                 {
                     _param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value
                         = _config.Game == SoulsGame.DS2S ? 60510000 : 0;
@@ -270,6 +266,14 @@ namespace DarkSoulsItemMigrator
                     _param[row.ID][string.Format(_config.ItemAmountFieldPattern, slotIndex)].Value = 0;
                 }
             }
+        }
+
+        private bool IsValidItem(PARAM.Row? row, int slotIndex)
+        {
+            var isValidItemId = _param[row.ID][string.Format(_config.ItemIdFieldPattern, slotIndex)].Value.ToString() != "0";
+            var isValidItemCount = _param[row.ID][string.Format(_config.ItemAmountFieldPattern, slotIndex)].Value.ToString() != "0";
+            var isValidItemCategory = _config.ItemCategoryFieldPattern == null || _param[row.ID][string.Format(_config.ItemCategoryFieldPattern, slotIndex)].Value.ToString() != "4294967295";
+            return isValidItemId && isValidItemCount && isValidItemCategory;
         }
 
         /// <summary>Returns the serialized bytes of the modified param.</summary>
