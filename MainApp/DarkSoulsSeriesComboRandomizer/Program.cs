@@ -56,7 +56,7 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Wrapper.OnModItemPickUp += SendItemToCorrectGame;
             ds3Wrapper.OnModItemPickUp += SendItemToCorrectGame;
 
-            ds3Wrapper.Resume();
+            dsrWrapper.Resume();
 
             var exit = false;
             while (!exit)

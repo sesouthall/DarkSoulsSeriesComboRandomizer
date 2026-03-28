@@ -41,7 +41,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             var inventorySize = PlayerDataPtr.ReadInt32((int)DSROffsets.PlayerGameData.InventorySize);
             var currentInventory = new List<DSRInventoryItem>(inventorySize);
 
-            for (int i = 0; i < inventorySize; i++)
+            for (int i = 0; i <= inventorySize; i++)
             {
                 if(InventoryPtr.ReadByte(i * 28) == 0xFF)
                 {
@@ -52,10 +52,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                         InventoryPtr.ReadUInt32(i * 28 + (int)DSROffsets.InventoryItem.Category),
                         InventoryPtr.ReadUInt32(i * 28 + (int)DSROffsets.InventoryItem.Id),
                         InventoryPtr.ReadUInt32(i * 28 + (int)DSROffsets.InventoryItem.Quantity),
-                        InventoryPtr.ReadInt32(i * 28 + (int)DSROffsets.InventoryItem.Property4),
+                        InventoryPtr.ReadInt32(i * 28 + (int)DSROffsets.InventoryItem.SortedItemIndex),
                         InventoryPtr.ReadInt32(i * 28 + (int)DSROffsets.InventoryItem.Property5),
                         InventoryPtr.ReadUInt32(i * 28 + (int)DSROffsets.InventoryItem.Durability),
-                        InventoryPtr.ReadInt32(i * 28 + (int)DSROffsets.InventoryItem.Property7),
+                        InventoryPtr.ReadInt32(i * 28 + (int)DSROffsets.InventoryItem.MaxDurability),
                         i
                     )
                 );
@@ -81,19 +81,22 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             Execute(asm);
         }
 
-        public void RemoveItem(int index)
+        public void RemoveItem(uint category, uint id)
         {
-            var inventorySize = PlayerDataPtr.ReadInt32((int)DSROffsets.PlayerGameData.InventorySize);
-            if (index >= inventorySize)
-            {
-                throw new IndexOutOfRangeException($"Cannot remove item {index+1} from inventory. There are only {inventorySize} items.");
-            }
-            var inventoryCount = PlayerDataPtr.ReadInt32((int)DSROffsets.PlayerGameData.InventoryCount);
-            PlayerDataPtr.WriteInt32((int)DSROffsets.PlayerGameData.InventoryCount, inventoryCount - 1);
-            InventoryPtr.WriteBytes(28 * index + (int)DSROffsets.InventoryItem.Category, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
-            InventoryPtr.WriteBytes(28 * index + (int)DSROffsets.InventoryItem.Id, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
-            InventoryPtr.WriteBytes(28 * index + (int)DSROffsets.InventoryItem.Quantity, new byte[] { 0x00, 0x00, 0x00, 0x00 });
-            InventoryPtr.WriteBytes(28 * index + (int)DSROffsets.InventoryItem.Property5, new byte[] { 0x00, 0x00, 0x00, 0x00 });
+            byte[] asm = (byte[])DSRAssembly.RemoveItem.Clone();
+
+            var dbgEvent_Global_objAddress = this.Process.MainModule.BaseAddress + DSROffsets.DbgEvent_Global_objOffset;
+            byte[] bytes = BitConverter.GetBytes((ulong)dbgEvent_Global_objAddress);
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            bytes = BitConverter.GetBytes((ulong)category);
+            Array.Copy(bytes, 0, asm, 0x10, 8);
+            bytes = BitConverter.GetBytes((ulong)id);
+            Array.Copy(bytes, 0, asm, 0x1A, 8);
+            var removeItemFunctionAddress = this.Process.MainModule.BaseAddress + DSROffsets.RemoveItemFunctionOffset;
+            bytes = BitConverter.GetBytes((ulong)removeItemFunctionAddress);
+            Array.Copy(bytes, 0, asm, 0x2E, 8);
+
+            Execute(asm);
         }
 
         public void Warp(int id)

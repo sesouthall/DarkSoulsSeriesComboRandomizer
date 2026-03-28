@@ -11,6 +11,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private readonly PHPointer PlayerDataPtr;
         private readonly PHPointer InventoryPtr;
         private readonly PHPointer ItemGet_Call;
+        private readonly PHPointer ItemRemove_Call;
         private readonly PHPointer MapItemManAddr;
         private readonly PHPointer ReadEventFlag_Call;
         private readonly PHPointer WriteEventFlag_Call;
@@ -27,6 +28,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             PlayerDataPtr = CreateChildPointer(GameDataManBasePtr, DS3Offsets.GameDataManOffset1, (int)DS3Offsets.GameDataMan.PlayerGameData);
             InventoryPtr = CreateChildPointer(PlayerDataPtr, (int)DS3Offsets.PlayerGameData.InventoryPointer);
             ItemGet_Call = RegisterAbsoluteAOB(DS3Offsets.ItemGetAOB);
+            ItemRemove_Call = RegisterAbsoluteAOB(DS3Offsets.ItemRemoveAOB);
             MapItemManAddr = RegisterRelativeAOB(DS3Offsets.MapItemManAOB, 3, 7);
             ReadEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.ReadEventFlagAOB);
             WriteEventFlag_Call = RegisterAbsoluteAOB(DS3Offsets.WriteEventFlagAOB);
@@ -100,16 +102,26 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void RemoveItem(int index)
         {
+            byte[] asm = (byte[])DS3Assembly.RemoveItem.Clone();
+
             var inventoryArraySize = PlayerDataPtr.ReadInt32((int)DS3Offsets.PlayerGameData.InventoryArraySize);
             if (index >= inventoryArraySize)
             {
                 throw new IndexOutOfRangeException($"Cannot remove item {index + 1} from inventory. There are only {inventoryArraySize} items.");
             }
-            var inventoryCount = PlayerDataPtr.ReadInt32((int)DS3Offsets.PlayerGameData.InventoryCount);
-            PlayerDataPtr.WriteInt32((int)DS3Offsets.PlayerGameData.InventoryCount, inventoryCount - 1);
-            InventoryPtr.WriteBytes(16 * index + (int)DS3Offsets.InventoryItem.Property1, new byte[] { 0x00, 0x00, 0x00, 0x00 });
-            InventoryPtr.WriteBytes(16 * index + (int)DS3Offsets.InventoryItem.Id, new byte[] { 0xFF, 0xFF, 0xFF, 0xFF });
-            InventoryPtr.WriteBytes(16 * index + (int)DS3Offsets.InventoryItem.Quantity, new byte[] { 0x00, 0x00, 0x00, 0x00 });
+
+            var equipInventoryData = PlayerDataPtr.Resolve() + (int)DS3Offsets.PlayerGameData.EquipInventoryData;
+            byte[] bytes = BitConverter.GetBytes((ulong)equipInventoryData);
+            Array.Copy(bytes, 0, asm, 0x6, 8);
+            var tailDataIndex = PlayerDataPtr.ReadInt32((int)DS3Offsets.PlayerGameData.EquipInventoryData + (int)DS3Offsets.EquipInventoryData.TailDataIndex);
+            bytes = BitConverter.GetBytes((ulong)(tailDataIndex + index));
+            Array.Copy(bytes, 0, asm, 0x10, 8);
+            bytes = BitConverter.GetBytes((ulong)1);
+            Array.Copy(bytes, 0, asm, 0x1A, 8);
+            bytes = BitConverter.GetBytes((ulong)ItemRemove_Call.Resolve() - 0x8);
+            Array.Copy(bytes, 0, asm, 0x24, 8);
+
+            Execute(asm);
         }
 
         public void Warp(int bonfireId)

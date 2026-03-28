@@ -23,6 +23,23 @@ b:  41 b8 fe fe fe fe       mov    r8d,0xfefefefe
 51: 48 83 c4 38             add    rsp,0x38
 55: c3                      ret";
 
+        public static byte[] RemoveItem = CommentedAssemblyParser.LoadDefuseOutput(RemoveItemAssembly);
+
+        private const string RemoveItemAssembly = @"0:  48 83 ec 28             sub    rsp,0x28
+4:  48 b9 fe fe fe fe fe    movabs rcx,0xfefefefefefefefe
+b:  fe fe fe 
+e:  48 ba fe fe fe fe fe    movabs rdx,0xfefefefefefefefe
+15: fe fe fe 
+18: 49 b8 fe fe fe fe fe    movabs r8,0xfefefefefefefefe
+1f: fe fe fe 
+22: 49 b9 01 00 00 00 00    movabs r9,0x1
+29: 00 00 00 
+2c: 48 b8 fe fe fe fe fe    movabs rax,0xfefefefefefefefe
+33: fe fe fe 
+36: ff d0                   call   rax
+38: 48 83 c4 28             add    rsp,0x28
+3c: c3                      ret";
+
         public static byte[] BonfireWarp = CommentedAssemblyParser.LoadDefuseOutput(BonfireWarpAssembly);
 
         private const string BonfireWarpAssembly = @"0:  48 b9 fe fe fe fe fe    movabs rcx,0xfefefefefefefefe

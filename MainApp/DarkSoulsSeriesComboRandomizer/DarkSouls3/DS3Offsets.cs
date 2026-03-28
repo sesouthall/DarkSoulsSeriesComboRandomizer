@@ -4,6 +4,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
     {
         public const string ItemGetAOB = "8B 02 83 F8 06";
 
+        public const string ItemRemoveAOB = "? 83 ec ? 8b f2 ? 8b e9 ? 85 c0 74";
+
         public const string MapItemManAOB = "48 8B 0D ? ? ? ? BB ? ? ? ? 41 BC";
 
         // BaseA in public ce table
@@ -39,6 +41,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
             NameString1 = 0x88,
 
+            EquipInventoryData = 0x3D0,
             InventoryPointer = 0x3E8,
             InventoryCount = 0x3F0,
 
@@ -46,6 +49,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             KeyItemsSize = 0x400,
 
             InventoryArraySize = 0x458,
+        }
+
+        public enum EquipInventoryData
+        {
+            TailDataIndex = 0x24
         }
 
         public enum InventoryItem

@@ -13,6 +13,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         public const int EventFlagsOffset1 = 0;
         public const int EventFlagsOffset2 = 0;
 
+        public const int RemoveItemFunctionOffset = 0x48cdc0;
+        public const int DbgEvent_Global_objOffset = 0x1c7b1b0;
+
         public enum ChrClassWarp
         {
             LastBonfire = 0xB34,
@@ -150,10 +153,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             Category = 0x0,
             Id = 0x4,
             Quantity = 0x8,
-            Property4 = 0xC,
+            SortedItemIndex = 0xC,
             Property5 = 0x10,
             Durability = 0x14,
-            Property7 = 0x18
+            MaxDurability = 0x18
         }
     }
 }
