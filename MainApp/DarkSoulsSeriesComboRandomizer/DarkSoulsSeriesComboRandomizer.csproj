@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\PropertyHook\PropertyHook\PropertyHook.csproj" />
     <ProjectReference Include="..\..\..\SoulsFormatsNEXT\SoulsFormats\SoulsFormats.csproj" />
+    <ProjectReference Include="..\..\..\SoulsIds\SoulsIds\SoulsIds.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +25,12 @@
     <None Update="ConfigFiles\DSR_injected_items.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ConfigFiles\PARAM\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Folder>
   </ItemGroup>
 
 </Project>

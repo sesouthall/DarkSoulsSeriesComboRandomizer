@@ -1,20 +1,8 @@
-﻿using DarkSoulsSeriesComboRandomizer;
-using SoulsFormats;
+﻿using SoulsFormats;
 using SoulsFormats.Cryptography;
 
-namespace DarkSoulsItemMigrator
+namespace DarkSoulsSeriesComboRandomizer
 {
-    // ---------------------------------------------------------------
-    // LotSlot — one item slot extracted from a lot row, carrying
-    // everything needed to write it back into any game's lot param.
-    // ---------------------------------------------------------------
-    record LotSlot(
-        SoulsGame SourceGame,
-        int ItemId,
-        SoulsItemType ItemType,
-        int Weight,
-        int Amount
-    );
 
     // ---------------------------------------------------------------
     // GameLotConfig — describes the field names and category value
@@ -321,27 +309,27 @@ namespace DarkSoulsItemMigrator
             // DSR — BND3 parambnd
             var dsrParambnd = BND3.Read(
                 Path.Combine(_dsrRoot, @"param\GameParam\GameParam.parambnd.dcx"));
-            var dsrLotParam = LoadParam(
+            var dsrLotParam = PARAMUtils.LoadParam(
                 dsrParambnd, "ItemLotParam",
                 Path.Combine(paramdefRoot, @"DS1R\Defs\ItemLotParam.xml"));
 
             // DS2 — multiple lot tables in plain BND4 regulation
             var ds2Reg = BND4.Read(
                 Path.Combine(_ds2Root, "enc_regulation.bnd.dcx"));
-            var ds2LotChr = LoadParam(
+            var ds2LotChr = PARAMUtils.LoadParam(
                 ds2Reg, "ItemLotParam2_Chr",
                 Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
-            var ds2LotOther = LoadParam(
+            var ds2LotOther = PARAMUtils.LoadParam(
                 ds2Reg, "ItemLotParam2_Other",
                 Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
-            var ds2LotSvr = LoadParam(
+            var ds2LotSvr = PARAMUtils.LoadParam(
                 ds2Reg, "ItemLotParam2_SvrEvent",
                 Path.Combine(paramdefRoot, @"DS2S\Defs\Item_Lot_Param2.xml"));
 
             // DS3 — encrypted regulation
             var ds3Reg = RegulationDecryptor.DecryptDS3Regulation(
                 Path.Combine(_ds3Root, "Data0.bdt"));
-            var ds3LotParam = LoadParam(
+            var ds3LotParam = PARAMUtils.LoadParam(
                 ds3Reg, "ItemLotParam",
                 Path.Combine(paramdefRoot, @"DS3\Defs\ItemLotParam.xml"));
 
@@ -422,13 +410,6 @@ namespace DarkSoulsItemMigrator
                 File.Delete(path);
                 File.Move($"{path}.unrandomized", path);
             }
-        }
-
-        private static PARAM LoadParam(IBinder bnd, string nameContains, string paramdefPath)
-        {
-            var param = PARAM.Read(bnd.Files.Single(f => f.Name.Contains(nameContains)).Bytes);
-            param.ApplyParamdef(PARAMDEF.XmlDeserialize(paramdefPath));
-            return param;
         }
 
         private void Shuffle<T>(List<T> list)

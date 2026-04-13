@@ -1,9 +1,11 @@
-using DarkSoulsItemMigrator;
+using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
+using DarkSoulsSeriesComboRandomizer.DarkSouls3;
+using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
 using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    internal static class Program
+    internal static partial class Program
     {
         private static DSRWrapper? dsrWrapper;
         private static DS2Wrapper? ds2Wrapper;
@@ -23,15 +25,43 @@ namespace DarkSoulsSeriesComboRandomizer
         [STAThread]
         static void Main()
         {
-            var mappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
-            if (!File.Exists(mappingsFile))
+            var bonfireMappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
+            if (!File.Exists(bonfireMappingsFile))
             {
-                File.WriteAllText(mappingsFile, "Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash");
+                File.WriteAllText(bonfireMappingsFile, "Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash");
             }
 
+            var bonfireMappings = ParseBonfireMappings(bonfireMappingsFile);
+            
             dsrMapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DSR_injected_items.csv");
             ds2Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS2S_injected_items.csv");
             ds3Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS3_injected_items.csv");
+
+            var dsrItems = new DSRItemLots(dsrRoot, dsrMapping);
+            var ds2Items = new DS2SotFSItemLots(dsrRoot, dsrMapping);
+            var ds3Items = new DS3ItemLots(dsrRoot, dsrMapping);
+
+            dsrItems.Load();
+            ds2Items.Load();
+            ds3Items.Load();
+
+            foreach (var mapping in bonfireMappings)
+            {
+                var dsrMap = Map.DSRMaps.Single(map => map.Bonfires.Contains(mapping.DS1Bonfire));
+                var ds2Map = Map.DS2Maps.Single(map => map.Bonfires.Contains(mapping.DS2Bonfire));
+                var ds3Map = Map.DS3Maps.Single(map => map.Bonfires.Contains(mapping.DS3Bonfire));
+
+                dsrMap.connectedMaps.Add(ds2Map);
+                dsrMap.connectedMaps.Add(ds3Map);
+                ds2Map.connectedMaps.Add(dsrMap);
+                ds2Map.connectedMaps.Add(ds3Map);
+                ds3Map.connectedMaps.Add(dsrMap);
+                ds3Map.connectedMaps.Add(ds2Map);
+            }
+
+            var firelinkTower = Map.DS3Maps.Single(map => map.FriendlyName == "Firelink Tower");
+            var firelinkRoof = Map.DS3Maps.Single(map => map.FriendlyName == "Firelink Roof");
+            firelinkTower.connectedMaps.Add(firelinkRoof);
 
             var randomizer = new ItemLotRandomizer(dsrRoot, ds2Root, ds3Root, dsrMapping, ds2Mapping, ds3Mapping);
             randomizer.Randomize(@"C:\Users\sesou\Downloads\Smithbox\Assets\PARAM");
@@ -87,6 +117,22 @@ namespace DarkSoulsSeriesComboRandomizer
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new Form1());
+        }
+
+        private static List<BonfireTriple> ParseBonfireMappings(string mappingFile)
+        {
+            var lines = File.ReadAllLines(mappingFile);
+            var result = new List<BonfireTriple>();
+            foreach (string line in lines)
+            {
+                var bonfireNames = line.Split(',');
+                if (bonfireNames.Length != 3)
+                {
+                    throw new InvalidDataException($"Line '{line}' is expected to contain three bonfire names, but does not");
+                }
+                result.Add(new BonfireTriple(bonfireNames[0], bonfireNames[1], bonfireNames[2]));
+            }
+            return result;
         }
 
         static void StartPipeServers()
