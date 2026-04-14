@@ -50,7 +50,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             new() {26900000, 26900200, 26900300},
             new() {27000000, 27000100},
             new() {27800000, 27801000, 27801010, 27801020, 27801030, 27802000, 27802010, 27803000, 27803100},
-            new() {27900001, 27905000, 27907002},
+            new() {27900001, 27905001, 27907001},
             new() {27900101, 27905100},
             new() {27901001, 27903001, 27905300},
             new() {27902001, 27905200},
@@ -95,10 +95,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private bool alreadyTaken = false;
 
         private static Dictionary<int, DSRItemLot> lotCache = new();
+        private static Dictionary<int, SoulsItem> crossGameItems = new();
 
-        public LotType LotType => type;
+        int IItemLot.ID => ID;
+
+        LotType IItemLot.LotType => type;
 
         IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+
+        SoulsGame IItemLot.Game => SoulsGame.DSR;
 
         private DSRItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type)
         {
@@ -106,6 +111,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             Slots = slots;
             this.originalRows = originalRows;
             this.type = type;
+        }
+
+        public static void Initialize(Dictionary<int, SoulsItem> crossGameItems)
+        {
+            DSRItemLot.crossGameItems = crossGameItems;
         }
 
         public static DSRItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM? fullItemLotParamTable)
@@ -119,7 +129,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
             // Sometimes two item lots are linked. e.g. Oscar gives the Asylum F2 East key in dialog, or on death.
             // In those cases, link the equivalent lots, so that they always contain the same item.
-            var linkedLotIds = linkedItemLots.Single(set => set.Contains(itemLot.ID)) ?? new HashSet<int> { itemLot.ID };
+            var linkedLotIds = linkedItemLots.SingleOrDefault(set => set.Contains(itemLot.ID)) ?? new HashSet<int> { itemLot.ID };
             var linkedLots = linkedLotIds.Select(lotId => fullItemLotParamTable.Rows.Single(row => row.ID == lotId)).ToList();
 
             var actualLotType = lotTypeGuess == LotType.UnspecifiedEnemy ? slots.Count > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop : lotTypeGuess;
@@ -139,8 +149,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 var itemId = Convert.ToInt32(itemLot[string.Format(ItemIdFieldPattern, i)].Value);
                 var amount = Convert.ToInt32(itemLot[string.Format(ItemAmountFieldPattern, i)].Value);
                 var weight = Convert.ToInt32(itemLot[string.Format(ItemWeightFieldPattern, i)].Value);
-                var category = Convert.ToUInt32(itemLot[string.Format(ItemCategoryFieldPattern, i)].Value);
-                var parsedCategory = category != 0xFFFFFFFF ? (SoulsItemType)category : SoulsItemType.Goods;
+                var category = Convert.ToInt32(itemLot[string.Format(ItemCategoryFieldPattern, i)].Value);
+                var parsedCategory = category != -1 ? (SoulsItemType)category : SoulsItemType.Goods;
 
                 if (weight > 0)
                 {
@@ -168,7 +178,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             return slots;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems, Dictionary<(SoulsGame, SoulsItemType, int), int> crossGameItems)
+        public bool CanTake()
+        {
+            return !alreadyTaken;
+        }
+
+        public void TakeItems(Queue<LotSlot> unassignedItems)
         {
             if (alreadyTaken)
             {
@@ -187,7 +202,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                     }
                     else
                     {
-                        var resolvedId = crossGameItems[(slot.SourceGame, slot.ItemType, slot.ItemId)];
+                        var resolvedId = crossGameItems.Single(pair => pair.Value == new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId)).Key;
                         Slots[i] = new LotSlot(SoulsGame.DSR, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
                     }
                 }

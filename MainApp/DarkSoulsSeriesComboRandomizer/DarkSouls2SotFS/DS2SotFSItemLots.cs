@@ -50,7 +50,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                             var mapData = MSB2.Read(bytes);
 
                             var parsedMap = Map.DS2Maps.Single(map => matchingMapFile.Contains(map.FileName));
-                            var generatorData = PARAMUtils.LoadParam(regulationFile, $"generatorparam_{parsedMap.FileName}", @"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_PARAM.xml");
+
+                            var generatorHeader = bhd.Buckets.SelectMany(bucket => bucket).Single(header => header.FileNameHash == HashFileName($"/param/generatorparam_{parsedMap.FileName}.param"));
+                            var generatorBytes = generatorHeader.ReadFile(bdt);
+                            var generatorData = PARAM.Read(generatorBytes);
+                            generatorData.ApplyParamdef(PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_PARAM.xml"));
                             LoadMapLocationData(mapData, generatorData, parsedMap);
                         }
                     }
@@ -136,12 +140,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                     continue;
                 }
 
-                var cell = enemy["ItemLotID1"];
-                if (cell == null) continue; // NPC Param is malformed
-                var itemLotNumber = (uint)cell.Value;
-                if (itemLotNumber == 0) continue; // Enemy has no drops
-
-                parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, LotType.UnspecifiedEnemy));
+                var itemLotNumber = (uint?)enemy["ItemLotID1"]?.Value;
+                if (itemLotNumber.HasValue && itemLotNumber.Value != 0)
+                {
+                    parsedMap.ItemLocations.AddRange(ParseEnemyItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                }
 
                 if (entityItemLots.ContainsKey((parsedMap.FileName, enemy.ID)))
                 {
@@ -155,7 +158,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 var itemLotNumber = mapObject.MapObjectInstanceParamID;
                 if (itemLotNumber <= 0) continue; // No actual drop at this treasure
-                parsedMap.ItemLocations.AddRange(ParseItemLotChain((uint)itemLotNumber, LotType.Treasure));
+                parsedMap.ItemLocations.AddRange(ParseOtherItemLotChain((uint)itemLotNumber, LotType.Treasure));
             }
         }
 
@@ -164,10 +167,20 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             return 100000 <= itemLotNumber && itemLotNumber < 900000 ? LotType.Boss : LotType.GenericEvent;
         }
 
-        private IEnumerable<DS2SotFSItemLot> ParseItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
+        private IEnumerable<DS2SotFSItemLot> ParseEnemyItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
         {
             Row? itemLot;
             while ((itemLot = itemLotParamChr?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
+            {
+                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess);
+                itemLotNumber++;
+            }
+        }
+
+        private IEnumerable<DS2SotFSItemLot> ParseOtherItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
+        {
+            Row? itemLot;
+            while ((itemLot = itemLotParamOther?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
                 yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess);
                 itemLotNumber++;

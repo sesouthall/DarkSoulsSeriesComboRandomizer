@@ -25,12 +25,8 @@
     <None Update="ConfigFiles\DSR_injected_items.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="ConfigFiles\PARAM\**">
+    <None Update="ConfigFiles\PARAM\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Folder>
+    </None>
   </ItemGroup>
-
 </Project>

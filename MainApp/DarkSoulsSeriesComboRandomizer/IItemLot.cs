@@ -2,10 +2,13 @@
 {
     public interface IItemLot
     {
+        public int ID { get; }
         public LotType LotType { get; }
         public IReadOnlyList<LotSlot> Slots { get; }
+        public SoulsGame Game { get; }
 
-        void TakeItems(Queue<LotSlot> unassignedItems, Dictionary<(SoulsGame, SoulsItemType, int), int> crossGameItems);
+        bool CanTake();
+        void TakeItems(Queue<LotSlot> unassignedItems);
         public void Write();
     }
 }

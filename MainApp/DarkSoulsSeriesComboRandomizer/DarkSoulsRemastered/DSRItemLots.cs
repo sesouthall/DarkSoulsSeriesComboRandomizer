@@ -32,7 +32,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             regulationFile = BND3.Read(RegulationFilePath);
 
             itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS1R\Defs\ItemLotParam.xml");
-            npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\ItemLotParam.xml");
+            npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
 
             foreach (var mapFile in Directory.GetFiles(MapFolder))
             {
@@ -71,19 +71,19 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         {
             foreach (var enemy in mapData.Parts.Enemies)
             {
-                var enemyParam = npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID);
-                if (enemyParam == null) continue; // Enemy references missing NPC Param
-                var cell = enemyParam["itemLotId_1"];
-                if (cell == null) continue; // NPC Param is malformed
-                var itemLotNumber = (int)cell.Value;
-                if (itemLotNumber == -1) continue; // Enemy has no drops
-
-                AssignLotToCorrectMap(defaultMap, itemLotNumber, LotType.UnspecifiedEnemy);
+                var itemLotNumber = (int?)npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID)?["itemLotId_1"]?.Value;
+                if (itemLotNumber.HasValue && itemLotNumber.Value != -1)
+                {
+                    AssignLotToCorrectMap(defaultMap, itemLotNumber.Value, LotType.UnspecifiedEnemy);
+                }
 
                 if (entityItemLots.ContainsKey(enemy.EntityID))
                 {
-                    var lotId = entityItemLots[enemy.EntityID];
-                    AssignLotToCorrectMap(defaultMap, lotId, GetEventLotType(itemLotNumber));
+                    var lotIdNumbers = entityItemLots[enemy.EntityID];
+                    foreach (var lotId in lotIdNumbers)
+                    {
+                        AssignLotToCorrectMap(defaultMap, lotId, GetEventLotType(lotId));
+                    }
                 }
             }
 
@@ -100,9 +100,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             {
                 if (entityItemLots.ContainsKey(part.EntityID))
                 {
-                    var itemLotNumber = entityItemLots[part.EntityID];
-                    var lotType = GetEventLotType(itemLotNumber);
-                    AssignLotToCorrectMap(defaultMap, itemLotNumber, lotType);
+                    var lotIdNumbers = entityItemLots[part.EntityID];
+                    foreach (var lotId in lotIdNumbers)
+                    {
+                        AssignLotToCorrectMap(defaultMap, lotId, GetEventLotType(lotId));
+                    }
                 }
             }
         }
@@ -124,7 +126,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         private static LotType GetEventLotType(int itemLotNumber)
         {
-            return 100000 <= itemLotNumber && itemLotNumber < 900000 ? LotType.Boss : LotType.GenericEvent;
+            return 2000 <= itemLotNumber && itemLotNumber < 3000 ? LotType.Boss : LotType.GenericEvent;
         }
 
         private IEnumerable<DSRItemLot> ParseItemLotChain(int itemLotNumber, LotType lotTypeGuess)
@@ -137,42 +139,35 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             }
         }
 
-        private static readonly Dictionary<int, int> entityItemLots = new Dictionary<int, int>()
+        private static readonly Dictionary<int, List<int>> entityItemLots = new Dictionary<int, List<int>>()
         {
-            { 1010750, 2510 }, // Capra Demon
-            { 1000800, 2500 }, // Gaping Dragon
-            { 1000800, 52610000 }, // GD tail drop
-            { 1100160, 2520 }, // Priscilla
-            { 1100160, 27310000 }, // Priscilla tail drop
-            { 1200801, 2530 }, // Moonlight Butterfly
-            { 1200800, 2540 }, // Sif
-            { 1200800, 2541 },
-            { 1210402, 2710 }, // Kalameet
-            { 1210402, 45110000 }, // Kalameet tail drop
-            { 1210820, 2690 }, // Artorias
-            { 1210800, 2680 }, // Sanctuary Guardian
-            { 1210800, 34720000 }, // Sanctuary Guardian tail drop
-            { 1210840, 2700 }, // Manus
-            { 1310810, 2560 }, // Nito
-            { 1320800, 34510000 }, // Stone Dragon tail drop
-            { 1400800, 2570 }, // Queelag
-            { 1410400, 22310000 }, // Demon Firesage
-            { 1410700, 2670 }, // Centipede Demon
-            { 1410802, 2580 }, // Bed of Chaos
-            { 1500800, 2590 }, // Iron Golem
-            { 1510650, 2600 }, // Gwyndolin
-            { 1510801, 2610 }, // Ornstein
-            { 1510811, 2620 }, // Smough
-            { 1510600, 1090 }, // Gwynevere
-            { 6180, 1100 }, // Ingward
-            { 1600800, 2630 }, // Four Kings
-            { 1700800, 2640 }, // Seath
-            { 1700800, 52910000 }, // Seath tail drop
-            { 1800800, 2650 }, // Gwyn
-            { 1810800, 2660 }, // Asylum Demon
-            { 1810800, 2661 },
-            { 1810810, 22300000 }, // Stray Demon
-            { 1700510, 27100200 }, // Pendant Blue Golem
+            { 1010750, new List<int>{ 2510 } }, // Capra Demon
+            { 1000800, new List<int>{ 2500, 52610000 } }, // Gaping Dragon main and tail drop
+            { 1100160, new List<int>{ 2520, 27310000 } }, // Priscilla main and tail
+            { 1200801, new List<int>{ 2530 } }, // Moonlight Butterfly
+            { 1200800, new List<int>{ 2540, 2541 } }, // Sif soul and convenant ring
+            { 1210402, new List<int>{ 2710, 45110000 } }, // Kalameet main and tail
+            { 1210820, new List<int>{ 2690 } }, // Artorias
+            { 1210800, new List<int>{ 2680, 34720000 } }, // Sanctuary Guardian
+            { 1210840, new List<int>{ 2700 } }, // Manus
+            { 1310810, new List<int>{ 2560 } }, // Nito
+            { 1320800, new List<int>{ 34510000 } }, // Stone Dragon tail drop
+            { 1400800, new List<int>{ 2570 } }, // Queelag
+            { 1410400, new List<int>{ 22310000 } }, // Demon Firesage
+            { 1410700, new List <int>{ 2670 } }, // Centipede Demon
+            { 1410802, new List<int>{ 2580 } }, // Bed of Chaos
+            { 1500800, new List<int>{ 2590 } }, // Iron Golem
+            { 1510650, new List<int>{ 2600 } }, // Gwyndolin
+            { 1510801, new List<int>{ 2610 } }, // Ornstein
+            { 1510811, new List<int>{ 2620 } }, // Smough
+            { 1510600, new List<int>{ 1090 } }, // Gwynevere
+            { 6180, new List<int>{ 1100 } }, // Ingward
+            { 1600800, new List<int>{ 2630 } }, // Four Kings
+            { 1700800, new List<int>{ 2640, 52910000 } }, // Seath main and tail drop
+            { 1800800, new List<int>{ 2650 } }, // Gwyn
+            { 1810800, new List<int>{ 2660, 2661 } }, // Asylum Demon Big Pilgrim Key and Demon Greathammer
+            { 1810810, new List<int>{ 22300000 } }, // Stray Demon
+            { 1700510, new List<int>{ 27100200 } }, // Pendant Blue Golem
         };
     }
 }

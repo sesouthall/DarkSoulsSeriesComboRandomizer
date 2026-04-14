@@ -37,9 +37,13 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS2S_injected_items.csv");
             ds3Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS3_injected_items.csv");
 
+            DSRItemLot.Initialize(dsrMapping);
+            DS2SotFSItemLot.Initialize(ds2Mapping);
+            DS3ItemLot.Initialize(ds3Mapping);
+
             var dsrItems = new DSRItemLots(dsrRoot, dsrMapping);
-            var ds2Items = new DS2SotFSItemLots(dsrRoot, dsrMapping);
-            var ds3Items = new DS3ItemLots(dsrRoot, dsrMapping);
+            var ds2Items = new DS2SotFSItemLots(ds2Root, ds2Mapping);
+            var ds3Items = new DS3ItemLots(ds3Root, ds3Mapping);
 
             dsrItems.Load();
             ds2Items.Load();
@@ -63,8 +67,11 @@ namespace DarkSoulsSeriesComboRandomizer
             var firelinkRoof = Map.DS3Maps.Single(map => map.FriendlyName == "Firelink Roof");
             firelinkTower.connectedMaps.Add(firelinkRoof);
 
-            var randomizer = new ItemLotRandomizer(dsrRoot, ds2Root, ds3Root, dsrMapping, ds2Mapping, ds3Mapping);
-            randomizer.Randomize(@"C:\Users\sesou\Downloads\Smithbox\Assets\PARAM");
+            ItemRandomizer.Randomize(Map.DSRMaps.Single(map => map.FriendlyName == "DS1 Starting Cell"), Map.AllMaps, Key.AllKeys, new List<(int, SoulsGame)>(), new Random(0));
+
+            dsrItems.Save();
+            ds2Items.Save();
+            ds3Items.Save();
 
             StartPipeServers();
 
@@ -91,10 +98,7 @@ namespace DarkSoulsSeriesComboRandomizer
             var exit = false;
             while (!exit)
             {
-                //dsrWrapper.GiveSunlightMedals();
-                //ds2Wrapper.GiveSunlightMedals();
-                //ds3Wrapper.GiveSunlightMedals();
-                     Thread.Sleep(10000);
+                Thread.Sleep(10000);
             }
 
             dsrWrapper.OnModItemPickUp -= SendItemToCorrectGame;
@@ -109,7 +113,9 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Wrapper.Dispose();
             ds3Wrapper.Dispose();
 
-            randomizer.RemoveRandomization();
+            dsrItems.Revert();
+            ds2Items.Revert();
+            ds3Items.Revert();
             
             return;
 

@@ -51,18 +51,6 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        public void GiveSunlightMedals()
-        {
-            if (!hook.GetCurrentInventory().Any(item => item.category == 0x40000000 && item.id == 12297))
-            {
-                hook.GiveItem(0x40000000, 12297, 1);
-            }
-            if (!hook.GetCurrentInventory().Any(item => item.category == 0x40000000 && item.id == 13253))
-            {
-                hook.GiveItem(0x40000000, 13253, 1);
-            }
-        }
-
         public void GiveItem(SoulsItemType itemType, int itemId, int quantity)
         {
             hook.GiveItem((int)itemType, itemId, quantity);

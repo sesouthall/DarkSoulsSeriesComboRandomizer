@@ -1,4 +1,5 @@
-﻿using static SoulsFormats.PARAM;
+﻿using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
+using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
@@ -17,10 +18,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private bool alreadyTaken = false;
 
         private static Dictionary<int, DS3ItemLot> lotCache = new();
+        private static Dictionary<int, SoulsItem> crossGameItems = new();
 
-        public LotType LotType => type;
+        int IItemLot.ID => ID;
+
+        LotType IItemLot.LotType => type;
 
         IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+
+        SoulsGame IItemLot.Game => SoulsGame.DS3;
 
         private DS3ItemLot(List<LotSlot> slots, Row originalRow, LotType type)
         {
@@ -28,6 +34,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Slots = slots;
             this.originalRow = originalRow;
             this.type = type;
+        }
+
+        public static void Initialize(Dictionary<int, SoulsItem> crossGameItems)
+        {
+            DS3ItemLot.crossGameItems = crossGameItems;
         }
 
         public static DS3ItemLot Parse(Row itemLot, LotType lotTypeGuess)
@@ -75,7 +86,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             return parsed;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems, Dictionary<(SoulsGame, SoulsItemType, int), int> crossGameItems)
+        public bool CanTake()
+        {
+            return !alreadyTaken;
+        }
+
+        public void TakeItems(Queue<LotSlot> unassignedItems)
         {
             if (alreadyTaken)
             {
@@ -94,7 +110,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                     }
                     else
                     {
-                        var resolvedId = crossGameItems[(slot.SourceGame, slot.ItemType, slot.ItemId)];
+                        var resolvedId = crossGameItems.Single(pair => pair.Value == new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId)).Key;
                         Slots[i] = new LotSlot(SoulsGame.DS3, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
                     }
                 }

@@ -13,13 +13,18 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private readonly Row originalRow;
         public LotType type;
 
-        private bool alreadyTaken = false;
+        private int nextSlotToFill = 0;
 
         private static Dictionary<int, DS2SotFSItemLot> lotCache = new();
+        private static Dictionary<int, SoulsItem> crossGameItems = new();
 
-        public LotType LotType => type;
+        int IItemLot.ID => ID;
+
+        LotType IItemLot.LotType => type;
 
         IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+
+        SoulsGame IItemLot.Game => SoulsGame.DS2S;
 
         private DS2SotFSItemLot(List<LotSlot> slots, Row originalRow, LotType type)
         {
@@ -27,6 +32,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Slots = slots;
             this.originalRow = originalRow;
             this.type = type;
+        }
+
+        public static void Initialize(Dictionary<int, SoulsItem> crossGameItems)
+        {
+            DS2SotFSItemLot.crossGameItems = crossGameItems;
         }
 
         public static DS2SotFSItemLot Parse(Row itemLot, LotType lotTypeGuess)
@@ -39,7 +49,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             // DS2 uses 10 (no item) to represent an empty item in the ItemLotParam2_Other table (treasure from chests, corpses, boss drops, etc.)
             // and 60510000 (rubbish) to represent an empty item in the ItemLotParam2_Chr table (drop tables for killed enemies and NPCs)
             var emptyItemId = lotTypeGuess == LotType.UnspecifiedEnemy ? 60510000 : 10;
-            var tempSlots = new List<LotSlot>();
             var slots = new List<LotSlot>();
             for (var i = 0; i <= 9; i++)
             {
@@ -50,7 +59,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
                 if (weight > 0)
                 {
-                    tempSlots.Add(new LotSlot(SoulsGame.DS3, itemId, category, weight, amount, isEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0));
+                    slots.Add(new LotSlot(SoulsGame.DS2S, itemId, category, weight, amount, isEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0));
                 }
             }
 
@@ -62,16 +71,29 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             return parsed;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems, Dictionary<(SoulsGame, SoulsItemType, int), int> crossGameItems)
+        public bool CanTake()
         {
-            if (alreadyTaken)
+            return nextSlotToFill < Slots.Count;
+        }
+
+        public void TakeItems(Queue<LotSlot> unassignedItems)
+        {
+            // DS2 supports multiple drops from a single item lot, so guaranteed treasures can
+            // have more than one item in them. That means a key can get assinged to a lot without
+            // fully filling it. To support that, count each item as it's placed and don't start blocking
+            // calls until all slots are filled.
+            if (nextSlotToFill >= Slots.Count)
             {
                 return;
             }
 
             for (var i = 0; i < Slots.Count; i++)
             {
-                if (Slots[i].isEmptyItem) continue;
+                if (Slots[i].isEmptyItem)
+                {
+                    nextSlotToFill++;
+                    continue;
+                }
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
@@ -81,13 +103,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                     }
                     else
                     {
-                        var resolvedId = crossGameItems[(slot.SourceGame, slot.ItemType, slot.ItemId)];
+                        var resolvedId = crossGameItems.Single(pair => pair.Value == new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId)).Key;
                         Slots[i] = new LotSlot(SoulsGame.DS2S, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
                     }
+                    nextSlotToFill++;
                 }
             }
-
-            alreadyTaken = true;
         }
 
         public void Write()

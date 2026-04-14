@@ -1,6 +1,6 @@
 ﻿namespace DarkSoulsSeriesComboRandomizer
 {
-    record SoulsItem(SoulsGame Game, SoulsItemType ItemType, int OriginalId);
+   public record SoulsItem(SoulsGame Game, SoulsItemType ItemType, int OriginalId);
 
     static class SoulsItemCsvParser
     {

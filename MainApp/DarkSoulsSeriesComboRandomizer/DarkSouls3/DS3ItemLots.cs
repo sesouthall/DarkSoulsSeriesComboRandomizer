@@ -87,19 +87,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         {
             foreach (var enemy in mapData.Parts.Enemies)
             {
-                var enemyParam = npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID);
-                if (enemyParam == null) continue; // Enemy references missing NPC Param
-                var cell = enemyParam["ItemLotId1"];
-                if (cell == null) continue; // NPC Param is malformed
-                var itemLotNumber = (int)cell.Value;
-                if (itemLotNumber == -1) continue; // Enemy has no drops
-
-                parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, LotType.UnspecifiedEnemy));
+                var itemLotNumber = (int?) npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID)?["ItemLotId1"]?.Value;
+                if (itemLotNumber.HasValue && itemLotNumber.Value != -1)
+                {
+                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                }
+                
 
                 if (entityItemLots.ContainsKey(enemy.EntityID))
                 {
                     var lotId = entityItemLots[enemy.EntityID];
-                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(lotId, GetEventLotType(itemLotNumber)));
+                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(lotId, GetEventLotType(lotId)));
                 }
             }
 
@@ -345,40 +343,20 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         {
             "/map/mapstudio/m30_00_00_00.msb.dcx",
             "/map/mapstudio/m30_01_00_00.msb.dcx",
-            "/map/mapstudio/m30_02_00_00.msb.dcx",
             "/map/mapstudio/m31_00_00_00.msb.dcx",
-            "/map/mapstudio/m31_01_00_00.msb.dcx",
-            "/map/mapstudio/m31_02_00_00.msb.dcx",
-            "/map/mapstudio/m31_03_00_00.msb.dcx",
-            "/map/mapstudio/m31_04_00_00.msb.dcx",
-            "/map/mapstudio/m31_05_00_00.msb.dcx",
-            "/map/mapstudio/m31_06_00_00.msb.dcx",
-            "/map/mapstudio/m31_07_00_00.msb.dcx",
-            "/map/mapstudio/m31_08_00_00.msb.dcx",
-            "/map/mapstudio/m31_09_00_00.msb.dcx",
-            "/map/mapstudio/m31_90_00_00.msb.dcx",
             "/map/mapstudio/m32_00_00_00.msb.dcx",
-            "/map/mapstudio/m32_90_00_00.msb.dcx",
             "/map/mapstudio/m33_00_00_00.msb.dcx",
-            "/map/mapstudio/m33_01_00_00.msb.dcx",
-            "/map/mapstudio/m34_00_00_00.msb.dcx",
             "/map/mapstudio/m34_01_00_00.msb.dcx",
             "/map/mapstudio/m35_00_00_00.msb.dcx",
-            "/map/mapstudio/m36_00_00_00.msb.dcx",
-            "/map/mapstudio/m36_90_00_00.msb.dcx",
             "/map/mapstudio/m37_00_00_00.msb.dcx",
             "/map/mapstudio/m38_00_00_00.msb.dcx",
             "/map/mapstudio/m39_00_00_00.msb.dcx",
             "/map/mapstudio/m40_00_00_00.msb.dcx",
             "/map/mapstudio/m41_00_00_00.msb.dcx",
             "/map/mapstudio/m45_00_00_00.msb.dcx",
-            "/map/mapstudio/m46_00_00_00.msb.dcx",
-            "/map/mapstudio/m47_00_00_00.msb.dcx",
             "/map/mapstudio/m50_00_00_00.msb.dcx",
             "/map/mapstudio/m51_00_00_00.msb.dcx",
             "/map/mapstudio/m51_01_00_00.msb.dcx",
-            "/map/mapstudio/m53_00_00_00.msb.dcx",
-            "/map/mapstudio/m54_00_00_00.msb.dcx",
         };
 
         // From UXM's ArchiveKeys
