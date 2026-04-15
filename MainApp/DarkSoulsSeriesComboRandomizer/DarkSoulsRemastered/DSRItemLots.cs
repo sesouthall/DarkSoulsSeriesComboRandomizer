@@ -36,7 +36,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
             foreach (var mapFile in Directory.GetFiles(MapFolder))
             {
-                var matchingParsedMap = Map.DSRMaps.SingleOrDefault(parsedMap => mapFile.Contains(parsedMap.FileName));
+                var matchingParsedMap = Map.DSRMaps.Values.SingleOrDefault(parsedMap => mapFile.Contains(parsedMap.FileName));
                 if (matchingParsedMap != null)
                 {
                     var mapData = MSB1.Read(mapFile);
@@ -74,7 +74,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 var itemLotNumber = (int?)npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID)?["itemLotId_1"]?.Value;
                 if (itemLotNumber.HasValue && itemLotNumber.Value != -1)
                 {
-                    AssignLotToCorrectMap(defaultMap, itemLotNumber.Value, LotType.UnspecifiedEnemy);
+                    AssignLotChainToCorrectMap(defaultMap, ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
                 }
 
                 if (entityItemLots.ContainsKey(enemy.EntityID))
@@ -82,7 +82,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                     var lotIdNumbers = entityItemLots[enemy.EntityID];
                     foreach (var lotId in lotIdNumbers)
                     {
-                        AssignLotToCorrectMap(defaultMap, lotId, GetEventLotType(lotId));
+                        AssignLotChainToCorrectMap(defaultMap, ParseItemLotChain(lotId, GetEventLotType(lotId)));
                     }
                 }
             }
@@ -93,7 +93,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 var itemLotNumber = treasure.ItemLots[0];
                 if (itemLotNumber == -1) continue; // No actual drop at this treasure
 
-                AssignLotToCorrectMap(defaultMap, itemLotNumber, LotType.Treasure);
+                AssignLotChainToCorrectMap(defaultMap, ParseItemLotChain(itemLotNumber, LotType.Treasure));
             }
 
             foreach (var part in mapData.Parts.Objects)
@@ -103,23 +103,25 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                     var lotIdNumbers = entityItemLots[part.EntityID];
                     foreach (var lotId in lotIdNumbers)
                     {
-                        AssignLotToCorrectMap(defaultMap, lotId, GetEventLotType(lotId));
+                        AssignLotChainToCorrectMap(defaultMap, ParseItemLotChain(lotId, GetEventLotType(lotId)));
                     }
                 }
             }
         }
 
-        private void AssignLotToCorrectMap(Map defaultMap, int itemLotNumber, LotType lotType)
+        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<IItemLot> itemLots)
         {
-            if (Map.DS1NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLotNumber)))
+            if (!itemLots.Any()) return;
+
+            if (Map.DS1NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
-                var actualMapName = Map.DS1NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLotNumber)).Key;
-                var actualMap = Map.DSRMaps.Single(map => map.FriendlyName == actualMapName);
-                actualMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, lotType));
+                var actualMapName = Map.DS1NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
+                var actualMap = Map.DSRMaps.Values.Single(map => map.Name == actualMapName);
+                actualMap.ItemLocations.AddRange(itemLots);
             }
             else
             {
-                defaultMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, lotType));
+                defaultMap.ItemLocations.AddRange(itemLots);
             }
         }
 
@@ -131,6 +133,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         private IEnumerable<DSRItemLot> ParseItemLotChain(int itemLotNumber, LotType lotTypeGuess)
         {
+            if (itemLotNumber >= 4000 && itemLotNumber < 5000) yield break; // Firelink fallback chest should be ignored
             Row? itemLot;
             while ((itemLot = itemLotParam?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {

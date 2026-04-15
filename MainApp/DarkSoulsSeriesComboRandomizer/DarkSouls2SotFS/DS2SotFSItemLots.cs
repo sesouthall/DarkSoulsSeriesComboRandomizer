@@ -49,7 +49,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                             var bytes = header.ReadFile(bdt);
                             var mapData = MSB2.Read(bytes);
 
-                            var parsedMap = Map.DS2Maps.Single(map => matchingMapFile.Contains(map.FileName));
+                            var parsedMap = Map.DS2Maps.Values.Single(map => matchingMapFile.Contains(map.FileName));
 
                             var generatorHeader = bhd.Buckets.SelectMany(bucket => bucket).Single(header => header.FileNameHash == HashFileName($"/param/generatorparam_{parsedMap.FileName}.param"));
                             var generatorBytes = generatorHeader.ReadFile(bdt);
@@ -143,14 +143,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 var itemLotNumber = (uint?)enemy["ItemLotID1"]?.Value;
                 if (itemLotNumber.HasValue && itemLotNumber.Value != 0)
                 {
-                    parsedMap.ItemLocations.AddRange(ParseEnemyItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                    AssignLotChainToCorrectMap(parsedMap, ParseEnemyItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
                 }
 
                 if (entityItemLots.ContainsKey((parsedMap.FileName, enemy.ID)))
                 {
                     var eventItemLotNumber = entityItemLots[(parsedMap.FileName, enemy.ID)];
                     var lotType = GetEventLotType(eventItemLotNumber);
-                    parsedMap.ItemLocations.Add(DS2SotFSItemLot.Parse(itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber), lotType));
+                    AssignLotChainToCorrectMap(parsedMap, new List<IItemLot> { DS2SotFSItemLot.Parse(itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber), lotType) });
                 }
             }
 
@@ -158,7 +158,23 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 var itemLotNumber = mapObject.MapObjectInstanceParamID;
                 if (itemLotNumber <= 0) continue; // No actual drop at this treasure
-                parsedMap.ItemLocations.AddRange(ParseOtherItemLotChain((uint)itemLotNumber, LotType.Treasure));
+                AssignLotChainToCorrectMap(parsedMap, ParseOtherItemLotChain((uint)itemLotNumber, LotType.UnspecifiedEnemy));
+            }
+        }
+
+        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<IItemLot> itemLots)
+        {
+            if (!itemLots.Any()) return;
+
+            if (Map.DS2NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
+            {
+                var actualMapName = Map.DS2NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
+                var actualMap = Map.DS2Maps.Values.Single(map => map.Name == actualMapName);
+                actualMap.ItemLocations.AddRange(itemLots);
+            }
+            else
+            {
+                defaultMap.ItemLocations.AddRange(itemLots);
             }
         }
 

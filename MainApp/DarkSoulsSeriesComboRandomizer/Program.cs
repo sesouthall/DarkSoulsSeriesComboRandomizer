@@ -49,25 +49,10 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Items.Load();
             ds3Items.Load();
 
-            foreach (var mapping in bonfireMappings)
-            {
-                var dsrMap = Map.DSRMaps.Single(map => map.Bonfires.Contains(mapping.DS1Bonfire));
-                var ds2Map = Map.DS2Maps.Single(map => map.Bonfires.Contains(mapping.DS2Bonfire));
-                var ds3Map = Map.DS3Maps.Single(map => map.Bonfires.Contains(mapping.DS3Bonfire));
+            Map.LoadCrossGameWarps(bonfireMappings);
+            Map.HandleDS3FirelinkRoofSkip(false);
 
-                dsrMap.connectedMaps.Add(ds2Map);
-                dsrMap.connectedMaps.Add(ds3Map);
-                ds2Map.connectedMaps.Add(dsrMap);
-                ds2Map.connectedMaps.Add(ds3Map);
-                ds3Map.connectedMaps.Add(dsrMap);
-                ds3Map.connectedMaps.Add(ds2Map);
-            }
-
-            var firelinkTower = Map.DS3Maps.Single(map => map.FriendlyName == "Firelink Tower");
-            var firelinkRoof = Map.DS3Maps.Single(map => map.FriendlyName == "Firelink Roof");
-            firelinkTower.connectedMaps.Add(firelinkRoof);
-
-            ItemRandomizer.Randomize(Map.DSRMaps.Single(map => map.FriendlyName == "DS1 Starting Cell"), Map.AllMaps, Key.AllKeys, new List<(int, SoulsGame)>(), new Random(0));
+            ItemRandomizer.Randomize(Map.DSRMaps[MapName.DS1StartingCell], Map.AllMaps, Key.AllKeys, new List<(int, SoulsGame)>(), new Random(0));
 
             dsrItems.Save();
             ds2Items.Save();

@@ -121,16 +121,18 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void Write()
         {
-            for (var i = 1; i <= Slots.Count; i++)
+            int i = 1;
+            foreach (var slot in Slots)
             {
-                originalRow[string.Format(ItemIdFieldPattern, i)].Value = Slots[i].ItemId;
-                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = Slots[i].Amount;
+                originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                 // DS3 usually normalizes total weight to 1000.
                 // This may not add to 1000, but it should be close enough.
                 // If this is one of the few non-guaranteed drops that sums to 100 instead,
                 // congrats, you get lots of drops.
-                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = Slots[i].Weight * 10;
-                originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = Slots[i].ItemType;
+                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight * 10;
+                originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = slot.ItemType;
+                i++;
             }
         }
     }

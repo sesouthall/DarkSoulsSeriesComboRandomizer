@@ -215,14 +215,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         {
             foreach (var originalRow in originalRows)
             {
-                for (var i = 1; i <= Slots.Count; i++)
+                int i = 1;
+                foreach (var slot in Slots)
                 {
-                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = Slots[i].ItemId;
-                    originalRow[string.Format(ItemAmountFieldPattern, i)].Value = Slots[i].Amount;
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                    originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish
                     // 100 seems more common, so use that.
-                    originalRow[string.Format(ItemWeightFieldPattern, i)].Value = Slots[i].Weight;
-                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = Slots[i].ItemType;
+                    originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
+                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = slot.ItemType;
+                    i++;
                 }
             }
         }

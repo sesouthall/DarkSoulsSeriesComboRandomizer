@@ -1,6 +1,6 @@
 ﻿namespace DarkSoulsSeriesComboRandomizer
 {
-    internal record BonfireTriple
+    public record BonfireTriple
     {
         public readonly string DS1Bonfire;
         public readonly string DS2Bonfire;

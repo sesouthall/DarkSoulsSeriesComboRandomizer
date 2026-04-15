@@ -113,17 +113,18 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public void Write()
         {
-            for (var i = 1; i <= Slots.Count; i++)
+            int i = 0;
+            foreach (var slot in Slots)
             {
-                originalRow[string.Format(ItemIdFieldPattern, i)].Value = Slots[i].ItemId;
-                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = Slots[i].Amount;
+                originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                 // DS2 weights are direct percentages
                 // Since we've already normalized the weights for a drop to add to 100,
                 // using them directly should be fine. If this is a drop table with lots
                 // of items and it picks up lots of common ones, it could go above 100
                 // but that shouldn't break anything, it'll just cause the enemy to always
                 // drop something, potentially multiple things.
-                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = Slots[i].Weight;
+                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
             }
         }
     }

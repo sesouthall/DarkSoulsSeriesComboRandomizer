@@ -108,7 +108,7 @@ namespace DarkSoulsItemMigrator
         {
             EnsureTargetLoaded();
 
-            _targetNameFmg!.Entries.Add(new FMG.Entry(_nextItemId, item.Name));
+            _targetNameFmg!.Entries.Add(new FMG.Entry(_nextItemId, $"{item.Name} ({item.SourceGame})"));
             _targetDescFmg!.Entries.Add(new FMG.Entry(_nextItemId, item.Desc));
             _targetLongDescFmg!.Entries.Add(new FMG.Entry(_nextItemId, item.LongDesc));
 

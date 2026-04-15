@@ -78,7 +78,7 @@ namespace DarkSoulsSeriesComboRandomizer
         /// <param name="random">Optional seeded RNG; a new one is created if null.</param>
         public static void Randomize(
             Map startMap,
-            IReadOnlyList<Map> allMaps,
+            IReadOnlyDictionary<MapName, Map> allMaps,
             IEnumerable<Key> allKeys,
             IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots,
             Random? random = null)
@@ -89,24 +89,24 @@ namespace DarkSoulsSeriesComboRandomizer
             var keyList = new List<KeyInstance>();
             foreach (var key in allKeys)
             {
-                var defaultLot = allMaps.Where(map => map.SourceGame == key.originalGame).SelectMany(map => map.ItemLocations).FirstOrDefault(location => location.ID == key.defaultLotNumber);
+                var defaultLot = allMaps.Values.Where(map => map.SourceGame == key.originalGame).SelectMany(map => map.ItemLocations).FirstOrDefault(location => location.ID == key.defaultLotNumber);
                 var defaultSlot = defaultLot?.Slots.Single(slot => slot.ItemId == key.itemId);
                 if (defaultSlot != null)
                 {
                     keyList.Add(new(key, defaultSlot));
                 }
             }
-            
+
             // ---- discover every lot in the fully-unlocked graph -------------
             // (ignoring locks) so we know the complete universe to randomize.
             // Don't include keys, since they will all be placed separately.
-            var allLots = allMaps
+            var allLots = allMaps.Values
                 .SelectMany(m => m.ItemLocations.Where(location => !lockedLots.Contains((location.ID, m.SourceGame))))
                 .ToList();
             var dropsByCategory = allLots.GroupBy(lot => lot.LotType)
                 .ToDictionary(
                 grouping => grouping.Key,
-                grouping => grouping.SelectMany(lot => lot.Slots.Where(slot => !slot.isEmptyItem && !IsKey(slot, keyList)).ToList()));
+                grouping => grouping.SelectMany(lot => lot.Slots.Where(slot => !slot.isEmptyItem && !IsKey(slot, keyList))).Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount)).ToList());
 
             // ---- Phase 1: reachability-aware key placement ----------
             // This must go first to make sure the player isn't trapped in the prison tower.
@@ -152,10 +152,10 @@ namespace DarkSoulsSeriesComboRandomizer
                 remaining.Remove(keyToPlace);
 
                 // There's no key for this connection. Activate it when the player can reach both levers.
-                if (startMap.CanReach("Undead Burg / Undead Parish") && startMap.CanReach("Blighttown") && !connectedSensFortress)
+                if (startMap.CanReach(MapName.UndeadBurgUndeadParish) && startMap.CanReach(MapName.Blighttown) && !connectedSensFortress)
                 {
-                    var undeadBurgMap = allMaps.Single(map => map.FriendlyName == "Undead Burg / Undead Parish");
-                    var sensFortressMap = allMaps.Single(map => map.FriendlyName == "Sen's Fortress");
+                    var undeadBurgMap = allMaps[MapName.UndeadBurgUndeadParish];
+                    var sensFortressMap = allMaps[MapName.SensFortress];
                     undeadBurgMap.connectedMaps.Add(sensFortressMap);
                     sensFortressMap.connectedMaps.Add(undeadBurgMap);
                     connectedSensFortress = true;
@@ -189,13 +189,13 @@ namespace DarkSoulsSeriesComboRandomizer
         //  Helpers
         // ------------------------------------------------------------------ //
 
-        private static void PlaceArchiveTowerCellAndGiantDoorKeys(ref List<KeyInstance> allKeys, IReadOnlyList<Map> allMaps, IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots, Random random)
+        private static void PlaceArchiveTowerCellAndGiantDoorKeys(ref List<KeyInstance> allKeys, IReadOnlyDictionary<MapName, Map> allMaps, IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots, Random random)
         {
             // The Tower Cell Key must be accessible from the Tower Cell.
             // If that bonfire has cross-game connections, this fans out quite a bit.
             // If not, this is the guard's drop.
             var towerCellKey = allKeys.Single(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2004);
-            var towerCellMap = allMaps.Single(map => map.FriendlyName == "Tower Cell");
+            var towerCellMap = allMaps[MapName.TowerCell];
             var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure);
             availableLots.AddRange(towerCellMap.ItemLocations); // include jailer, even though he isn't a boss/treasure drop
             var keyQueue = new Queue<LotSlot>();

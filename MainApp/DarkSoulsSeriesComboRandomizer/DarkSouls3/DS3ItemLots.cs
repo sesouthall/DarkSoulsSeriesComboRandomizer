@@ -50,7 +50,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                             var bytes = header.ReadFile(bdt);
                             var mapData = MSB3.Read(bytes);
 
-                            var parsedMap = Map.DS3Maps.Single(map => matchingMapFile.Contains(map.FileName));
+                            var parsedMap = Map.DS3Maps.Values.Single(map => matchingMapFile.Contains(map.FileName));
                             LoadMapLocationData(mapData, parsedMap);
                         }
                     }
@@ -71,7 +71,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             }
 
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
-            regulationFile.Write(Data0Path);
+            RegulationDecryptor.EncryptDS3Regulation(Data0Path, regulationFile);
         }
 
         public void Revert()
@@ -90,14 +90,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 var itemLotNumber = (int?) npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID)?["ItemLotId1"]?.Value;
                 if (itemLotNumber.HasValue && itemLotNumber.Value != -1)
                 {
-                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
                 }
                 
 
                 if (entityItemLots.ContainsKey(enemy.EntityID))
                 {
                     var lotId = entityItemLots[enemy.EntityID];
-                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(lotId, GetEventLotType(lotId)));
+                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(lotId, GetEventLotType(lotId)));
                 }
             }
 
@@ -106,7 +106,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 if (!mapData.Parts.Objects.Any(o => o.Name == treasure.TreasurePartName)) continue; // Treasure isn't obtainable
                 var itemLotNumber = treasure.ItemLot1;
                 if (itemLotNumber == -1) continue; // No actual drop at this treasure
-                parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, LotType.Treasure));
+                AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber, LotType.Treasure));
             }
 
             foreach (var part in mapData.Parts.Objects)
@@ -114,8 +114,29 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 if (entityItemLots.ContainsKey(part.EntityID))
                 {
                     var itemLotNumber = entityItemLots[part.EntityID];
-                    parsedMap.ItemLocations.AddRange(ParseItemLotChain(itemLotNumber, GetEventLotType(itemLotNumber)));
+                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber, GetEventLotType(itemLotNumber)));
                 }
+            }
+
+            foreach (var talkLot in talkLots.Where(lot => lot.Item2 == parsedMap.Name))
+            {
+                AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(talkLot.Item1, LotType.GenericEvent));
+            }
+        }
+
+        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<IItemLot> itemLots)
+        {
+            if (!itemLots.Any()) return;
+
+            if (Map.DS3NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
+            {
+                var actualMapName = Map.DS3NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
+                var actualMap = Map.DS3Maps.Values.Single(map => map.Name == actualMapName);
+                actualMap.ItemLocations.AddRange(itemLots);
+            }
+            else
+            {
+                defaultMap.ItemLocations.AddRange(itemLots);
             }
         }
 
@@ -336,6 +357,63 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             { 4500176, 59200 },
             { 4500802, 4700 },
             { 4500701, 55200 },
+        };
+
+        // Copied from TheFifthMatt's SoulsRandomizers
+        // Associated maps are my own. Sometimes they are the zone where the item is obtained,
+        // sometimes they are the zone that must be reached to trigger the dialog to get the item
+        // Technically, it's possible to get to the triggering zone without having access to the
+        // NPC/statue/other dialog location, but these won't get key items, so it should be fine.
+        private static readonly List<(int, MapName)> talkLots = new List<(int, MapName)>
+        {
+            ( 4207, MapName.LothricCastle ), // Great Lightning Spear
+            ( 4217, MapName.UndeadSettlement ), // Warmth
+            ( 4220, MapName.RoadOfSacrificesFarronKeep ), // Watchdogs of Farron covenant item
+            ( 4226, MapName.RoadOfSacrificesFarronKeep ), // Artorias Greatshield
+            ( 4230, MapName.IrithyllAnorLondo ), // Aldrich Faithful covenant item
+            ( 4237, MapName.IrithyllAnorLondo ), // Archdeacon's Great Staff
+            ( 4240, MapName.RoadOfSacrificesFarronKeep ), // Blue Sentinels covenant item
+            ( 4250, MapName.IrithyllAnorLondo ), // Blade of the Darkmoon covenant item
+            ( 4260, MapName.CathedralOfTheDeep ), // Rosaria's Fingers covenant item
+            ( 4267, MapName.CathedralOfTheDeep ), // Man-grub's Staff
+            ( 4270, MapName.HighWallOfLothricGarden ), // Way of Blue covenant item
+            ( 60300, MapName.IrithyllAnorLondo ), // Anri's Straight Sword
+            //( 60310, MapName.GrandArchives ), // Twin Princes Greatsword - no event id, and at most one per randomizer playthrough anyway
+            ( 60400, MapName.CatacombsCarthusSmoulderingLake ), // Morion Blade
+            ( 60600, MapName.IrithyllAnorLondo ), // Blade of the Darkmoon covenant item again?
+            ( 60700, MapName.RoadOfSacrificesFarronKeep ), // Heavy Gem from Hawkwood
+            ( 60703, MapName.RoadOfSacrificesFarronKeep ), // Another Heavy Gem from Hawkwood? Maybe on-death drop?
+            ( 60610, MapName.IrithyllAnorLondo ), // Darkmoon Ring
+            ( 60630, MapName.IrithyllAnorLondo ), // Darkmoon Ring again?
+            ( 60720, MapName.RoadOfSacrificesFarronKeep ), // Farron Ring
+            ( 60805, MapName.IrithyllAnorLondo ), // Blessed Mail Breaker from Sirris
+            ( 60900, MapName.UndeadSettlement ), // Cracked Red Eye Orb from Leonhard
+            ( 60910, MapName.UndeadSettlement ), // Lift Key from Leonhard
+            ( 61000, MapName.ArchdragonPeak ), // Hawkwood's Swordgrass
+            ( 61200, MapName.UndeadSettlement ), // Blue Tearstone Ring
+            ( 61300, MapName.RoadOfSacrificesFarronKeep ), // Young Dragon Ring
+            ( 61310, MapName.CatacombsCarthusSmoulderingLake ), // Slumbering Dragoncrest Ring
+            ( 61400, MapName.UndeadSettlement ), // Pyromancy Flame
+            ( 61900, MapName.CathedralOfTheDeep ), // Ring of the Evil Eye
+            ( 62000, MapName.CathedralOfTheDeep), // Rusted Coin from Patches
+            ( 62010, MapName.FirelinkTower ), // Rusted Gold Coin from Patches
+            ( 62100, MapName.UndeadSettlement ), // First Siegbrau
+            ( 62103, MapName.IrithyllAnorLondo ), // Second Siegbrau
+            ( 62105, MapName.DungeonProfanedCapital ), // Third Siegbrau
+            ( 62120, MapName.DungeonProfanedCapital ), // Emit Force
+            ( 62130, MapName.OldCell ), // Titanite Slab from Siegward
+            ( 62300, MapName.HighWallOfLothricGarden ), // Small Lothric Banner
+            ( 62310, MapName.HighWallOfLothricGarden ), // Way of Blue covenant item again?
+            ( 62500, MapName.HighWallOfLothricGarden ), // Young White Branch from Giant
+            ( 62600, MapName.RoadOfSacrificesFarronKeep ), // Blue Sentinels covenant item again?
+            ( 63100, MapName.UndeadSettlement ), // Mound-makers covenant item
+            ( 63110, MapName.PaintedWorldOfAriandel ), // Homeward bone from Drowsy Forlorn in the Painted World
+            ( 65400, MapName.PaintedWorldSecondHalf ), // Titanite Slab from Corvian
+            ( 65500, MapName.PaintedWorldOfAriandel ), // Chillbite Ring
+            ( 66210, MapName.DregHeap ), // Titanite Slab from Lapp
+            ( 66220, MapName.RingedCity ), // Seigbrau from Lapp
+            ( 66300, MapName.RingedCity ), // Sacred Chime of Filianore
+            ( 66310, MapName.RingedCity ), // Titanite Slab from Shira
         };
 
         // From UXM's full DS3 file list
