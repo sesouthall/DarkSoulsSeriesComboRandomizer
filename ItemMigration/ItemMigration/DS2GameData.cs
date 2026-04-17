@@ -18,7 +18,8 @@ class DS2GameData : GameData
 
     protected override SourceGame GameName => SourceGame.DS2S;
     protected override IBinder ParamBnd => _paramBnd.Bnd;
-    protected override IBinder MsgBnd => _msgBnd.Bnd;
+    protected override IBinder ItemMsgBnd => _msgBnd.Bnd;
+    protected override IBinder MenuMsgBnd => _msgBnd.Bnd;
 
     public DS2GameData(FmgDirectoryFile msgBnd, DS2RegulationFile paramBnd, TpfFile icons, int baseInjectedId)
     {
@@ -32,6 +33,7 @@ class DS2GameData : GameData
         TargetNameFmgName = "itemname.fmg";
         TargetDescFmgName = "simpleexplanation.fmg";
         TargetLongDescFmgName = "detailedexplanation.fmg";
+        BonfireTextFmgName = "bofire.fmg";
         DSRIconId = 64410000;
         DS3IconId = 64420000;
         IconIdCellName = "icon_id";
@@ -51,7 +53,8 @@ class DS2GameData : GameData
     protected override void ReplaceIconSheet()
     {
         var oldTexture = Icons.Tpf.Textures[0];
-        var customDSRIcon = File.ReadAllBytes(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\mod\icons\NewDS2Icons\ic_0064410000.dds");
+
+        var customDSRIcon = File.ReadAllBytes(@"Icons\ic_0064410000.dds");
         var newDSRTexture = new TPF
         {
             Flag2 = Icons.Tpf.Flag2,
@@ -60,7 +63,8 @@ class DS2GameData : GameData
         };
         newDSRTexture.Textures.Add(new TPF.Texture("IT_IC_0064410000", oldTexture.Format, oldTexture.Flags1, customDSRIcon, oldTexture.Platform));
         newDSRTexture.Write(@"C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game\menu\tex\icon\ic_0064410000.tpf");
-        var customDS3Icon = File.ReadAllBytes(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\mod\icons\NewDS2Icons\ic_0064420000.dds");
+
+        var customDS3Icon = File.ReadAllBytes(@"Icons\ic_0064420000.dds");
         var newDS3Texture = new TPF
         {
             Flag2 = Icons.Tpf.Flag2,

@@ -102,7 +102,7 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
 
     if (queryId >= QueryId::ShouldHaveOtherGameWarps && queryId <= QueryId::GetDS3BonfireId)
     {
-        printf_s("QueryId is: %d", queryId);
+        printf_s("QueryId is: %d\n", queryId);
         bool currentBonfireIsInMappings = false;
         BonfireTriple* mapping = BonfireTriple::nullMapping;
 #ifdef DSR
@@ -124,18 +124,24 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
         {
         case QueryId::ShouldHaveOtherGameWarps:
             *param_2 = currentBonfireIsInMappings;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 2;
             break;
         case QueryId::GetDS1BonfireId:
+            printf_s("Returning %d\n", mapping->DS1BonfireId);
             *param_2 = mapping->DS1BonfireId;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 1;
             break;
         case QueryId::GetDS2BonfireId:
+            printf_s("Returning %d\n", mapping->DS2BonfireId);
             *param_2 = mapping->DS2BonfireId;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 1;
             break;
         case QueryId::GetDS3BonfireId:
+            printf_s("Returning %d\n", mapping->DS3BonfireId);
             *param_2 = mapping->DS3BonfireId;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 1;
             break;
         }
-        *(int64_t*)((int64_t)param_2 + 0x8) = 2;
     }
     else
     {
@@ -158,7 +164,7 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
 #endif // DS3
     int commandId = (*(GetCommandIdFunction**)(*(int64_t*)param_2 + getCommandIdFunctionOffset))(param_2);
 
-    printf_s("CommandId is: %d", commandId);
+    printf_s("CommandId is: %d\n", commandId);
     if (commandId >= CommandId::WarpToDS1 && commandId <= CommandId::WarpToDS3)
     {
         BonfireTriple* mapping = BonfireTriple::nullMapping;

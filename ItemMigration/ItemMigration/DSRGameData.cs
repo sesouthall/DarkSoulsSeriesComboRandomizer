@@ -9,25 +9,31 @@ namespace DarkSoulsItemMigrator
     class DSRGameData : GameData
     {
         private readonly Bnd3File _paramBnd;
-        private readonly Bnd3File _msgBnd;
+        private readonly Bnd3File _itemMsgBnd;
+        private readonly Bnd3File _menuMsgBnd;
+        private readonly string _talkScriptFolder;
 
         protected override SourceGame GameName => SourceGame.DSR;
         protected override IBinder ParamBnd => _paramBnd.Bnd;
-        protected override IBinder MsgBnd => _msgBnd.Bnd;
+        protected override IBinder ItemMsgBnd => _itemMsgBnd.Bnd;
+        protected override IBinder MenuMsgBnd => _menuMsgBnd.Bnd;
 
-        public DSRGameData(Bnd3File msgBnd, Bnd3File paramBnd, TpfFile icons, int baseInjectedId)
+        public DSRGameData(Bnd3File itemMsgBnd, Bnd3File menuMsgBnd, Bnd3File paramBnd, TpfFile icons, string talkScriptFolder, int baseInjectedId)
         {
-            _msgBnd = msgBnd;
+            _itemMsgBnd = itemMsgBnd;
+            _menuMsgBnd = menuMsgBnd;
             _paramBnd = paramBnd;
+            _talkScriptFolder = talkScriptFolder;
 
             Icons = icons;
             IconTextureName = "Icon21";
-            IconSheetSourcePath = @"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\mod\icons\Icon21\Icon21.dds";
+            IconSheetSourcePath = @"Icons\Icon21.dds";
             GoodsParamRegex = new Regex("EquipParamGoods");
             GoodsParamdefPath = $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamGoods.xml";
             TargetNameFmgName = "Item_name_";
             TargetDescFmgName = "Item_description_";
             TargetLongDescFmgName = "Item_long_desc_";
+            BonfireTextFmgName = "Event_text_";
             DS2SIconId = 2159;
             DS3IconId = 2160;
             IconIdCellName = "iconId";
@@ -44,6 +50,95 @@ namespace DarkSoulsItemMigrator
                 new("Accessory", $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamAccessory.xml", "Accessory_name_", "Accessory_description_", "Accessory_long_desc_", int.MaxValue, new Regex("EquipParamAccessory")),
                 new("Goods",     $@"{Program.SmithboxRoot}\DS1R\Defs\EquipParamGoods.xml",     "Item_name_",      "Item_description_",      "Item_long_desc_", baseInjectedId, new Regex("EquipParamGoods")),
             };
+        }
+
+        public void AddCrossGameWarpsToBonfireMenu()
+        {
+            foreach (var esdFileName in Directory.GetFiles(_talkScriptFolder).Where(file => !file.Contains("bak_original")))
+            {
+                // Revert changes if there were any to this ezstate script
+                if (File.Exists($"{esdFileName}.bak_original"))
+                {
+                    File.Copy($"{esdFileName}.bak_original", esdFileName, overwrite: true);
+                }
+
+                var talkScriptFile = BND3.Read(esdFileName);
+
+                var editedFile = false;
+                foreach (var scriptFile in talkScriptFile.Files)
+                {
+                    var parsedScript = ESD.Read(scriptFile.Bytes);
+                    var editedStateGroup = false;
+                    foreach (var stateGroup in parsedScript.StateGroups.Values)
+                    {
+                        if (stateGroup.ContainsKey(4) && stateGroup[4].EntryCommands.Any(ESDCommandUtil.IsAddWarpToMenuCommand))
+                        {
+                            // Skip stateGroups that already have cross game warps
+                            if (stateGroup.Any(state => state.Value.EntryCommands.Any(ESDCommandUtil.IsCrossGameWarpCommand)))
+                            {
+                                Console.WriteLine($"{scriptFile.Name} already has cross game warps.");
+                                continue;
+                            }
+
+                            var lastState = stateGroup.Keys.Max();
+                            var warpToDS2CommandStateId = lastState + 1;
+                            var warpToDS3CommandStateId = lastState + 2;
+
+                            var lastMenuIndex = stateGroup[4].EntryCommands
+                                .Where(ESDCommandUtil.IsAddTalkListDataCommand)
+                                .Max(ESDCommandUtil.GetMenuIndexIgnoreLeave);
+                            var warpToDS2MenuIndex = (byte)(lastMenuIndex + 1);
+                            var warpToDS3MenuIndex = (byte)(lastMenuIndex + 2);
+
+                            var warpToDS2Command = new ESD.State();
+                            warpToDS2Command.Conditions.Add(new ESD.Condition(4, [65, 161]));
+                            warpToDS2Command.EntryCommands.Add(new ESD.CommandCall(1, 129));
+                            stateGroup.Add(warpToDS2CommandStateId, warpToDS2Command);
+
+                            var warpToDS3Command = new ESD.State();
+                            warpToDS3Command.Conditions.Add(new ESD.Condition(4, [65, 161]));
+                            warpToDS3Command.EntryCommands.Add(new ESD.CommandCall(1, 130));
+                            stateGroup.Add(warpToDS3CommandStateId, warpToDS3Command);
+
+                            ESD.CommandCall warpToDS2MenuOption;
+                            ESD.CommandCall warpToDS3MenuOption;
+                            if (stateGroup[4].EntryCommands[3].CommandBank == 5)
+                            {
+                                warpToDS2MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS2MenuIndex, 0, 0, 0, 161], [130, 130, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
+                                warpToDS3MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS3MenuIndex, 0, 0, 0, 161], [130, 131, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
+                            }
+                            else
+                            {
+                                warpToDS2MenuOption = new ESD.CommandCall(1, 19, [130, 128, 0, 0, 0, 132, 161], [warpToDS2MenuIndex, 161], [130, 130, 0, 0, 0, 132, 161], [63, 161]);
+                                warpToDS3MenuOption = new ESD.CommandCall(1, 19, [130, 128, 0, 0, 0, 132, 161], [warpToDS3MenuIndex, 161], [130, 131, 0, 0, 0, 132, 161], [63, 161]);
+                            }
+                            var warpToDS2Condition = new ESD.Condition(warpToDS2CommandStateId, [87, 132, 130, warpToDS2MenuIndex, 0, 0, 0, 149, 161]);
+                            var warpToDS3Condition = new ESD.Condition(warpToDS3CommandStateId, [87, 132, 130, warpToDS3MenuIndex, 0, 0, 0, 149, 161]);
+                            stateGroup[4].EntryCommands.Add(warpToDS2MenuOption);
+                            stateGroup[4].EntryCommands.Add(warpToDS3MenuOption);
+                            stateGroup[4].Conditions.Add(warpToDS2Condition);
+                            stateGroup[4].Conditions.Add(warpToDS3Condition);
+                            editedStateGroup = true;
+                        }
+                    }
+
+                    if (editedStateGroup)
+                    {
+                        scriptFile.Bytes = parsedScript.Write();
+                        editedFile = true;
+                    }
+                }
+
+                if (editedFile)
+                {
+                    // Back up original ezstate file before editing
+                    if (!File.Exists($"{esdFileName}.bak_original"))
+                    {
+                        File.Copy(esdFileName, $"{esdFileName}.bak_original");
+                    }
+                    talkScriptFile.Write(esdFileName);
+                }
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ namespace DarkSoulsItemMigrator
         public string TargetNameFmgName { get; protected init; } = null!;
         public string TargetDescFmgName { get; protected init; } = null!;
         public string TargetLongDescFmgName { get; protected init; } = null!;
+        public string BonfireTextFmgName { get; protected init; } = null!;
 
         // ID management
         public int BaseInjectedId { get; protected init; }
@@ -47,11 +48,13 @@ namespace DarkSoulsItemMigrator
         private FMG? _targetNameFmg;
         private FMG? _targetDescFmg;
         private FMG? _targetLongDescFmg;
+        private FMG? _bonfireTextFmg;
         private int _nextItemId;
 
         protected abstract SourceGame GameName { get; }
         protected abstract IBinder ParamBnd { get; }
-        protected abstract IBinder MsgBnd { get; }
+        protected abstract IBinder ItemMsgBnd { get; }
+        protected abstract IBinder MenuMsgBnd { get; }
 
         private void EnsureTargetLoaded()
         {
@@ -60,9 +63,10 @@ namespace DarkSoulsItemMigrator
             _targetParam = PARAM.Read(ParamBnd.Files.Single(f => GoodsParamRegex.IsMatch(f.Name)).Bytes);
             _targetParam.ApplyParamdef(PARAMDEF.XmlDeserialize(GoodsParamdefPath));
 
-            _targetNameFmg = FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetNameFmgName}")).Bytes);
-            _targetDescFmg = FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetDescFmgName}")).Bytes);
-            _targetLongDescFmg = FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetLongDescFmgName}")).Bytes);
+            _targetNameFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetNameFmgName}")).Bytes);
+            _targetDescFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetDescFmgName}")).Bytes);
+            _targetLongDescFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetLongDescFmgName}")).Bytes);
+            _bonfireTextFmg = FMG.Read(MenuMsgBnd.Files.First(f => f.Name.Contains($"\\{BonfireTextFmgName}")).Bytes);
 
             _nextItemId = BaseInjectedId;
         }
@@ -78,10 +82,10 @@ namespace DarkSoulsItemMigrator
                 var sourceParam = PARAM.Read(ParamBnd.Files.Single(f => itemType.ParamFileLookupPattern.IsMatch(f.Name)).Bytes);
                 sourceParam.ApplyParamdef(PARAMDEF.XmlDeserialize(itemType.ParamdefPath));
 
-                var nameFmg = FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.NameFmgName}")).Bytes);
-                var longDescFmg = FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.LongDescFmgName}")).Bytes);
+                var nameFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.NameFmgName}")).Bytes);
+                var longDescFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.LongDescFmgName}")).Bytes);
                 FMG? descFmg = itemType.DescFmgName != null
-                    ? FMG.Read(MsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.DescFmgName}")).Bytes)
+                    ? FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.DescFmgName}")).Bytes)
                     : null;
 
                 foreach (var row in sourceParam.Rows)
@@ -128,6 +132,18 @@ namespace DarkSoulsItemMigrator
             _nextItemId++;
         }
 
+        public void InjectCrossGameBonfireWarpMessages(Dictionary<string, int> bonfireNamesAndIds)
+        {
+            EnsureTargetLoaded();
+
+            foreach (var bonfireAndId in bonfireNamesAndIds)
+            {
+                _bonfireTextFmg!.Entries.Add(new FMG.Entry(bonfireAndId.Value, $"Warp to {bonfireAndId.Key}"));
+            }
+
+            MenuMsgBnd.Files.First(f => f.Name.Contains($"\\{BonfireTextFmgName}")).Bytes = _bonfireTextFmg!.Write();
+        }
+
         // ---------------------------------------------------------------
         // Flush — writes the accumulated param and FMG changes back into
         // the in-memory BNDs so SaveAll() can write them to disk.
@@ -137,9 +153,9 @@ namespace DarkSoulsItemMigrator
         {
             if (_targetParam == null) return; // nothing was added
 
-            MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetNameFmgName}")).Bytes = _targetNameFmg!.Write();
-            MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetDescFmgName}")).Bytes = _targetDescFmg!.Write();
-            MsgBnd.Files.First(f => f.Name.Contains($"\\{TargetLongDescFmgName}")).Bytes = _targetLongDescFmg!.Write();
+            ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetNameFmgName}")).Bytes = _targetNameFmg!.Write();
+            ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetDescFmgName}")).Bytes = _targetDescFmg!.Write();
+            ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{TargetLongDescFmgName}")).Bytes = _targetLongDescFmg!.Write();
             ParamBnd.Files.Single(f => GoodsParamRegex.IsMatch(f.Name)).Bytes = _targetParam.Write();
 
             ReplaceIconSheet();
