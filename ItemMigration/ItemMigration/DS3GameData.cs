@@ -72,7 +72,7 @@ namespace DarkSoulsItemMigrator
                     var editedStateGroup = false;
                     foreach (var stateGroup in parsedScript.StateGroups.Values)
                     {
-                        if (stateGroup.ContainsKey(2) && stateGroup[2].EntryCommands.Any(ESDCommandUtil.IsAddWarpToMenuCommand))
+                        if (stateGroup.TryGetValue(2, out ESD.State? addDialogToBonfireState) && addDialogToBonfireState.EntryCommands.Any(ESDCommandUtil.IsAddWarpToMenuCommand))
                         {
                             // Edit stateGroups that already have cross game warps
                             if (stateGroup.Any(state => state.Value.EntryCommands.Any(ESDCommandUtil.IsCrossGameWarpCommand)))
@@ -85,38 +85,28 @@ namespace DarkSoulsItemMigrator
                             var warpToDS1CommandStateId = lastState + 1;
                             var warpToDS2CommandStateId = lastState + 2;
 
-                            var lastMenuIndex = stateGroup[2].EntryCommands
+                            var lastMenuIndex = addDialogToBonfireState.EntryCommands
                                 .Where(ESDCommandUtil.IsAddTalkListDataCommand)
                                 .Max(ESDCommandUtil.GetMenuIndexIgnoreLeave);
                             var warpToDS1MenuIndex = (byte)(lastMenuIndex + 1);
                             var warpToDS2MenuIndex = (byte)(lastMenuIndex + 2);
 
                             var warpToDS1Command = new ESD.State();
-                            warpToDS1Command.Conditions.Add(new ESD.Condition(4, [65, 161]));
-                            warpToDS1Command.EntryCommands.Add(new ESD.CommandCall(1, 129));
+                            warpToDS1Command.Conditions.Add(new ESD.Condition(1, [65, 161]));
+                            warpToDS1Command.EntryCommands.Add(new ESD.CommandCall(1, 128));
                             stateGroup.Add(warpToDS1CommandStateId, warpToDS1Command);
 
                             var warpToDS2Command = new ESD.State();
-                            warpToDS2Command.Conditions.Add(new ESD.Condition(4, [65, 161]));
-                            warpToDS2Command.EntryCommands.Add(new ESD.CommandCall(1, 130));
+                            warpToDS2Command.Conditions.Add(new ESD.Condition(1, [65, 161]));
+                            warpToDS2Command.EntryCommands.Add(new ESD.CommandCall(1, 129));
                             stateGroup.Add(warpToDS2CommandStateId, warpToDS2Command);
 
-                            ESD.CommandCall warpToDS1MenuOption;
-                            ESD.CommandCall warpToDS2MenuOption;
-                            if (stateGroup[2].EntryCommands[0].CommandBank == 5)
-                            {
-                                warpToDS1MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS1MenuIndex, 0, 0, 0, 161], [130, 129, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
-                                warpToDS2MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS2MenuIndex, 0, 0, 0, 161], [130, 130, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
-                            }
-                            else
-                            {
-                                warpToDS1MenuOption = new ESD.CommandCall(1, 19, [130, 128, 0, 0, 0, 132, 161], [warpToDS1MenuIndex, 161], [130, 129, 0, 0, 0, 132, 161], [63, 161]);
-                                warpToDS2MenuOption = new ESD.CommandCall(1, 19, [130, 128, 0, 0, 0, 132, 161], [warpToDS2MenuIndex, 161], [130, 130, 0, 0, 0, 132, 161], [63, 161]);
-                            }
+                            var warpToDS1MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS1MenuIndex, 0, 0, 0, 161], [130, 129, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
+                            var warpToDS2MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS2MenuIndex, 0, 0, 0, 161], [130, 130, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
                             var warpToDS1Condition = new ESD.Condition(warpToDS1CommandStateId, [87, 132, 130, warpToDS1MenuIndex, 0, 0, 0, 149, 161]);
                             var warpToDS2Condition = new ESD.Condition(warpToDS2CommandStateId, [87, 132, 130, warpToDS2MenuIndex, 0, 0, 0, 149, 161]);
-                            stateGroup[2].EntryCommands.Add(warpToDS1MenuOption);
-                            stateGroup[2].EntryCommands.Add(warpToDS2MenuOption);
+                            addDialogToBonfireState.EntryCommands.Add(warpToDS1MenuOption);
+                            addDialogToBonfireState.EntryCommands.Add(warpToDS2MenuOption);
                             stateGroup[4].Conditions.Add(warpToDS1Condition);
                             stateGroup[4].Conditions.Add(warpToDS2Condition);
                             editedStateGroup = true;
