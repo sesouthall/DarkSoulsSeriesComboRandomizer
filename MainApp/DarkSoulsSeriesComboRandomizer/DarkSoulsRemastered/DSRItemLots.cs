@@ -1,39 +1,38 @@
 ﻿using SoulsFormats;
-using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 {
     internal class DSRItemLots
     {
         private readonly string rootDir;
-        private BND3? regulationFile;
-        private PARAM? itemLotParam;
-        private PARAM? npcParam;
+        private readonly string saveDir;
+        private readonly BND3 regulationFile;
+        private readonly PARAM itemLotParam;
+        private readonly PARAM npcParam;
 
-        private readonly Dictionary<(SoulsGame, SoulsItemType, int), int> _crossGameItems;
-
-        private string RegulationFilePath => Path.Combine(rootDir, "param", "GameParam", "GameParam.parambnd.dcx");
-        private string RegulationFileBackupPath => $"{RegulationFilePath}.unrandomized";
         private string MapFolder => Path.Combine(rootDir, "map", "MapStudio");
 
-        public DSRItemLots(string rootDir, Dictionary<int, SoulsItem> injectedItemsInThisGame)
+        public DSRItemLots(string rootDir, string saveDir, BND3 regulationFile, PARAM itemLotParam, PARAM npcParam)
         {
             this.rootDir = rootDir;
+            this.saveDir = saveDir;
+            this.regulationFile = regulationFile;
+            this.itemLotParam = itemLotParam;
+            this.npcParam = npcParam;
+        }
 
-            _crossGameItems = injectedItemsInThisGame
-                .ToDictionary(
-                    kvp => (kvp.Value.Game, kvp.Value.ItemType, kvp.Value.OriginalId),
-                    kvp => kvp.Key
-                );
+        public static DSRItemLots New(string rootDir, string saveDir)
+        {
+            var regulationFile = BND3.Read(Path.Combine("PreModdedGameFiles", "UnrandomizedRegulationFiles", "GameParam.parambnd.dcx"));
+
+            var itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS1R\Defs\ItemLotParam.xml");
+            var npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
+
+            return new DSRItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam);
         }
 
         public void Load()
         {
-            regulationFile = BND3.Read(RegulationFilePath);
-
-            itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS1R\Defs\ItemLotParam.xml");
-            npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
-
             foreach (var mapFile in Directory.GetFiles(MapFolder))
             {
                 var matchingParsedMap = Map.DSRMaps.Values.SingleOrDefault(parsedMap => mapFile.Contains(parsedMap.FileName));
@@ -48,23 +47,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public void Save()
         {
-            if (!File.Exists(RegulationFileBackupPath))
-            {
-                File.Copy(RegulationFilePath, RegulationFileBackupPath);
-            }
-
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
             regulationFile.Files.Single(f => f.Name.Contains("NpcParam")).Bytes = npcParam.Write();
-            regulationFile.Write(RegulationFilePath);
-        }
-
-        public void Revert()
-        {
-            if (File.Exists(RegulationFileBackupPath))
-            {
-                File.Delete(RegulationFilePath);
-                File.Move(RegulationFileBackupPath, RegulationFilePath);
-            }
+            regulationFile.Write(Path.Combine(saveDir, "GameParam.parambnd.dcx"));
         }
 
         private void LoadMapLocationData(MSB1 mapData, Map defaultMap)
@@ -134,7 +119,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private IEnumerable<DSRItemLot> ParseItemLotChain(int itemLotNumber, LotType lotTypeGuess)
         {
             if (itemLotNumber >= 4000 && itemLotNumber < 5000) yield break; // Firelink fallback chest should be ignored
-            Row? itemLot;
+            PARAM.Row? itemLot;
             while ((itemLot = itemLotParam?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
                 yield return DSRItemLot.Parse(itemLot, lotTypeGuess, itemLotParam);

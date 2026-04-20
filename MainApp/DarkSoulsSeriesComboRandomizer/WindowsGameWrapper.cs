@@ -37,14 +37,12 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public abstract event ItemReactor? OnModItemPickUp;
 
-        public WindowsGameWrapper(string exePath)
+        public WindowsGameWrapper(string exePath, string args = "")
         {
             gameProcess = new Process()
             {
-                StartInfo = new ProcessStartInfo(exePath)
+                StartInfo = new ProcessStartInfo(exePath, args)
                 {
-                    CreateNoWindow = false,
-                    UseShellExecute = true,
                     WorkingDirectory = Path.GetDirectoryName(exePath)
                 }
             };

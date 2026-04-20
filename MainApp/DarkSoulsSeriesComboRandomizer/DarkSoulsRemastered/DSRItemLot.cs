@@ -95,7 +95,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private bool alreadyTaken = false;
 
         private static Dictionary<int, DSRItemLot> lotCache = new();
-        private static Dictionary<int, SoulsItem> crossGameItems = new();
 
         int IItemLot.ID => ID;
 
@@ -111,11 +110,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             Slots = slots;
             this.originalRows = originalRows;
             this.type = type;
-        }
-
-        public static void Initialize(Dictionary<int, SoulsItem> crossGameItems)
-        {
-            DSRItemLot.crossGameItems = crossGameItems;
         }
 
         public static DSRItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM? fullItemLotParamTable)
@@ -202,7 +196,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                     }
                     else
                     {
-                        var resolvedId = crossGameItems.Single(pair => pair.Value == new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId)).Key;
+                        var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DSR);
                         Slots[i] = new LotSlot(SoulsGame.DSR, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
                     }
                 }

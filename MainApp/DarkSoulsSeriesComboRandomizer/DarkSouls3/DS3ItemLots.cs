@@ -7,33 +7,32 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
     internal class DS3ItemLots
     {
         private readonly string rootDir;
-        private BND4? regulationFile;
-        private PARAM? itemLotParam;
-        private PARAM? npcParam;
+        private readonly string saveDir;
+        private BND4 regulationFile;
+        private PARAM itemLotParam;
+        private PARAM npcParam;
 
-        private readonly Dictionary<(SoulsGame, SoulsItemType, int), int> _crossGameItems;
-
-        private string Data0Path => Path.Combine(rootDir, "Data0.bdt");
-        private string Data0BackupPath => $"{Data0Path}.unrandomized";
-
-        public DS3ItemLots(string rootDir, Dictionary<int, SoulsItem> injectedItemsInThisGame)
+        private DS3ItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParam, PARAM npcParam)
         {
             this.rootDir = rootDir;
+            this.saveDir = saveDir;
+            this.regulationFile = regulationFile;
+            this.itemLotParam = itemLotParam;
+            this.npcParam = npcParam;
+        }
 
-            _crossGameItems = injectedItemsInThisGame
-                .ToDictionary(
-                    kvp => (kvp.Value.Game, kvp.Value.ItemType, kvp.Value.OriginalId),
-                    kvp => kvp.Key
-                );
+        public static DS3ItemLots New(string rootDir, string saveDir)
+        {
+            var regulationFile = RegulationDecryptor.DecryptDS3Regulation(Path.Combine("PreModdedGameFiles", "UnrandomizedRegulationFiles", "Data0.bdt"));
+
+            var itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS3\Defs\ItemLotParam.xml");
+            var npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS3\Defs\NpcParam.xml");
+
+            return new DS3ItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam);
         }
 
         public void Load()
         {
-            regulationFile = RegulationDecryptor.DecryptDS3Regulation(Data0Path);
-
-            itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS3\Defs\ItemLotParam.xml");
-            npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS3\Defs\NpcParam.xml");
-
             foreach (var dataFileAndKey in dataFilesAndKeys)
             {
                 using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{dataFileAndKey.Item1}.bhd", dataFileAndKey.Item2);
@@ -65,22 +64,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void Save()
         {
-            if (!File.Exists(Data0BackupPath))
-            {
-                File.Copy(Data0Path, Data0BackupPath);
-            }
-
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
-            RegulationDecryptor.EncryptDS3Regulation(Data0Path, regulationFile);
-        }
-
-        public void Revert()
-        {
-            if (File.Exists(Data0BackupPath))
-            {
-                File.Delete(Data0Path);
-                File.Move(Data0BackupPath, Data0Path);
-            }
+            RegulationDecryptor.EncryptDS3Regulation(Path.Combine(saveDir, "Data0.bdt"), regulationFile);
         }
 
         private void LoadMapLocationData(MSB3 mapData, Map parsedMap)

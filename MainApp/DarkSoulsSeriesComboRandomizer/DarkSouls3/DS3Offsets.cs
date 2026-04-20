@@ -2,7 +2,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
     public static class DS3Offsets
     {
-        public const string ItemGetAOB = "8B 02 83 F8 06";
+        public const string ItemGetAOB = "4C 89 44 24 18 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 D9 48 81 EC 00 01 00 00"; // TGA's CT uses "8B 02 83 F8 06", but that doesn't exist in the downpatched version.
+                                                                                                                                // This seems to work for both 1.15 and 1.15.2
 
         public const string ItemRemoveAOB = "? 83 ec ? 8b f2 ? 8b e9 ? 85 c0 74";
 
@@ -23,7 +24,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         public const string WriteEventFlagAOB = "40 55 57 41 54 41 57 48 83 EC ? 80 B9 ? ? ? ? 00 45 0F B6 F9 45 0F B6 E0";
 
         public const int GameDataManOffset1 = 0;
-        public const int BonfireWarpMethodOffset = 0x475F00;
+        public const int BonfireWarpMethodOffset = 0x475DC0; // This is the address in the downpatched version (1.15) of the game. The latest version (1.15.2) has it at 0x475F00
+                                                             // Unfortunately, I haven't been able to find a good AOB for this function. It overlaps too much with a bunch of
+                                                             // other lua function definitions.
 
         public enum GameDataMan
         {

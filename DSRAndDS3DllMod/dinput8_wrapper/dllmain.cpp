@@ -38,15 +38,6 @@ extern uint64_t FUN_140e5f650Address;
 extern uint64_t DAT_144799990Address;
 static decltype(&DirectInput8Create) original_dinput8_create;
 
-#ifdef DSR
-const int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
-const int EzStateTalkEventCommandFunctionOffset = 0x4db340;
-#endif
-#ifdef DS3
-const int EzStateTalkEventQueryFunctionOffset = 0xeff690;
-const int EzStateTalkEventCommandFunctionOffset = 0xf035c0;
-#endif // DS3
-
 BonfireTable* parsedMappings;
 HANDLE hPipe = INVALID_HANDLE_VALUE;
 ChrClassWarp** warpInfo;
@@ -260,15 +251,21 @@ bool Begin(uint64_t qModuleHandle)
 #ifdef DSR
     void* warpInfo_sp = sp::mem::aob_scan("48 8B 05 xx xx xx xx 0F 28 01 66 0F 7F 80 xx xx 00 00 C6 80");
     warpInfo = sp::mem::pointer<ChrClassWarp*>((void*)((uint64_t)warpInfo_sp + *(uint32_t*)((uint64_t)warpInfo_sp + 3) + 7)).resolve();
+    int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
+    int EzStateTalkEventCommandFunctionOffset = 0x4db340;
 #endif // DSR
 #ifdef DS3
     void* warpInfo_sp = sp::mem::aob_scan("48 8B xx xx xx xx 04 89 48 28 C3");
     warpInfo = sp::mem::pointer<ChrClassWarp*>((void*)((uint64_t)warpInfo_sp + *(uint32_t*)((uint64_t)warpInfo_sp + 3) + 7)).resolve();
-    ContinueTextureLoadingAtAddress = Game::base_address + 0xe5e480;
+    void* talkEventQueryFunction = sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 68 FC FF FF");
+    int EzStateTalkEventQueryFunctionOffset = (uint64_t)talkEventQueryFunction - Game::base_address;
+    void* talkEventCommandFunction = sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 90 48 81 EC 70 01 00 00 48 C7 45 88 FE FF FF FF 48 89 58 18");
+    int EzStateTalkEventCommandFunctionOffset = (uint64_t)talkEventCommandFunction - Game::base_address;
+    /*ContinueTextureLoadingAtAddress = Game::base_address + 0xe5e480;
     AtomicIncrementAddress = Game::base_address + 0x17a35d0;
     FUN_140e60160Address = Game::base_address + 0xe60160;
     FUN_140e5f650Address = Game::base_address + 0xe5f650;
-    DAT_144799990Address = Game::base_address + 0x4799990;
+    DAT_144799990Address = Game::base_address + 0x4799990;*/
     //InsertJMP((BYTE*)(Game::base_address + 0xe5e47b), (int64_t)custom_texture_load, 13);
 #endif // DS3
 

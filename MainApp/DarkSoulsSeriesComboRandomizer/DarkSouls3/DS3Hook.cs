@@ -93,7 +93,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x10, 8);
             bytes = BitConverter.GetBytes((ulong)itemToGive);
             Array.Copy(bytes, 0, asm, 0x1A, 8);
-            bytes = BitConverter.GetBytes((ulong)ItemGet_Call.Resolve()-0x2F);
+            bytes = BitConverter.GetBytes((ulong)ItemGet_Call.Resolve());
             Array.Copy(bytes, 0, asm, 0x24, 8);
 
             Execute(asm);

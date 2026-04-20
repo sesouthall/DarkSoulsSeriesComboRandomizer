@@ -6,33 +6,32 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
     internal class DS2SotFSItemLots
     {
         private readonly string rootDir;
-        private BND4? regulationFile;
-        private PARAM? itemLotParamChr;
-        private PARAM? itemLotParamOther;
+        private readonly string saveDir;
+        private BND4 regulationFile;
+        private PARAM itemLotParamChr;
+        private PARAM itemLotParamOther;
 
-        private readonly Dictionary<(SoulsGame, SoulsItemType, int), int> _crossGameItems;
-
-        private string RegulationFilePath => Path.Combine(rootDir, "enc_regulation.bnd.dcx");
-        private string RegulationFileBackupPath => $"{RegulationFilePath}.unrandomized";
-
-        public DS2SotFSItemLots(string rootDir, Dictionary<int, SoulsItem> injectedItemsInThisGame)
+        private DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther)
         {
             this.rootDir = rootDir;
+            this.saveDir = saveDir;
+            this.regulationFile = regulationFile;
+            this.itemLotParamChr = itemLotParamChr;
+            this.itemLotParamOther = itemLotParamOther;
+        }
 
-            _crossGameItems = injectedItemsInThisGame
-                .ToDictionary(
-                    kvp => (kvp.Value.Game, kvp.Value.ItemType, kvp.Value.OriginalId),
-                    kvp => kvp.Key
-                );
+        public static DS2SotFSItemLots New(string rootDir, string saveDir)
+        {
+            var regulationFile = ReadRegulationFile(Path.Combine("PreModdedGameFiles", "UnrandomizedRegulationFiles", "enc_regulation.bnd.dcx"));
+
+            var itemLotParamChr = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Chr", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
+            var itemLotParamOther = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Other", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
+
+            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther);
         }
 
         public void Load()
         {
-            regulationFile = ReadRegulationFile(RegulationFilePath);
-
-            itemLotParamChr = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Chr", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
-            itemLotParamOther = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Other", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
-
             foreach (var dataFileAndKey in LoadDS2Keys())
             {
                 using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{dataFileAndKey.Item1}.bhd", dataFileAndKey.Item2);
@@ -111,23 +110,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public void Save()
         {
-            if (!File.Exists(RegulationFileBackupPath))
-            {
-                File.Copy(RegulationFilePath, RegulationFileBackupPath);
-            }
-
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam2_Chr")).Bytes = itemLotParamChr.Write();
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam2_Other")).Bytes = itemLotParamOther.Write();
-            regulationFile.Write(RegulationFilePath);
-        }
-
-        public void Revert()
-        {
-            if (File.Exists(RegulationFileBackupPath))
-            {
-                File.Delete(RegulationFilePath);
-                File.Move(RegulationFileBackupPath, RegulationFilePath);
-            }
+            regulationFile.Write(Path.Combine(saveDir, "enc_regulation.bnd.dcx"));
         }
 
         private void LoadMapLocationData(MSB2 mapData, PARAM generatorData, Map parsedMap)
