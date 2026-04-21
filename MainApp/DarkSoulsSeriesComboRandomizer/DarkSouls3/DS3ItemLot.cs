@@ -54,7 +54,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
                 if (weight > 0)
                 {
-                    tempSlots.Add(new LotSlot(SoulsGame.DS3, itemId, parsedCategory, weight, amount, isEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
+                    tempSlots.Add(new LotSlot(SoulsGame.DS3, itemId, parsedCategory, weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
                 }
             }
 
@@ -94,7 +94,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
             for (var i = 0; i < Slots.Count; i++)
             {
-                if (Slots[i].isEmptyItem) continue;
+                if (Slots[i].IsEmptyItem) continue;
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {

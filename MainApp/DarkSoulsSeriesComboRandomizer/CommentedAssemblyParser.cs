@@ -6,7 +6,7 @@ namespace DarkSoulsSeriesComboRandomizer
     // Copied from DSR-Gadget
     internal static class CommentedAssemblyParser
     {
-        private static Regex asmLineRx = new Regex(@"^[\w\d]+:\s+((?:[\w\d][\w\d] ?)+)");
+        private static readonly Regex asmLineRx = new Regex(@"^[\w\d]+:\s+((?:[\w\d][\w\d] ?)+)");
 
         public static byte[] LoadDefuseOutput(string lines)
         {

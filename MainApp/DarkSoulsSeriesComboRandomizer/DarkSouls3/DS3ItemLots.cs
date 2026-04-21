@@ -1,5 +1,6 @@
 ﻿using SoulsFormats;
 using SoulsFormats.Cryptography;
+using System.IO;
 using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3

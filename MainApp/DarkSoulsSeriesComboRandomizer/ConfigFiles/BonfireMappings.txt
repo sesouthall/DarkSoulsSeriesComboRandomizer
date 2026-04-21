@@ -1,0 +1,7 @@
+﻿Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash
+Firelink Shrine (DS1),The Far Fire,Firelink Shrine (DS3)
+Anor Londo (DS1),King's Gate,Central Irithyll
+Stone Dragon,Dragon Aerie,Archdragon Peak
+Painted World of Ariamis,Outer Wall,Snowfield
+Oolacile Sanctuary,Sanctum Walk,The Dreg Heap
+Prison Tower (DS1),Throne Floor,Grand Archives

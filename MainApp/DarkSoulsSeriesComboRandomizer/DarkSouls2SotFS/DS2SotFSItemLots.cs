@@ -1,4 +1,5 @@
 ﻿using SoulsFormats;
+using System.IO;
 using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS

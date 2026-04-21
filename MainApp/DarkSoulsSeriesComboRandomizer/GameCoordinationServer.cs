@@ -1,25 +1,21 @@
 using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
 using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
+using System.IO;
 using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class GameCoordinationServer : IDisposable
+    public class GameCoordinationServer(string dsrExePath, string ds2ExePath, string ds3ExePath) : IDisposable
     {
-        private readonly DSRWrapper dsrWrapper;
-        private readonly DS2SotFSWrapper ds2Wrapper;
-        private readonly DS3Wrapper ds3Wrapper;
+        private readonly DSRWrapper dsrWrapper = new(dsrExePath);
+        private readonly DS2SotFSWrapper ds2Wrapper = new(ds2ExePath);
+        private readonly DS3Wrapper ds3Wrapper = new(ds3ExePath);
         private bool disposedValue;
 
-        public GameCoordinationServer(string dsrExePath, string ds2ExePath, string ds3ExePath)
-        {
-            this.dsrWrapper = new DSRWrapper(dsrExePath);
-            this.ds2Wrapper = new DS2SotFSWrapper(ds2ExePath);
-            this.ds3Wrapper = new DS3Wrapper(ds3ExePath);
-        }
+        public SoulsGame ActiveGame { get; private set; }
 
-        public void Start(CancellationToken cancellationToken)
+        public void Start(SoulsGame firstGame)
         {
             StartPipeServers();
 
@@ -37,20 +33,32 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Wrapper.OnModItemPickUp += SendItemToCorrectGame;
             ds3Wrapper.OnModItemPickUp += SendItemToCorrectGame;
 
-            dsrWrapper.Resume();
-
-            while (!cancellationToken.IsCancellationRequested)
+            switch (firstGame)
             {
-                Thread.Sleep(10000);
+                case SoulsGame.DSR:
+                    dsrWrapper.Resume();
+                    break;
+                case SoulsGame.DS2S:
+                    ds2Wrapper.Resume();
+                    break;
+                case SoulsGame.DS3:
+                    ds3Wrapper.Resume();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(firstGame), $"{firstGame} is not a known SoulsGame");
             }
+            ActiveGame = firstGame;
+        }
 
+        public async Task Stop()
+        {
             dsrWrapper.OnModItemPickUp -= SendItemToCorrectGame;
             ds2Wrapper.OnModItemPickUp -= SendItemToCorrectGame;
             ds3Wrapper.OnModItemPickUp -= SendItemToCorrectGame;
 
-            dsrWrapper.Resume();
-            ds2Wrapper.Resume();
-            ds3Wrapper.Resume();
+            await dsrWrapper.WaitForShutdown();
+            await ds2Wrapper.WaitForShutdown();
+            await ds3Wrapper.WaitForShutdown();
         }
 
         private void StartPipeServers()
@@ -65,23 +73,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
                     if (int.TryParse(line, out var destinationBonfire))
                     {
-                        dsrWrapper.Pause();
-
-                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
-                        {
-                            dsrWrapper.Resume();
-                            dsrWrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
-                        {
-                            ds2Wrapper.Resume();
-                            ds2Wrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
-                        {
-                            ds3Wrapper.Resume();
-                            ds3Wrapper.Warp(destinationBonfire);
-                        }
+                        SwitchGame(SoulsGame.DSR, destinationBonfire);
                     }
                 }
             });
@@ -96,23 +88,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
                     if (int.TryParse(line, out var destinationBonfire))
                     {
-                        ds2Wrapper.Pause();
-
-                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
-                        {
-                            dsrWrapper.Resume();
-                            dsrWrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
-                        {
-                            ds2Wrapper.Resume();
-                            ds2Wrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
-                        {
-                            ds3Wrapper.Resume();
-                            ds3Wrapper.Warp(destinationBonfire);
-                        }
+                        SwitchGame(SoulsGame.DS2S, destinationBonfire);
                     }
                 }
             });
@@ -128,26 +104,47 @@ namespace DarkSoulsSeriesComboRandomizer
                     if (int.TryParse(line, out var destinationBonfire))
                     {
                         Thread.Sleep(500);
-                        ds3Wrapper.Pause();
-
-                        if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
-                        {
-                            dsrWrapper.Resume();
-                            dsrWrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
-                        {
-                            ds2Wrapper.Resume();
-                            ds2Wrapper.Warp(destinationBonfire);
-                        }
-                        else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
-                        {
-                            ds3Wrapper.Resume();
-                            ds3Wrapper.Warp(destinationBonfire);
-                        }
+                        SwitchGame(SoulsGame.DS3, destinationBonfire);
                     }
                 }
             });
+        }
+
+        private void SwitchGame(SoulsGame currentGame, int destinationBonfire)
+        {
+            switch (currentGame)
+            {
+                case SoulsGame.DSR:
+                    dsrWrapper.Pause();
+                    break;
+                case SoulsGame.DS2S:
+                    ds2Wrapper.Pause();
+                    break;
+                case SoulsGame.DS3:
+                    ds3Wrapper.Pause();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(currentGame), $"{currentGame} is not a known SoulsGame");
+            }
+
+            if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
+            {
+                ActiveGame = SoulsGame.DSR;
+                dsrWrapper.Resume();
+                dsrWrapper.Warp(destinationBonfire);
+            }
+            else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
+            {
+                ActiveGame = SoulsGame.DS2S;
+                ds2Wrapper.Resume();
+                ds2Wrapper.Warp(destinationBonfire);
+            }
+            else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
+            {
+                ActiveGame = SoulsGame.DS3;
+                ds3Wrapper.Resume();
+                ds3Wrapper.Warp(destinationBonfire);
+            }
         }
 
         private void SendItemToCorrectGame(SoulsGame sourceGame, int itemId, int quantity)

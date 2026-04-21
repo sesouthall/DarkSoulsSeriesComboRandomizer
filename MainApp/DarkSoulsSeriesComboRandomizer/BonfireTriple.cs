@@ -1,4 +1,6 @@
-﻿namespace DarkSoulsSeriesComboRandomizer
+﻿using System.IO;
+
+namespace DarkSoulsSeriesComboRandomizer
 {
     public record BonfireTriple
     {

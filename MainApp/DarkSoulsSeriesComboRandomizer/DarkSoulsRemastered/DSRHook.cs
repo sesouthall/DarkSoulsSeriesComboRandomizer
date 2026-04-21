@@ -15,7 +15,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         public bool CharacterLoaded { get; private set; } = false;
 
         public DSRHook(int refreshInterval, int minLifetime) :
-            base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS™: REMASTERED")
+            base(refreshInterval, minLifetime, p => p.Id != Environment.ProcessId && p.MainWindowTitle == "DARK SOULS™: REMASTERED")
         {
             GameDataManBasePtr = RegisterRelativeAOB(DSROffsets.GameDataManAOB, 3, 7);
             PlayerDataPtr = CreateChildPointer(GameDataManBasePtr, DSROffsets.GameDataManOffset1, (int)DSROffsets.GameDataMan.PlayerGameData);

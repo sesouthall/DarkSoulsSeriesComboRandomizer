@@ -20,7 +20,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public bool CharacterLoaded { get; private set; } = false;
 
         public DS2SotFSHook(int refreshInterval, int minLifetime) :
-            base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS II")
+            base(refreshInterval, minLifetime, p => p.Id != Environment.ProcessId && p.MainWindowTitle == "DARK SOULS II")
         {
             GameManagerImp = RegisterRelativeAOB(DS2SotFSOffsets.GameManagerImpAOB, 3, 7, DS2SotFSOffsets.GameManagerImpOffset1);
             GameDataManager = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameManagerImp.GameDataManager);

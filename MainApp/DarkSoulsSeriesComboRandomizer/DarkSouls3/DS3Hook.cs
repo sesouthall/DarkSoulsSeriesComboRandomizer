@@ -19,7 +19,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         public bool CharacterLoaded { get; private set; } = false;
 
         public DS3Hook(int refreshInterval, int minLifetime) :
-            base(refreshInterval, minLifetime, p => p.MainWindowTitle == "DARK SOULS III")
+            base(refreshInterval, minLifetime, p => p.Id != Environment.ProcessId && p.MainWindowTitle == "DARK SOULS III")
         {
             GameDataManBasePtr = RegisterRelativeAOB(DS3Offsets.GameDataManAOB, 3, 7);
             GameMan = RegisterRelativeAOB(DS3Offsets.GameManAOB, 3, 7, 0);

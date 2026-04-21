@@ -1,4 +1,5 @@
 ﻿using SoulsFormats;
+using System.IO;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 {

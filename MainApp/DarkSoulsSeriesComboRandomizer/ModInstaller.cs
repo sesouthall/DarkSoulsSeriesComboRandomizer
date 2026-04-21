@@ -1,31 +1,32 @@
 using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
 using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
+using System.IO;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    internal class ModInstaller : IDisposable
+    public record RandomizerOptions(int seed, string saveName, bool allowFirelinkRoofSkip = false);
+
+    internal class ModInstaller(string dsrRoot, string ds2Root, string ds3Root, RandomizerOptions options) : IDisposable
     {
-        private readonly string dsrRoot;
-        private readonly string ds2Root;
-        private readonly string ds3Root;
-        private readonly RandomizerOptions options;
         private bool disposedValue;
 
         private static readonly string backupFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BackupVanillaFiles");
         private string SaveFolderPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", options.saveName);
         private string DSRRegulationFilePath => Path.Combine(dsrRoot, "param", "GameParam", "GameParam.parambnd.dcx");
 
-        public ModInstaller(string dsrRoot, string ds2Root, string ds3Root, RandomizerOptions options)
-        {
-            this.dsrRoot = dsrRoot;
-            this.ds2Root = ds2Root;
-            this.ds3Root = ds3Root;
-            this.options = options;
-        }
-
         public void InstallStaticChanges()
         {
+            if (Directory.GetFiles(backupFolderPath).Length > 0)
+            {
+                // Cleanup didn't happen, or failed last time
+                RevertChanges();
+            }
+
+            CreateBonfireMappings();
+
+            CrossGameMappings.Initialize();
+
             // DSR uses direct file replacement. Just copy things over and save anything we're replacing.
             var ds1ModdedFilePath = Path.Combine("PreModdedGameFiles", "DSR");
             foreach (var file in Directory.GetFiles(ds1ModdedFilePath, "*", SearchOption.AllDirectories))
@@ -68,6 +69,18 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
+        private static void CreateBonfireMappings()
+        {
+            var bonfireMappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
+            if (!File.Exists(bonfireMappingsFile))
+            {
+                File.Copy(Path.Combine("ConfigFiles", "BonfireMappings.txt"), bonfireMappingsFile);
+            }
+
+            var bonfireMappings = BonfireTriple.ParseBonfireMappings(bonfireMappingsFile);
+            Map.LoadCrossGameWarps(bonfireMappings);
+        }
+
         public void CreateRandomizedRegulationFilesIfNeeded()
         {
             if (Directory.Exists(SaveFolderPath))
@@ -94,6 +107,8 @@ namespace DarkSoulsSeriesComboRandomizer
             dsrItems.Save();
             ds2Items.Save();
             ds3Items.Save();
+
+            File.WriteAllText(Path.Combine(SaveFolderPath, "seed.txt"), options.seed.ToString());
         }
 
         public void InstallRegulationFiles()
@@ -105,48 +120,69 @@ namespace DarkSoulsSeriesComboRandomizer
             File.Copy(Path.Combine(SaveFolderPath, "Data0.bdt"), Path.Combine(ds3Root, "ComboRandomizer", "Data0.bdt"), true);
         }
 
+        public SoulsGame GetLastGame()
+        {
+            var lastGame = SoulsGame.DSR;
+            if (File.Exists(Path.Combine(SaveFolderPath, "LastGame.txt")))
+            {
+                var lastGameString = File.ReadAllText(Path.Combine(SaveFolderPath, "LastGame.txt")).Trim();
+                lastGame = Enum.Parse<SoulsGame>(lastGameString);
+            }
+            return lastGame;
+        }
+
+        public void SaveLastGame(SoulsGame activeGame)
+        {
+            File.WriteAllText(Path.Combine(SaveFolderPath, "LastGame.txt"), activeGame.ToString());
+        }
+
+        public void RevertChanges()
+        {
+            // DSR - Restore backups for any files replaced. Delete the others.
+            var ds1ModdedFilePath = Path.Combine("PreModdedGameFiles", "DSR");
+            foreach (var file in Directory.GetFiles(ds1ModdedFilePath, "*", SearchOption.AllDirectories))
+            {
+                var vanillaFile = file.Replace(ds1ModdedFilePath, dsrRoot);
+                var backupFile = file.Replace(ds1ModdedFilePath, backupFolderPath);
+                File.Delete(vanillaFile);
+                if (File.Exists(backupFile))
+                {
+                    File.Move(backupFile, vanillaFile);
+                }
+            }
+            // Also restore the regulation file, since it isn't handled with the rest of them.
+            File.Delete(DSRRegulationFilePath);
+            File.Move(Path.Combine(backupFolderPath, "GameParam.parambnd.dcx"), DSRRegulationFilePath);
+
+            // DS2 - No files got replaced, just delete them.
+            var ds2ModdedFilePath = Path.Combine("PreModdedGameFiles", "DS2S");
+            foreach (var file in Directory.GetFiles(ds2ModdedFilePath, "*", SearchOption.AllDirectories))
+            {
+                var destinationPath = file.Replace(ds2ModdedFilePath, ds2Root);
+                File.Delete(destinationPath);
+            }
+
+            // DS3 - Restore DarkSoulsIII.exe, delete everything else
+            var ds3ModdedFilePath = Path.Combine("PreModdedGameFiles", "DS3");
+            foreach (var file in Directory.GetFiles(ds3ModdedFilePath, "*", SearchOption.AllDirectories))
+            {
+                var vanillaFile = file.Replace(ds3ModdedFilePath, ds3Root);
+                var backupFile = file.Replace(ds3ModdedFilePath, backupFolderPath);
+                File.Delete(vanillaFile);
+                if (File.Exists(backupFile))
+                {
+                    File.Move(backupFile, vanillaFile);
+                }
+            }
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (disposing)
                 {
-                    // DSR - Restore backups for any files replaced. Delete the others.
-                    var ds1ModdedFilePath = Path.Combine("PreModdedGameFiles", "DSR");
-                    foreach (var file in Directory.GetFiles(ds1ModdedFilePath))
-                    {
-                        var vanillaFile = file.Replace(ds1ModdedFilePath, dsrRoot);
-                        var backupFile = file.Replace(ds1ModdedFilePath, backupFolderPath);
-                        File.Delete(vanillaFile);
-                        if (File.Exists(backupFile))
-                        {
-                            File.Move(backupFile, vanillaFile);
-                        }
-                    }
-                    // Also restore the regulation file, since it isn't handled with the rest of them.
-                    File.Delete(DSRRegulationFilePath);
-                    File.Move(Path.Combine(backupFolderPath, "GameParam.parambnd.dcx"), DSRRegulationFilePath);
-
-                    // DS2 - No files got replaced, just delete them.
-                    var ds2ModdedFilePath = Path.Combine("PreModdedGameFiles", "DS2S");
-                    foreach (var file in Directory.GetFiles(ds2ModdedFilePath))
-                    {
-                        var destinationPath = file.Replace(ds2ModdedFilePath, ds2Root);
-                        File.Delete(destinationPath);
-                    }
-
-                    // DS3 - Restore DarkSoulsIII.exe, delete everything else
-                    var ds3ModdedFilePath = Path.Combine("PreModdedGameFiles", "DS3");
-                    foreach (var file in Directory.GetFiles(ds3ModdedFilePath))
-                    {
-                        var vanillaFile = file.Replace(ds3ModdedFilePath, dsrRoot);
-                        var backupFile = file.Replace(ds3ModdedFilePath, backupFolderPath);
-                        File.Delete(vanillaFile);
-                        if (File.Exists(backupFile))
-                        {
-                            File.Move(backupFile, vanillaFile);
-                        }
-                    }
+                    RevertChanges();
                 }
 
                 disposedValue = true;

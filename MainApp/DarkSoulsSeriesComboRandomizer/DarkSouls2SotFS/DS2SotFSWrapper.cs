@@ -55,7 +55,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             hook.GiveItem(itemId, quantity, 0, 0);
         }
 
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -72,7 +72,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             }
         }
 
-        public void Dispose()
+        public new void Dispose()
         {
             // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
             Dispose(disposing: true);

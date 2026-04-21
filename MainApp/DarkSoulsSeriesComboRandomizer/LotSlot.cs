@@ -10,6 +10,6 @@
         SoulsItemType ItemType,
         int Weight,
         int Amount,
-        bool isEmptyItem = false
+        bool IsEmptyItem = false
     );
 }

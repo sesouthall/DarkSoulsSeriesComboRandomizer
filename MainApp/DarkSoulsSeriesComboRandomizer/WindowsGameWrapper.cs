@@ -1,9 +1,12 @@
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public abstract class WindowsGameWrapper : IGameWrapper, IDisposable
+    public delegate void ItemReactor(SoulsGame game, int itemId, int quantity);
+
+    public abstract class WindowsGameWrapper : IDisposable
     {
         [Flags]
         public enum ThreadAccess : int
@@ -51,6 +54,12 @@ namespace DarkSoulsSeriesComboRandomizer
         public virtual void Start()
         {
             gameProcess.Start();
+        }
+
+        public async Task WaitForShutdown()
+        {
+            Resume();
+            await gameProcess.WaitForExitAsync();
         }
 
         protected void RefreshProcess(string MainWindowTitle)
@@ -110,6 +119,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 if (disposing)
                 {
+                    Resume();
                     gameProcess.Close();
                     gameProcess.Dispose();
                 }

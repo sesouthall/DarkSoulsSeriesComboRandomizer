@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace DarkSoulsSeriesComboRandomizer
+﻿namespace DarkSoulsSeriesComboRandomizer
 {
     /// <summary>
     /// Randomizes item lots across all three Dark Souls games using a
@@ -49,10 +45,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         /// <summary>
         /// Pairs a LotSlot with the specific Key definition it came from.
-        /// This is necessary for Fragrant Branches of Yore, which share an
-        /// item ID across multiple Key entries that each unlock a different
-        /// connection.  For every other key the match is unique by
-        /// (game, itemType, itemId).
+        /// This is useful for determining if a LotSlot to randomize 
         /// </summary>
         private record KeyInstance(Key Key, LotSlot Slot);
 
@@ -61,7 +54,7 @@ namespace DarkSoulsSeriesComboRandomizer
         // ------------------------------------------------------------------ //
 
         /// <summary>
-        /// Randomizes all item lots reachable from <paramref name="startMap"/>.
+        /// Randomizes all item lots with the player starting from <paramref name="startMap"/>.
         /// </summary>
         /// <param name="startMap">
         ///     The map the player spawns into.
@@ -70,7 +63,7 @@ namespace DarkSoulsSeriesComboRandomizer
         ///     The full list of every map across all three games (Map.AllMaps).
         /// </param>
         /// <param name="allKeys">
-        ///     All Key objects from DSRKeys, DS2SotFSKeys, and DS3Keys combined.
+        ///     The full list of keys across all three games (Key.AllKeys).
         /// </param>
         /// <param name="lockedLots">
         ///     (IItemLot, SoulsGame) pairs whose contents must not be randomized.
@@ -89,11 +82,21 @@ namespace DarkSoulsSeriesComboRandomizer
             var keyList = new List<KeyInstance>();
             foreach (var key in allKeys)
             {
-                var defaultLot = allMaps.Values.Where(map => map.SourceGame == key.originalGame).SelectMany(map => map.ItemLocations).FirstOrDefault(location => location.ID == key.defaultLotNumber);
+                var defaultLot = allMaps.Values.Where(map => map.SourceGame == key.originalGame)
+                    .SelectMany(map => map.ItemLocations)
+                    .FirstOrDefault(location => location.ID == key.defaultLotNumber);
                 var defaultSlot = defaultLot?.Slots.Single(slot => slot.ItemId == key.itemId);
                 if (defaultSlot != null)
                 {
                     keyList.Add(new(key, defaultSlot));
+                }
+                else
+                {
+                    // Since the key isn't being randomized, assume it's available.
+                    // There's probably edge cases that break this, but I plan to add
+                    // shop/event support soon, so it shouldn't be too much of an issue.
+                    // - An Optimistic Fool 4/20/2026
+                    key.Collect();
                 }
             }
 
@@ -106,7 +109,9 @@ namespace DarkSoulsSeriesComboRandomizer
             var dropsByCategory = allLots.GroupBy(lot => lot.LotType)
                 .ToDictionary(
                 grouping => grouping.Key,
-                grouping => grouping.SelectMany(lot => lot.Slots.Where(slot => !slot.isEmptyItem && !IsKey(slot, keyList))).Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount)).ToList());
+                grouping => grouping.SelectMany(lot => lot.Slots.Where(slot => !slot.IsEmptyItem && !IsKey(slot, keyList)))
+                    .Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount))
+                    .ToList());
 
             // ---- Phase 1: reachability-aware key placement ----------
             // This must go first to make sure the player isn't trapped in the prison tower.
@@ -125,7 +130,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 if (keyToPlace == null)
                 {
-                    if (!remaining.All(keySlotPair => keySlotPair.Key.connectionsUnlocked.Count == 0))
+                    if (!remaining.All(keySlotPair => keySlotPair.Key.ConnectionsUnlocked.Count == 0))
                     {
                         throw new Exception("Hit a dead-end, no key connects an accessible zone to a new zone, but there are still keys which create connections.");
                     }
