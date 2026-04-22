@@ -12,8 +12,17 @@ namespace DarkSoulsSeriesComboRandomizer
         private bool disposedValue;
 
         private static readonly string backupFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BackupVanillaFiles");
-        private string SaveFolderPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", options.saveName);
+        public string SaveFolderPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", options.saveName);
         private string DSRRegulationFilePath => Path.Combine(dsrRoot, "param", "GameParam", "GameParam.parambnd.dcx");
+
+        private static readonly string DS1SaveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "NBGI", "DARK SOULS REMASTERED");
+        private const string DS1SaveFileName = "DRAKS0005.sl2";
+
+        private static readonly string DS2SaveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsII");
+        private const string DS2SaveFileName = "DS2SOFS0000.sl2";
+
+        private static readonly string DS3SaveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsIII");
+        private const string DS3SaveFileName = "DS30000.sl2";
 
         public void InstallStaticChanges()
         {
@@ -102,7 +111,12 @@ namespace DarkSoulsSeriesComboRandomizer
 
             Map.HandleDS3FirelinkRoofSkip(options.allowFirelinkRoofSkip);
 
-            ItemRandomizer.Randomize(Map.AllMaps[MapName.DS1StartingCell], Map.AllMaps, Key.AllKeys, new List<(int, SoulsGame)>(), new Random(options.seed));
+            var unrandomizedLots = DSRItemLots.StartingItemLots.Select(itemLotId => (itemLotId, SoulsGame.DSR)) // Don't randomize the DS1 starting gear...
+                .Append((DSRItemLots.EstusFlaskLot, SoulsGame.DSR)) // The DS1 Estus Flask...
+                .Append((DS2SotFSItemLots.EstusFlaskLot, SoulsGame.DS2S)) // The DS2 Estus Flask..
+                .Append((DS3ItemLots.AshenEstusFlaskLot, SoulsGame.DS3)) // or the DS3 Ashen Estus Flask.
+                .ToList();                                               // DS3 regular Estus Flask is a starting item, so no need to handle it for now.
+            ItemRandomizer.Randomize(Map.AllMaps[MapName.DS1StartingCell], Map.AllMaps, Key.AllKeys, unrandomizedLots, new Random(options.seed));
 
             dsrItems.Save();
             ds2Items.Save();
@@ -118,6 +132,79 @@ namespace DarkSoulsSeriesComboRandomizer
             File.Copy(Path.Combine(SaveFolderPath, "enc_regulation.bnd.dcx"), Path.Combine(ds2Root, "ComboRandomizer", "enc_regulation.bnd.dcx"), true);
 
             File.Copy(Path.Combine(SaveFolderPath, "Data0.bdt"), Path.Combine(ds3Root, "ComboRandomizer", "Data0.bdt"), true);
+        }
+
+        public SuccessOrError InstallModSaveFiles()
+        {
+            var successOrError = new SuccessOrError();
+
+            BackupAndReplaceSingleSaveFile(DS1SaveFolder, DS1SaveFileName, "REMASTERED", successOrError);
+
+            if (!successOrError.Succeeded)
+            {
+                return successOrError;
+            }
+
+            BackupAndReplaceSingleSaveFile(DS2SaveFolder, DS2SaveFileName, "2", successOrError);
+
+            if (!successOrError.Succeeded)
+            {
+                RestoreSingleSaveFile(DS1SaveFolder, DS1SaveFileName, "REMASTERED", successOrError);
+                return successOrError;
+            }
+
+            BackupAndReplaceSingleSaveFile(DS3SaveFolder, DS3SaveFileName, "3", successOrError);
+
+            if (!successOrError.Succeeded)
+            {
+                RestoreSingleSaveFile(DS1SaveFolder, DS1SaveFileName, "REMASTERED", successOrError);
+                RestoreSingleSaveFile(DS2SaveFolder, DS2SaveFileName, "2", successOrError);
+                return successOrError;
+            }
+
+            return successOrError;
+        }
+
+        private void BackupAndReplaceSingleSaveFile(string vanillaSaveFolder, string saveFileName, string gameSuffix, SuccessOrError currentStatus)
+        {
+            var possibleSaveFiles = Directory.GetFiles(vanillaSaveFolder, saveFileName, SearchOption.AllDirectories).ToList();
+            if (possibleSaveFiles.Count > 1)
+            {
+                currentStatus.AddError($@"There is more than one Dark Souls {gameSuffix} save file ({saveFileName}) in {vanillaSaveFolder}.
+Please move any backups to another folder so the randomizer can clearly identify the real one.");
+                return;
+            }
+            else if (possibleSaveFiles.Count == 1)
+            {
+                var saveFile = possibleSaveFiles.Single();
+                var backupFile = saveFile.Replace(vanillaSaveFolder, backupFolderPath);
+                if (File.Exists(backupFile))
+                {
+                    currentStatus.AddError($@"There is already a save for Dark Souls {gameSuffix} backed up in {backupFolderPath}.
+This probably means the randomizer crashed and didn't restore things correctly.
+Please check the save files and manully restore them to the correct locations.
+The randomizer's save belongs here: {saveFile.Replace(vanillaSaveFolder, SaveFolderPath)}
+The vanilla save belongs here: {saveFile}
+The backup folder should not have any files named {saveFileName}");
+                    return;
+                }
+                File.Move(saveFile, backupFile);
+            }
+            // If there are no save files, there's nothing to back up
+
+            var possibleRandomizedSaves = Directory.GetFiles(SaveFolderPath, saveFileName, SearchOption.AllDirectories).ToList();
+            if (possibleRandomizedSaves.Count > 1) // This should only happen if the user edits the app's save folders
+            {
+                currentStatus.AddError($@"There is more than one Dark Souls {gameSuffix} save file associated with this randomization.
+Please check {SaveFolderPath} and remove any extra files named {saveFileName}.");
+                return;
+            }
+            else if (possibleRandomizedSaves.Count == 1)
+            {
+                var randomizedSaveFile = possibleRandomizedSaves.Single();
+                var vanillaLocation = randomizedSaveFile.Replace(SaveFolderPath, vanillaSaveFolder);
+                File.Move(randomizedSaveFile, vanillaLocation);
+            }
         }
 
         public SoulsGame GetLastGame()
@@ -174,6 +261,66 @@ namespace DarkSoulsSeriesComboRandomizer
                     File.Move(backupFile, vanillaFile);
                 }
             }
+        }
+
+        public SuccessOrError RestoreVanillaSaveFiles()
+        {
+            var successOrError = new SuccessOrError();
+
+            RestoreSingleSaveFile(DS1SaveFolder, DS1SaveFileName, "REMASTERED", successOrError);
+            RestoreSingleSaveFile(DS2SaveFolder, DS2SaveFileName, "2", successOrError);
+            RestoreSingleSaveFile(DS3SaveFolder, DS3SaveFileName, "3", successOrError);
+
+            return successOrError;
+        }
+
+        private void RestoreSingleSaveFile(string vanillaSaveFolder, string saveFileName, string gameSuffix, SuccessOrError currentState)
+        {
+            var possibleRandomizedSaveFiles = Directory.GetFiles(vanillaSaveFolder, saveFileName, SearchOption.AllDirectories).ToList();
+            if (possibleRandomizedSaveFiles.Count > 1) // The user added a save file while the mod was running. Don't touch anything, just bail with a warining.
+            {
+                currentState.AddError($@"There is more than one Dark Souls {gameSuffix} save file in {vanillaSaveFolder}.
+Since I can't tell which one, if any, is associated with the randomizer, I'm leaving them alone.
+You can find backups of unrandomized saves in {backupFolderPath}.
+If the current save is from a randomized run and you'd like to keep it, the randomizer's save should go in {SaveFolderPath}.");
+                return;
+            }
+            else if (possibleRandomizedSaveFiles.Count == 1)
+            {
+                var randomizedSaveFileInVanillaSaveFolder = possibleRandomizedSaveFiles.Single();
+                var randomizedSaveFileInRandomizerSaveFolder = randomizedSaveFileInVanillaSaveFolder.Replace(vanillaSaveFolder, SaveFolderPath);
+                if (File.Exists(randomizedSaveFileInRandomizerSaveFolder))
+                {
+                    currentState.AddError($@"The randomized save seems to have been correctly copied into Dark Souls {gameSuffix}'s default save location: {vanillaSaveFolder}
+However, it also still exists in the randomizer save it should have come from: {SaveFolderPath}
+This shouldn't be possible, so I'm leaving everything as-is.
+You should be able to find a backup of the unrandomized saves in {backupFolderPath}.
+Please put the randomized save here: {randomizedSaveFileInRandomizerSaveFolder}
+Please put the unrandomized save here: {randomizedSaveFileInVanillaSaveFolder}
+Please make sure there are no files named {saveFileName} in {backupFolderPath}");
+                    return;
+                }
+                File.Move(randomizedSaveFileInVanillaSaveFolder, randomizedSaveFileInRandomizerSaveFolder);
+            }
+            // No randomized save? Either this is a failing install for a new run, or something went very wrong with your game
+
+            var possibleBackedUpSaves = Directory.GetFiles(backupFolderPath, saveFileName, SearchOption.AllDirectories).ToList();
+            if (possibleBackedUpSaves.Count > 1) // Multiple backed up saves should never happen, but just in case
+            {
+                currentState.AddError($@"There is more than one Dark Souls {gameSuffix} save backed up in {backupFolderPath}.
+This shouldn't be possible, so I'm leaving everything as-is.
+Please identify the correct backup save in {backupFolderPath}
+and put it in the same subfolder under {vanillaSaveFolder}.
+Please make sure there are no files named {saveFileName} in {backupFolderPath}");
+                return;
+            }
+            else if (possibleBackedUpSaves.Count == 1)
+            {
+                var backedUpVanillaSave = possibleBackedUpSaves.Single();
+                var vanillaSave = backedUpVanillaSave.Replace(backupFolderPath, vanillaSaveFolder);
+                File.Move(backupFolderPath, vanillaSaveFolder);
+            }
+            // No backed-up save? It must not have existed when the randomizer launched.
         }
 
         protected virtual void Dispose(bool disposing)

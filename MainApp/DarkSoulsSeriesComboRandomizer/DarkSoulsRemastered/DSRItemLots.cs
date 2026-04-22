@@ -46,11 +46,42 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             }
         }
 
+        private const string WeaponNameFMGFileName = "Weapon_name_";
+        private const string ArmorNameFMGFileName = "Armor_name_";
+        private const string AccessoryNameFMGFileName = "Accessory_name_";
+        private const string GoodsNameFMGFileName = "Item_name_";
+
         public void Save()
         {
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
             regulationFile.Files.Single(f => f.Name.Contains("NpcParam")).Bytes = npcParam.Write();
             regulationFile.Write(Path.Combine(saveDir, "GameParam.parambnd.dcx"));
+
+            var itemTextFile = BND3.Read(Path.Combine(rootDir, "msg", "ENGLISH", "item.msgbnd.dcx"));
+
+            var weaponNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(WeaponNameFMGFileName)).Bytes);
+            var armorNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(ArmorNameFMGFileName)).Bytes);
+            var accessoryNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(AccessoryNameFMGFileName)).Bytes);
+            var goodsNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(GoodsNameFMGFileName)).Bytes);
+
+            foreach (var map in Map.DS3Maps.Values)
+            {
+                foreach (var itemLocation in map.ItemLocations)
+                {
+                    foreach (var itemSlot in itemLocation.Slots)
+                    {
+                        var itemName = itemSlot.ItemType switch
+                        {
+                            SoulsItemType.Weapon => weaponNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Armor => armorNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Accessory => accessoryNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Goods => goodsNameFMG[itemSlot.ItemId],
+                            _ => ""
+                        };
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName}"]);
+                    }
+                }
+            }
         }
 
         private void LoadMapLocationData(MSB1 mapData, Map defaultMap)
@@ -158,5 +189,35 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             { 1810810, new List<int>{ 22300000 } }, // Stray Demon
             { 1700510, new List<int>{ 27100200 } }, // Pendant Blue Golem
         };
+
+        public static readonly IReadOnlyList<int> StartingItemLots =
+        [
+            1810100,
+            1810110,
+            1810120,
+            1810130,
+            1810140,
+            1810150,
+            1810160,
+            1810170,
+            1810180,
+            1810190,
+            1810200,
+            1810210,
+            1810220,
+            1810230,
+            1810240,
+            1810250,
+            1810260,
+            1810270,
+            1810280,
+            1810290,
+            1810300,
+            1810310,
+            1810320,
+            1810330,
+        ];
+
+        public const int EstusFlaskLot = 1082;
     }
 }

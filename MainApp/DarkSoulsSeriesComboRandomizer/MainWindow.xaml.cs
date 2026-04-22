@@ -277,7 +277,48 @@ namespace DarkSoulsSeriesComboRandomizer
                     _installer.InstallRegulationFiles();
                 });
 
+                Dispatcher.Invoke(() => StatusText.Text = "Backing up save files…");
+
+                SuccessOrError? saveBackupResults = null;
+                await Task.Run(() =>
+                {
+                    saveBackupResults = _installer.InstallModSaveFiles();
+                });
+
+                if (saveBackupResults == null)
+                {
+                    MessageBox.Show("Something went wrong while switching to the randomizer's save files. Stopping randomizer.", "Unknown Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _installer.Dispose();
+                    _installer = null;
+                    Dispatcher.Invoke(() =>
+                    {
+                        SetSetupControlsEnabled(true);
+                        UpdatePlayButton();
+                    });
+                    return;
+                }
+
+                if (!saveBackupResults.Succeeded)
+                {
+                    MessageBox.Show(string.Join("\n\n", saveBackupResults.Errors), "Error with game saves", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _installer.Dispose();
+                    _installer = null;
+                    Dispatcher.Invoke(() =>
+                    {
+                        SetSetupControlsEnabled(true);
+                        UpdatePlayButton();
+                    });
+                    return;
+                }
+
                 Dispatcher.Invoke(() => StatusText.Text = "Starting coordination server…");
+
+                MessageBox.Show(@"The mod will now launch each game, one at a time.
+Please set Dark Souls 1 to Offline Mode.
+If this is a new save, please create a character in each game. In DS2, proceed through character creation with the Fire Keepers.
+If this is an existing save, just load the existing characters.
+Once a character has been loaded, open the start menu. The game will be paused and minimized, and the next will start.
+Once all three games have loaded characters, DS1 will be resumed for new saves, or the last game you were in for existing saves.", "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 _server = new GameCoordinationServer(
                     DS1PathBox.Text,
@@ -292,6 +333,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     RunSeedDisplay.Text = seed.ToString();
                     RunSaveDisplay.Text = saveName;
+                    RunHintDisplay.Text = Path.Combine(_installer.SaveFolderPath, "Hints.txt");
                     StopButton.IsEnabled = true;
                     StopStatusText.Text = "";
 
@@ -341,6 +383,17 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 _server?.Dispose();
                 _server = null;
+
+                var result = _installer?.RestoreVanillaSaveFiles();
+
+                if (result == null)
+                {
+                    MessageBox.Show("Something went wrong while switching back to unmodded save files.", "Unknown Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else if (!result.Succeeded)
+                {
+                    MessageBox.Show(string.Join("\n\n", result.Errors, "Error restoring unmodded saves", MessageBoxButton.OK, MessageBoxImage.Error));
+                }
 
                 _installer?.Dispose();
                 _installer = null;

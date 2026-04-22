@@ -6,6 +6,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
     {
         private readonly PHPointer GameDataManBasePtr;
         private readonly PHPointer GameMan;
+        private readonly PHPointer MenuMan;
         private readonly PHPointer SprjLuaEventMan;
         private readonly PHPointer SprjEventFlagMan;
         private readonly PHPointer PlayerDataPtr;
@@ -23,6 +24,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         {
             GameDataManBasePtr = RegisterRelativeAOB(DS3Offsets.GameDataManAOB, 3, 7);
             GameMan = RegisterRelativeAOB(DS3Offsets.GameManAOB, 3, 7, 0);
+            MenuMan = RegisterRelativeAOB(DS3Offsets.MenuManAOB, 3, 7, 0);
             SprjLuaEventMan = RegisterRelativeAOB(DS3Offsets.SprjLuaEventManAOB, 3, 8, 0);
             SprjEventFlagMan = RegisterRelativeAOB(DS3Offsets.SprjEventFlagManAOB, 3, 7, 0);
             PlayerDataPtr = CreateChildPointer(GameDataManBasePtr, DS3Offsets.GameDataManOffset1, (int)DS3Offsets.GameDataMan.PlayerGameData);
@@ -37,7 +39,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerDataPtr.ReadString((int)DS3Offsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            while (PlayerDataPtr.ReadString((int)DS3Offsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MenuMan.ReadInt32((int)DS3Offsets.MenuMan.StartMenuFlag) != 2)
             {
                 Thread.Sleep(1000);
             }

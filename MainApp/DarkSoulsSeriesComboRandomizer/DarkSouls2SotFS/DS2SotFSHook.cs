@@ -16,6 +16,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private readonly PHPointer EventManager;
         private readonly PHPointer WarpManager;
         private readonly PHPointer EventFlagManager;
+        private readonly PHPointer MorphemeStates;
 
         public bool CharacterLoaded { get; private set; } = false;
 
@@ -34,12 +35,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             EventManager = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameManagerImp.EventManager);
             WarpManager = CreateChildPointer(EventManager, (int)DS2SotFSOffsets.EventManager.WarpManager);
             EventFlagManager = CreateChildPointer(EventManager, (int)DS2SotFSOffsets.EventManager.EventFlagManager);
+            MorphemeStates = CreateChildPointer(GameManagerImp, (int)DS2SotFSOffsets.GameManagerImp.PlayerStats, (int)DS2SotFSOffsets.PlayerStats.MorphemeStates);
             base.OnHooked += FinishSetup;
         }
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerData.ReadString((int)DS2SotFSOffsets.PlayerData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            while (PlayerData.ReadString((int)DS2SotFSOffsets.PlayerData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MorphemeStates.ReadByte((int)DS2SotFSOffsets.MorphemeStates.IsMenuIdle) != 1)
             {
                 Thread.Sleep(1000);
             }

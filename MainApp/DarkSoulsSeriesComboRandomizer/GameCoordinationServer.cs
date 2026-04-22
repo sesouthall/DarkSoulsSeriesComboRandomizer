@@ -20,13 +20,10 @@ namespace DarkSoulsSeriesComboRandomizer
             StartPipeServers();
 
             dsrWrapper.Start();
-            Thread.Sleep(15000);
             dsrWrapper.Pause();
             ds2Wrapper.Start();
-            Thread.Sleep(15000);
             ds2Wrapper.Pause();
             ds3Wrapper.Start();
-            Thread.Sleep(15000);
             ds3Wrapper.Pause();
 
             dsrWrapper.OnModItemPickUp += SendItemToCorrectGame;

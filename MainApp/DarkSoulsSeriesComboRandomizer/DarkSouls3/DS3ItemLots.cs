@@ -1,5 +1,6 @@
 ﻿using SoulsFormats;
 using SoulsFormats.Cryptography;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using static SoulsFormats.PARAM;
 
@@ -34,6 +35,93 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void Load()
         {
+            foreach (var mapFile in mapFiles)
+            {
+                if (TryReadPackedFile(mapFile, (bytes) => MSB3.Read(bytes), out var mapData))
+                {
+                    var parsedMap = Map.DS3Maps.Values.Single(map => mapFile.Contains(map.FileName));
+                    LoadMapLocationData(mapData, parsedMap);
+                }
+            }
+
+            ClearDataFileCache();
+        }
+
+        private static ulong HashFileName(string fileName)
+        {
+            return fileName.Aggregate(0u, (a, c) => a * 37 + c);
+        }
+
+        private const string WeaponNameFMGFileName = "武器名";
+        private const string ArmorNameFMGFileName = "防具名";
+        private const string AccessoryNameFMGFileName = "アクセサリ名";
+        private const string GoodsNameFMGFileName = "アイテム名";
+
+        public void Save()
+        {
+            regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
+            RegulationDecryptor.EncryptDS3Regulation(Path.Combine(saveDir, "Data0.bdt"), regulationFile);
+
+            if (!TryReadPackedFile("/msg/engus/item_dlc2.msgbnd.dcx", (bytes) => BND4.Read(bytes), out var itemTextFile))
+            {
+                return;
+            }
+
+            var weaponNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(WeaponNameFMGFileName)).Bytes);
+            var armorNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(ArmorNameFMGFileName)).Bytes);
+            var accessoryNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(AccessoryNameFMGFileName)).Bytes);
+            var goodsNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(GoodsNameFMGFileName)).Bytes);
+
+            foreach (var map in Map.DS3Maps.Values)
+            {
+                foreach (var itemLocation in map.ItemLocations)
+                {
+                    foreach (var itemSlot in itemLocation.Slots)
+                    {
+                        var itemName = itemSlot.ItemType switch
+                        {
+                            SoulsItemType.Weapon => weaponNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Armor => armorNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Accessory => accessoryNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Goods => goodsNameFMG[itemSlot.ItemId],
+                            _ => ""
+                        };
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName}"]);
+                    }
+                }
+            }
+
+            ClearDataFileCache();
+        }
+
+        private Dictionary<string, (BHD5, FileStream)> ds3DataFileCache = new Dictionary<string, (BHD5, FileStream)>();
+
+        private (BHD5, FileStream) ReadDS3DataFile(string fileName, string key)
+        {
+            if (ds3DataFileCache.TryGetValue(fileName, out var streams))
+            {
+                return streams;
+            }
+
+            using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{fileName}.bhd", key);
+            var bhd = BHD5.Read(bhdStream, BHD5.Game.DarkSouls3);
+            var bdt = File.OpenRead($@"{rootDir}\{fileName}.bdt");
+            ds3DataFileCache[fileName] = (bhd, bdt);
+            return (bhd, bdt);
+        }
+
+        private void ClearDataFileCache()
+        {
+            foreach (var (_, bdt) in ds3DataFileCache.Values)
+            {
+                bdt.Dispose();
+            }
+
+            ds3DataFileCache.Clear();
+        }
+
+        private bool TryReadPackedFile<T>(string packedFilePath, Func<byte[], T> reader, [NotNullWhen(returnValue: true)] out T? result)
+        {
             foreach (var dataFileAndKey in dataFilesAndKeys)
             {
                 using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{dataFileAndKey.Item1}.bhd", dataFileAndKey.Item2);
@@ -44,29 +132,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 {
                     foreach (var header in bucket)
                     {
-                        var matchingMapFile = mapFiles.SingleOrDefault(mapFile => HashFileName(mapFile) == header.FileNameHash);
-                        if (matchingMapFile != null)
+                        if (header.FileNameHash == HashFileName(packedFilePath))
                         {
-                            var bytes = header.ReadFile(bdt);
-                            var mapData = MSB3.Read(bytes);
-
-                            var parsedMap = Map.DS3Maps.Values.Single(map => matchingMapFile.Contains(map.FileName));
-                            LoadMapLocationData(mapData, parsedMap);
+                            result = reader(header.ReadFile(bdt))!;
+                            return true;
                         }
                     }
                 }
             }
-        }
 
-        private static ulong HashFileName(string fileName)
-        {
-            return fileName.Aggregate(0u, (a, c) => a * 37 + c);
-        }
-
-        public void Save()
-        {
-            regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
-            RegulationDecryptor.EncryptDS3Regulation(Path.Combine(saveDir, "Data0.bdt"), regulationFile);
+            result = default;
+            return false;
         }
 
         private void LoadMapLocationData(MSB3 mapData, Map parsedMap)
@@ -489,5 +565,7 @@ jur5aLDDntQHGx5zuNtc78gMGwlmPqDhgTusKPO4VyKvoL0kITYvukoXJATaa1HI
 WVUjhLm+/uj8r8PNgolerDeS+8FM5Bpe9QIEHwCZLw==
 -----END RSA PUBLIC KEY-----")
         };
+
+        public const int AshenEstusFlaskLot = 4000505;
     }
 }

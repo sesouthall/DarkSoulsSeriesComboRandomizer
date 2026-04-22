@@ -5,6 +5,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
     public class DSRHook : PHook
     {
         private readonly PHPointer GameDataManBasePtr;
+        private readonly PHPointer MenuMan;
         private readonly PHPointer PlayerDataPtr;
         private readonly PHPointer InventoryPtr;
         private readonly PHPointer ItemGet_Call;
@@ -18,6 +19,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             base(refreshInterval, minLifetime, p => p.Id != Environment.ProcessId && p.MainWindowTitle == "DARK SOULS™: REMASTERED")
         {
             GameDataManBasePtr = RegisterRelativeAOB(DSROffsets.GameDataManAOB, 3, 7);
+            MenuMan = RegisterRelativeAOB(DSROffsets.MenuManAOB, 3, 7, 0);
             PlayerDataPtr = CreateChildPointer(GameDataManBasePtr, DSROffsets.GameDataManOffset1, (int)DSROffsets.GameDataMan.PlayerGameData);
             InventoryPtr = CreateChildPointer(PlayerDataPtr, (int)DSROffsets.PlayerGameData.InventoryPointer);
             ItemGet_Call = RegisterAbsoluteAOB(DSROffsets.ItemGetAOB);
@@ -29,7 +31,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerDataPtr.ReadString((int)DSROffsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "")
+            while (PlayerDataPtr.ReadString((int)DSROffsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MenuMan.ReadInt32((int)DSROffsets.MenuMan.StartMenuOpenFlag) != 8)
             {
                 Thread.Sleep(1000);
             }

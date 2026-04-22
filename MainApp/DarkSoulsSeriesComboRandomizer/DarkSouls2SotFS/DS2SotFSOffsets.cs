@@ -22,7 +22,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public enum GameManagerImp
         {
             EventManager = 0x70,
-            GameDataManager = 0xA8
+            GameDataManager = 0xA8,
+            PlayerStats = 0xD0
         }
 
         public enum EventManager
@@ -39,6 +40,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Settings = 0x58,
             ClearCount = 0x78,
             PlayTime = 0xA4,
+        }
+
+        public enum PlayerStats
+        {
+            MorphemeStates = 0xB8
+        }
+
+        public enum MorphemeStates
+        {
+            IsMenuIdle = 0x4CB
         }
 
         public enum PlayerData

@@ -71,10 +71,10 @@
             NewKey(2021, SoulsItemType.Goods, SoulsGame.DSR, 6231,        [(MapName.UndeadBurgUndeadParish, MapName.UndeadBurgResidence),                
                                                                            (MapName.LowerUndeadBurg, MapName.LowerUndeadBurgResidence) ]),               // Residence Key
             NewKey(2022, SoulsItemType.Goods, SoulsGame.DSR, 27803001,    [(MapName.Oolacile, MapName.OolacileAfterGough)]),                             // Crest Key
-            NewKey(2100, SoulsItemType.Goods, SoulsGame.DSR, -1,          [(MapName.UndeadBurgUndeadParish, MapName.UndeadBurgResidence),                
-                                                                           (MapName.Depths, MapName.SewerChamber),                                       
-                                                                           (MapName.ValleyOfDrakes, MapName.NewLondoRuinsValleyOfDrakes),                
-                                                                           (MapName.SensFortress, MapName.SensCage) ]),                                  // Master Key
+            //NewKey(2100, SoulsItemType.Goods, SoulsGame.DSR, -1,          [(MapName.UndeadBurgUndeadParish, MapName.UndeadBurgResidence),                
+            //                                                               (MapName.Depths, MapName.SewerChamber),                                       
+            //                                                               (MapName.ValleyOfDrakes, MapName.NewLondoRuinsValleyOfDrakes),                
+            //                                                               (MapName.SensFortress, MapName.SensCage) ]),                                  // Master Key (ignore for now, otherwise the "unrandomized key" logic will collect it and break other keys)
             NewKey(2500, SoulsItemType.Goods, SoulsGame.DSR, 2560,        [(MapName.FirelinkAltar, MapName.FirstLordSoul)]),                             // Nito's Lord Soul
             NewKey(2501, SoulsItemType.Goods, SoulsGame.DSR, 2580,        [(MapName.FirstLordSoul, MapName.SecondLordSoul)]),                            // Bed of Chaos' Lord Soul
             NewKey(2502, SoulsItemType.Goods, SoulsGame.DSR, 2630,        [(MapName.SecondLordSoul, MapName.ThirdLordSoul)]),                            // Four Kings' Lord Soul

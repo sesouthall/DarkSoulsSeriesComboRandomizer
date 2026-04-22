@@ -45,6 +45,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             PlayTime = 0xA4,
         }
 
+        public const string MenuManAOB = "48 8B 05 ? ? ? ? 89 88 28 08 00 00 85 C9 ? ? C7 80 34 08 00 00 FF FF FF FF C3";
+        public enum MenuMan
+        {
+            StartMenuOpenFlag = 0x50,
+            InMainMenuFlag = 0xC8
+        }
+
         public enum PlayerGameData
         {
             Hp = 0x14,

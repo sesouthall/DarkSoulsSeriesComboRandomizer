@@ -1,4 +1,5 @@
 ﻿using SoulsFormats;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using static SoulsFormats.PARAM;
 
@@ -33,33 +34,21 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public void Load()
         {
-            foreach (var dataFileAndKey in LoadDS2Keys())
+            foreach (var mapFile in mapFiles)
             {
-                using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{dataFileAndKey.Item1}.bhd", dataFileAndKey.Item2);
-                var bhd = BHD5.Read(bhdStream, BHD5.Game.DarkSouls2);
-                using var bdt = File.OpenRead($@"{rootDir}\{dataFileAndKey.Item1}.bdt");
-
-                foreach (var bucket in bhd.Buckets)
+                if (TryReadPackedFile(mapFile, (bytes) => MSB2.Read(bytes), out var mapData))
                 {
-                    foreach (var header in bucket)
+                    var parsedMap = Map.DS2Maps.Values.Single(map => mapFile.Contains(map.FileName));
+
+                    if (TryReadPackedFile($"/param/generatorparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorData) && generatorData != null)
                     {
-                        var matchingMapFile = mapFiles.SingleOrDefault(mapFile => HashFileName(mapFile) == header.FileNameHash);
-                        if (matchingMapFile != null)
-                        {
-                            var bytes = header.ReadFile(bdt);
-                            var mapData = MSB2.Read(bytes);
-
-                            var parsedMap = Map.DS2Maps.Values.Single(map => matchingMapFile.Contains(map.FileName));
-
-                            var generatorHeader = bhd.Buckets.SelectMany(bucket => bucket).Single(header => header.FileNameHash == HashFileName($"/param/generatorparam_{parsedMap.FileName}.param"));
-                            var generatorBytes = generatorHeader.ReadFile(bdt);
-                            var generatorData = PARAM.Read(generatorBytes);
-                            generatorData.ApplyParamdef(PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_PARAM.xml"));
-                            LoadMapLocationData(mapData, generatorData, parsedMap);
-                        }
+                        generatorData.ApplyParamdef(PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_PARAM.xml"));
+                        LoadMapLocationData(mapData, generatorData, parsedMap);
                     }
                 }
             }
+
+            ClearDataFileCache();
         }
 
         private static BND4 ReadRegulationFile(string path)
@@ -114,6 +103,73 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam2_Chr")).Bytes = itemLotParamChr.Write();
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam2_Other")).Bytes = itemLotParamOther.Write();
             regulationFile.Write(Path.Combine(saveDir, "enc_regulation.bnd.dcx"));
+
+            if (!TryReadPackedFile("/menu/text/english/itemname.fmg", (bytes) => FMG.Read(bytes), out var itemNamesFMG))
+            {
+                return;
+            }
+
+            foreach (var map in Map.DS3Maps.Values)
+            {
+                foreach (var itemLocation in map.ItemLocations)
+                {
+                    foreach (var itemSlot in itemLocation.Slots)
+                    {
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemNamesFMG[itemSlot.ItemId]}: {map.FriendlyName}"]);
+                    }
+                }
+            }
+
+            ClearDataFileCache();
+        }
+
+        private Dictionary<string, (BHD5, FileStream)> ds2DataFileCache = new Dictionary<string, (BHD5, FileStream)>();
+
+        private (BHD5, FileStream) ReadDS2DataFile(string fileName, string key)
+        {
+            if (ds2DataFileCache.TryGetValue(fileName, out var streams))
+            {
+                return streams;
+            }
+
+            using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{fileName}.bhd", key);
+            var bhd = BHD5.Read(bhdStream, BHD5.Game.DarkSouls2);
+            var bdt = File.OpenRead($@"{rootDir}\{fileName}.bdt");
+            ds2DataFileCache[fileName] = (bhd, bdt);
+            return (bhd, bdt);
+        }
+
+        private void ClearDataFileCache()
+        {
+            foreach (var (_, bdt) in ds2DataFileCache.Values)
+            {
+                bdt.Dispose();
+            }
+
+            ds2DataFileCache.Clear();
+        }
+
+        private bool TryReadPackedFile<T>(string packedFilePath, Func<byte[], T> reader, [NotNullWhen(returnValue: true)] out T? result)
+        {
+            foreach (var dataFileAndKey in LoadDS2Keys())
+            {
+                var (bhd, bdt) = ReadDS2DataFile(dataFileAndKey.Item1, dataFileAndKey.Item2);
+
+                foreach (var bucket in bhd.Buckets)
+                {
+                    foreach (var header in bucket)
+                    {
+                        if (header.FileNameHash == HashFileName(packedFilePath))
+                        {
+                            result = reader(header.ReadFile(bdt))!;
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            result = default;
+            return false;
         }
 
         private void LoadMapLocationData(MSB2 mapData, PARAM generatorData, Map parsedMap)
@@ -203,8 +259,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             return filesAndKeys;
         }
 
-        private static List<string> mapFiles = new List<string>
-        {
+        private static readonly List<string> mapFiles =
+        [
             "/map/m10_02_00_00/m10_02_00_00.msb",
             "/map/m10_04_00_00/m10_04_00_00.msb",
             "/map/m10_10_00_00/m10_10_00_00.msb",
@@ -233,10 +289,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             "/map/m50_36_00_00/m50_36_00_00.msb",
             "/map/m50_37_00_00/m50_37_00_00.msb",
             "/map/m50_38_00_00/m50_38_00_00.msb",
-        };
+        ];
 
         // Id ranges from vawser's DS2-Scrambler
-        private static readonly Dictionary<(string, int), int> entityItemLots = new Dictionary<(string, int), int>()
+        private static readonly Dictionary<(string, int), int> entityItemLots = new()
         {
             // Boss drops (item lots 100000-900000)
             { ("m10_14_00_00", 2500), 106000 },
@@ -283,5 +339,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             // Other?
             { ("m10_10_00_00", 86), 1751000 }, // Cale gives House Key
         };
+
+        public const int EstusFlaskLot = 1700000;
     }
 }

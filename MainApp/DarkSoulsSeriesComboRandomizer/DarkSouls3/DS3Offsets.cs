@@ -15,6 +15,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         // BaseC in public ce table
         public const string GameManAOB = "48 8B ? ? ? ? 04 89 48 28 C3";
 
+        public const string MenuManAOB = "48 8B 0D ?? ?? ?? ?? 33 C0 48 39 81 ?? ?? ?? ?? 0F 95 C0 C3";
+
         public const string SprjLuaEventManAOB = "48 83 3D ? ? ? ? 00 48 8B F9 0F 84 ? ? ? ? 48";
 
         public const string SprjEventFlagManAOB = "48 8B 0D ? ? ? ? 44 0F B6 CB 41 B8 07 00 00 00 8B D6";
@@ -36,6 +38,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Settings = 0x58,
             ClearCount = 0x78,
             PlayTime = 0xA4,
+        }
+
+        public enum MenuMan
+        {
+            StartMenuFlag = 0x54,
+            CharacterCreationMenuFlag = 0xC8
         }
 
         public enum PlayerGameData
