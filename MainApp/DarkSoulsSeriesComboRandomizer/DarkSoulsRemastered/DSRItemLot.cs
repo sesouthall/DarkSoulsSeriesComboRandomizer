@@ -112,7 +112,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             this.type = type;
         }
 
-        public static DSRItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM? fullItemLotParamTable)
+        public static DSRItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM fullItemLotParamTable)
         {
             if (lotCache.ContainsKey(itemLot.ID))
             {
@@ -148,7 +148,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
                 if (weight > 0)
                 {
-                    tempSlots.Add(new LotSlot(SoulsGame.DSR, itemId, parsedCategory, weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
+                    tempSlots.Add(new LotSlot(SoulsGame.DSR, itemId, parsedCategory, weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == -1));
                 }
             }
 

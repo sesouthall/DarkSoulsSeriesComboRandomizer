@@ -154,7 +154,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             PARAM.Row? itemLot;
             while ((itemLot = itemLotParam?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
-                yield return DSRItemLot.Parse(itemLot, lotTypeGuess, itemLotParam);
+                yield return DSRItemLot.Parse(itemLot, lotTypeGuess, itemLotParam!);
                 itemLotNumber++;
             }
         }

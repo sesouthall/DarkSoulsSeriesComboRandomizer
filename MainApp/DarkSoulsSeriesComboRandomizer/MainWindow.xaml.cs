@@ -31,6 +31,8 @@ namespace DarkSoulsSeriesComboRandomizer
             InitializeSeed();
             PopulateSaveList();
             UpdatePlayButton();
+
+            CrossGameMappings.Initialize();
         }
 
         // ── Initialisation helpers ────────────────────────────────────────────────

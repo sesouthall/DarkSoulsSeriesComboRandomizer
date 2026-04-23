@@ -34,8 +34,6 @@ namespace DarkSoulsSeriesComboRandomizer
 
             CreateBonfireMappings();
 
-            CrossGameMappings.Initialize();
-
             // DSR uses direct file replacement. Just copy things over and save anything we're replacing.
             var ds1ModdedFilePath = Path.Combine("PreModdedGameFiles", "DSR");
             foreach (var file in Directory.GetFiles(ds1ModdedFilePath, "*", SearchOption.AllDirectories))
@@ -44,7 +42,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 var backupFile = file.Replace(ds1ModdedFilePath, backupFolderPath);
                 if (File.Exists(vanillaFile))
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(backupFile));
+                    Directory.CreateDirectory(Path.GetDirectoryName(backupFile)!);
                     File.Move(vanillaFile, backupFile);
                 }
                 File.Copy(file, vanillaFile);
@@ -57,7 +55,7 @@ namespace DarkSoulsSeriesComboRandomizer
             foreach (var file in Directory.GetFiles(ds2ModdedFilePath, "*", SearchOption.AllDirectories))
             {
                 var destinationPath = file.Replace(ds2ModdedFilePath, ds2Root);
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
                 File.Copy(file, destinationPath);
             }
 
@@ -70,10 +68,10 @@ namespace DarkSoulsSeriesComboRandomizer
                 var backupPath = file.Replace(ds3ModdedFilePath, backupFolderPath);
                 if (File.Exists(destinationPath)) // Should be only DarkSoulsIII.exe
                 {
-                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath));
+                    Directory.CreateDirectory(Path.GetDirectoryName(backupPath)!);
                     File.Move(destinationPath, backupPath);
                 }
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
                 File.Copy(file, destinationPath);
             }
         }
@@ -188,6 +186,7 @@ The vanilla save belongs here: {saveFile}
 The backup folder should not have any files named {saveFileName}");
                     return;
                 }
+                Directory.CreateDirectory(Path.GetDirectoryName(backupFile)!);
                 File.Move(saveFile, backupFile);
             }
             // If there are no save files, there's nothing to back up
@@ -300,6 +299,7 @@ Please put the unrandomized save here: {randomizedSaveFileInVanillaSaveFolder}
 Please make sure there are no files named {saveFileName} in {backupFolderPath}");
                     return;
                 }
+                Directory.CreateDirectory(Path.GetDirectoryName(randomizedSaveFileInRandomizerSaveFolder)!);
                 File.Move(randomizedSaveFileInVanillaSaveFolder, randomizedSaveFileInRandomizerSaveFolder);
             }
             // No randomized save? Either this is a failing install for a new run, or something went very wrong with your game
@@ -318,7 +318,7 @@ Please make sure there are no files named {saveFileName} in {backupFolderPath}")
             {
                 var backedUpVanillaSave = possibleBackedUpSaves.Single();
                 var vanillaSave = backedUpVanillaSave.Replace(backupFolderPath, vanillaSaveFolder);
-                File.Move(backupFolderPath, vanillaSaveFolder);
+                File.Move(backedUpVanillaSave, vanillaSave);
             }
             // No backed-up save? It must not have existed when the randomizer launched.
         }

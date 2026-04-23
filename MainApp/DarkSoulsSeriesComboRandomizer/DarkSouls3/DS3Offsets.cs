@@ -15,7 +15,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         // BaseC in public ce table
         public const string GameManAOB = "48 8B ? ? ? ? 04 89 48 28 C3";
 
-        public const string MenuManAOB = "48 8B 0D ?? ?? ?? ?? 33 C0 48 39 81 ?? ?? ?? ?? 0F 95 C0 C3";
+        public const string MenuManAOB = "48 8B 0D ? ? ? ? 33 C0 48 39 81 ? ? ? ? 0F 95 C0 C3";
 
         public const string SprjLuaEventManAOB = "48 83 3D ? ? ? ? 00 48 8B F9 0F 84 ? ? ? ? 48";
 
