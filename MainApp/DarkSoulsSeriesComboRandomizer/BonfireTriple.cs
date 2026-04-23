@@ -21,6 +21,11 @@ namespace DarkSoulsSeriesComboRandomizer
             var result = new List<BonfireTriple>();
             foreach (string line in lines)
             {
+                if (line.StartsWith('#'))
+                {
+                    continue;
+                }
+
                 var bonfireNames = line.Split(',');
                 if (bonfireNames.Length != 3)
                 {

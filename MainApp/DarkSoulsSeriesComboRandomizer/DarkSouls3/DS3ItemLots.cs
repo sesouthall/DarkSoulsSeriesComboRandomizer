@@ -62,10 +62,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
             RegulationDecryptor.EncryptDS3Regulation(Path.Combine(saveDir, "Data0.bdt"), regulationFile);
 
-            if (!TryReadPackedFile("/msg/engus/item_dlc2.msgbnd.dcx", (bytes) => BND4.Read(bytes), out var itemTextFile))
-            {
-                return;
-            }
+            var itemTextFile = BND4.Read(Path.Combine(rootDir, "ComboRandomizer", "msg", "engus", "item_dlc2.msgbnd"));
 
             var weaponNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(WeaponNameFMGFileName)).Bytes);
             var armorNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(ArmorNameFMGFileName)).Bytes);

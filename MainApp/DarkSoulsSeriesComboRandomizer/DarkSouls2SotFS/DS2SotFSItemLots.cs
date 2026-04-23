@@ -104,12 +104,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam2_Other")).Bytes = itemLotParamOther.Write();
             regulationFile.Write(Path.Combine(saveDir, "enc_regulation.bnd.dcx"));
 
-            if (!TryReadPackedFile("/menu/text/english/itemname.fmg", (bytes) => FMG.Read(bytes), out var itemNamesFMG))
-            {
-                return;
-            }
+            var itemNamesFMG = FMG.Read(Path.Combine(rootDir, "ComboRandomizer", "menu", "text", "english", "itemname.fmg"));
 
-            foreach (var map in Map.DS3Maps.Values)
+            foreach (var map in Map.DS2Maps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {

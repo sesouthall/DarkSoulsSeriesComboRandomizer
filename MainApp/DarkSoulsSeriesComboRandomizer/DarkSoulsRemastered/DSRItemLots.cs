@@ -64,7 +64,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             var accessoryNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(AccessoryNameFMGFileName)).Bytes);
             var goodsNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(GoodsNameFMGFileName)).Bytes);
 
-            foreach (var map in Map.DS3Maps.Values)
+            foreach (var map in Map.DSRMaps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {

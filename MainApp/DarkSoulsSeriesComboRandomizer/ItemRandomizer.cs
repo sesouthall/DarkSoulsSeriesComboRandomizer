@@ -139,18 +139,10 @@
                 }
 
                 // Find reachable, unclaimed Treasure/Boss lots
-                var candidates = startMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure);
-                if (candidates.Count == 0)
-                {
-                    throw new Exception("Ran out of slots before keys!");
-                }
-
-                var targetLot = candidates[random.Next(candidates.Count)];
-                while (!targetLot.CanTake())
-                {
-                    targetLot = candidates[random.Next(candidates.Count)];
-                }
-
+                var targetLot = startMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                    .OrderBy(_ => random.Next())
+                    .FirstOrDefault(lot => lot.CanTake()) ?? throw new Exception("Ran out of slots before keys!");
+                
                 keyQueue.Enqueue(keyToPlace.Slot);
                 targetLot.TakeItems(keyQueue);
                 keyToPlace.Key.Collect();

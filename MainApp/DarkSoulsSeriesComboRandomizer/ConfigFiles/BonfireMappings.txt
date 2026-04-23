@@ -1,4 +1,5 @@
-﻿Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash
+﻿# Use this file to list the bonfires to connect. Supported bonfire names can be found in either of the dll mods in BonfireTableParser.cpp.
+Undead Asylum Courtyard,Fire Keepers' Dwelling,Cemetery of Ash
 Firelink Shrine (DS1),The Far Fire,Firelink Shrine (DS3)
 Anor Londo (DS1),King's Gate,Central Irithyll
 Stone Dragon,Dragon Aerie,Archdragon Peak

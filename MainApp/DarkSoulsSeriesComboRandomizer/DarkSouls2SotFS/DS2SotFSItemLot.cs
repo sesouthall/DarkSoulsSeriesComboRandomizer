@@ -119,6 +119,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 // but that shouldn't break anything, it'll just cause the enemy to always
                 // drop something, potentially multiple things.
                 originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
+                i++;
             }
         }
     }
