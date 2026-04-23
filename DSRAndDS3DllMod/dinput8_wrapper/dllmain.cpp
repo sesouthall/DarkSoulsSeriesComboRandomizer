@@ -30,12 +30,12 @@ std::thread begin_thread;
 
 extern "C" UINT_PTR directinput_create_proc = 0;
 extern "C" __declspec(dllexport) HRESULT __cdecl DirectInput8Create(HINSTANCE hinst, DWORD dwVersion, REFIID riidltf, LPVOID * ppvOut, LPUNKNOWN punkOuter);
-extern "C" void custom_texture_load();
-extern uint64_t ContinueTextureLoadingAtAddress;
-extern uint64_t AtomicIncrementAddress;
-extern uint64_t FUN_140e60160Address;
-extern uint64_t FUN_140e5f650Address;
-extern uint64_t DAT_144799990Address;
+//extern "C" void custom_texture_load();
+//extern uint64_t ContinueTextureLoadingAtAddress;
+//extern uint64_t AtomicIncrementAddress;
+//extern uint64_t FUN_140e60160Address;
+//extern uint64_t FUN_140e5f650Address;
+//extern uint64_t DAT_144799990Address;
 static decltype(&DirectInput8Create) original_dinput8_create;
 
 BonfireTable* parsedMappings;
@@ -241,9 +241,6 @@ bool Begin(uint64_t qModuleHandle)
         return false;
     }
 
-    // Uncomment these lines to create a console and allow console output for debugging
-    AllocConsole();
-    freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
     printf_s("Working fine so far\n");
 
     Game::init();
@@ -297,10 +294,42 @@ bool Begin(uint64_t qModuleHandle)
     return true;
 };
 
+// Network block code copied from Katalash's ModEngine
+typedef int(__stdcall* WSASTARTUP)(WORD, void*);
+
+WSASTARTUP fpWsaStartup = NULL;
+
+// block windows sockets from ever being initialized
+INT __stdcall tWSAStartup(WORD wVersionRequested, void* lpWSAData)
+{
+    return 10091L; // WSASYSNOTREADY
+}
+
+bool BlockNetworkConnection()
+{
+    if (MH_CreateHookApi(L"ws2_32", "WSAStartup", &tWSAStartup, reinterpret_cast<LPVOID*>(&fpWsaStartup)) != MH_OK)
+    {
+        printf_s("Failed to create network block hook\n");
+        return false;
+    }
+
+    if (MH_EnableHook((LPVOID)GetProcAddress(GetModuleHandleW(L"ws2_32"), "WSAStartup")) != MH_OK)
+    {
+        printf_s("Failed to enable network block hook\n");
+        return false;
+    }
+
+    printf_s("WSAStartup blocked\n");
+    return true;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
     switch (fdwReason) {
         case (DLL_PROCESS_ATTACH): {
+            // Uncomment the two lines below to enable debug logging
+            AllocConsole();
+            freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
 #ifdef DSR
             dearxan::neuter_arxan([](const dearxan::DearxanResult& result)
                 {
@@ -313,6 +342,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                         printf_s("Failed to disable Arxan! Error: %s\n", result.error_msg().c_str());
                     }
                 });
+
+            Hook::HookManager::GetInstance()->Initialize();
+
+            printf_s("Attempting to block network\n");
+            if (!BlockNetworkConnection())
+            {
+                printf_s("Failed to block network\n");
+            }
 #endif // DSR
             DisableThreadLibraryCalls(hinstDLL);
             begin_thread = std::thread(Begin, (uint64_t)hinstDLL);
