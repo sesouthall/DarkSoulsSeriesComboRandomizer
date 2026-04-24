@@ -82,20 +82,20 @@ namespace DarkSoulsItemMigrator
                 var sourceParam = PARAM.Read(ParamBnd.Files.Single(f => itemType.ParamFileLookupPattern.IsMatch(f.Name)).Bytes);
                 sourceParam.ApplyParamdef(PARAMDEF.XmlDeserialize(itemType.ParamdefPath));
 
-                var nameFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.NameFmgName}")).Bytes);
-                var longDescFmg = FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.LongDescFmgName}")).Bytes);
-                FMG? descFmg = itemType.DescFmgName != null
-                    ? FMG.Read(ItemMsgBnd.Files.First(f => f.Name.Contains($"\\{itemType.DescFmgName}")).Bytes)
-                    : null;
+                var nameFmgs = ItemMsgBnd.Files.Where(f => f.Name.Contains($"\\{itemType.NameFmgName}")).Select(file => FMG.Read(file.Bytes)).ToList();
+                var longDescFmgs = ItemMsgBnd.Files.Where(f => f.Name.Contains($"\\{itemType.LongDescFmgName}")).Select(file => FMG.Read(file.Bytes)).ToList();
+                var descFmgs = itemType.DescFmgName != null
+                    ? ItemMsgBnd.Files.Where(f => f.Name.Contains($"\\{itemType.DescFmgName}")).Select(file => FMG.Read(file.Bytes)).ToList()
+                    : new List<FMG>();
 
                 foreach (var row in sourceParam.Rows)
                 {
                     if (row.ID >= itemType.SkipFromId) continue;
 
                     yield return new SourceItem(
-                        Name: nameFmg[row.ID],
-                        Desc: descFmg?[row.ID] ?? string.Empty,
-                        LongDesc: longDescFmg[row.ID],
+                        Name: nameFmgs.FirstOrDefault(fmg => fmg[row.ID] != null)?[row.ID] ?? string.Empty,
+                        Desc: descFmgs.FirstOrDefault(fmg => fmg[row.ID] != null)?[row.ID] ?? string.Empty,
+                        LongDesc: longDescFmgs.FirstOrDefault(fmg => fmg[row.ID] != null)?[row.ID] ?? string.Empty,
                         SourceRow: row,
                         SourceGame: GameName,
                         SourceCategory: itemType.ParamName
