@@ -110,20 +110,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
-                    if (slot.SourceGame == SoulsGame.DS2S)
-                    {
-                        NewSlots.Add(slot);
-                    }
-                    else
-                    {
-                        var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS2S);
-                        NewSlots.Add(new LotSlot(SoulsGame.DS2S, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
-                    }
-                }
-                else if (!partialFill)
-                {
-                    ItemRandomizer.MissingItemCount++;
-                    //throw new Exception("Ran out of items!");
+                    NewSlots.Add(slot);
                 }
             }
         }
@@ -135,7 +122,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 int i = 0;
                 foreach (var slot in NewSlots)
                 {
-                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                    var resolvedId = slot.SourceGame == SoulsGame.DS2S ? slot.ItemId : CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS2S);
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DS2 weights are direct percentages
                     // Since we've already normalized the weights for a drop to add to 100,

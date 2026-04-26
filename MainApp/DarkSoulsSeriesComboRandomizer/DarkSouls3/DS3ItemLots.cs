@@ -205,7 +205,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Row? itemLot;
             while ((itemLot = itemLotParam.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
-                yield return DS3ItemLot.Parse(itemLot, lotTypeGuess);
+                yield return DS3ItemLot.Parse(itemLot, lotTypeGuess, itemLotParam);
                 itemLotNumber++;
             }
         }

@@ -196,20 +196,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
-                    if (slot.SourceGame == SoulsGame.DSR)
-                    {
-                        NewSlots.Add(slot);
-                    }
-                    else
-                    {
-                        var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DSR);
-                        NewSlots.Add(new LotSlot(SoulsGame.DSR, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
-                    }
-                }
-                else if (!partialFill)
-                {
-                    ItemRandomizer.MissingItemCount++;
-                    //throw new Exception("Ran out of items!");
+                    NewSlots.Add(slot);
                 }
             }
         }
@@ -221,12 +208,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 int i = 1;
                 foreach (var slot in NewSlots)
                 {
-                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                    var resolvedId = slot.SourceGame == SoulsGame.DSR ? slot.ItemId : CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DSR);
+                    var resolvedType = slot.SourceGame == SoulsGame.DSR ? slot.ItemType : SoulsItemType.Goods;
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish
                     // 100 seems more common, so use that.
                     originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
-                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = slot.ItemType;
+                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = resolvedType;
                     i++;
                 }
             }

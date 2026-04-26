@@ -88,7 +88,7 @@
             NewKey(138,  SoulsItemType.Accessory, SoulsGame.DSR, 2540,    [(MapName.NewLondoRuinsPostSeal, MapName.FourKings)]),                         // Covenant of Artorias
             NewKey(139,  SoulsItemType.Accessory, SoulsGame.DSR, 2670,    []),                                                                           // Orange Charred Ring
             NewKey(149,  SoulsItemType.Accessory, SoulsGame.DSR, 1300020, []),                                                                           // Darkmoon Seance Ring
-            NewKey(384,  SoulsItemType.Accessory, SoulsGame.DSR, 1810080, [(MapName.AnorLondo, MapName.PaintedWorld)]),                                  // Peculiar Doll
+            NewKey(384,  SoulsItemType.Goods, SoulsGame.DSR, 1810080, [(MapName.AnorLondo, MapName.PaintedWorld)]),                                      // Peculiar Doll
         ];
 
         public static readonly IReadOnlyList<Key> DS2SotFSKeys =
@@ -106,7 +106,7 @@
             NewKey(50870000, SoulsItemType.Goods, SoulsGame.DS2S, 75400500, [(MapName.Majula, MapName.LenigrastsHouse)]),                                             // Lenigrast's Key (TODO: Add Lenigrast's store)
             NewKey(50890000, SoulsItemType.Goods, SoulsGame.DS2S, 60006000, []),                                                                                      // Rotunda Lockstone
             NewKey(50900000, SoulsItemType.Goods, SoulsGame.DS2S, 309700,   [(MapName.DrangleicCastleThroneOfWant, MapName.Nashandra)]),                              // Giant's Kinship
-            NewKey(50910000, SoulsItemType.Goods, SoulsGame.DS2S, 1787000,  [(MapName.ForestOfFallenGiantsPostSoldierKey, MapName.MemoryOfVammarOrroAndJeigh),
+            NewKey(50910000, SoulsItemType.Goods, SoulsGame.DS2S, 600000,   [(MapName.ForestOfFallenGiantsPostSoldierKey, MapName.MemoryOfVammarOrroAndJeigh),
                                                                              (MapName.BrightstoneCoveTseldora, MapName.DragonMemories),
                                                                              (MapName.UndeadCrypt, MapName.MemoryOfTheKing) ]),                                       // Ashen Mist Heart
             NewKey(50930000, SoulsItemType.Goods, SoulsGame.DS2S, 1742000,  [(MapName.BrightstoneCoveTseldora, MapName.TseldoraDen)]),                                // Tseldora Den Key
@@ -135,11 +135,14 @@
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10106420, [(MapName.ShadedWoodsShrineOfWinter, MapName.LionMageSetChest)]),                         // Fragrant Branch of Yore
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10275050, [(MapName.ShadedWoodsShrineOfWinter, MapName.FangKeyLion)]),                              // Fragrant Branch of Yore
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10165140, [(MapName.ShrineOfAmana, MapName.RiseOfTheDead)]),                                        // Fragrant Branch of Yore
+            NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 1140300,  []),                                                                                      // Fragrant Branch of Yore
+            NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 1153100,  []),                                                                                      // Fragrant Branch of Yore
+            NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 2240100,  []),                                                                                      // Fragrant Branch of Yore
         ];
 
         public static readonly IReadOnlyList<Key> DS3Keys =
         [
-            NewKey(2001, SoulsItemType.Goods, SoulsGame.DS3, 60910,   [(MapName.HighWallOfLothricGarden, MapName.DarkwraithCell)]),                 // Lift Chamber Key
+            NewKey(2001, SoulsItemType.Goods, SoulsGame.DS3, 50902,   [(MapName.HighWallOfLothricGarden, MapName.DarkwraithCell)]),                 // Lift Chamber Key
             NewKey(2005, SoulsItemType.Goods, SoulsGame.DS3, 2110,    [(MapName.CatacombsCarthusSmoulderingLake, MapName.IrithyllAnorLondo)]),      // Small Doll
             NewKey(2007, SoulsItemType.Goods, SoulsGame.DS3, 3900040, [(MapName.DungeonProfanedCapital, MapName.LedgeOutsideJailbreakersWindow)]),  // Jailbreaker's Key
             NewKey(2008, SoulsItemType.Goods, SoulsGame.DS3, 3900520, [(MapName.DungeonProfanedCapital, MapName.JailCells)]),                       // Jailer's Key Ring (TODO: Add Karla's shop)
@@ -149,7 +152,7 @@
             NewKey(2013, SoulsItemType.Goods, SoulsGame.DS3, 110025,  [(MapName.CemetaryFirelinkUntendedGraves, MapName.FirelinkTower)]),           // Tower Key
             NewKey(2014, SoulsItemType.Goods, SoulsGame.DS3, 57000,   [(MapName.LothricCastle, MapName.GrandArchives)]),                            // Grand Archives Key
             //NewKey(2015, SoulsItemType.Goods, SoulsGame.DS3, 51600,   [(MapName.CemetaryFirelinkUntendedGraves, MapName.FirelinkTower)]),           // Tower Key (copy dropped by Irena if you kill her, ignoring for now)
-            NewKey(2102, SoulsItemType.Goods, SoulsGame.DS3, 62300,   [(MapName.HighWallOfLothricGarden, MapName.UndeadSettlement)]),               // Small Lothric Banner
+            NewKey(2102, SoulsItemType.Goods, SoulsGame.DS3, 52300,   [(MapName.HighWallOfLothricGarden, MapName.UndeadSettlement)]),               // Small Lothric Banner
             NewKey(2123, SoulsItemType.Goods, SoulsGame.DS3, 2100,    [(MapName.CemetaryFirelinkUntendedGraves, MapName.FirstCinders)]),            // Cinders of a Lord (Abyss Watchers)
             NewKey(2124, SoulsItemType.Goods, SoulsGame.DS3, 2130,    [(MapName.FirstCinders, MapName.SecondCinders)]),                             // Cinders of a Lord (Aldrich)
             NewKey(2125, SoulsItemType.Goods, SoulsGame.DS3, 2170,    [(MapName.SecondCinders, MapName.ThirdCinders)]),                             // Cinders of a Lord (Yhorm)

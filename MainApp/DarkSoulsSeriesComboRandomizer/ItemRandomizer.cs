@@ -39,8 +39,6 @@
     /// </summary>
     public static class ItemRandomizer
     {
-        public static int MissingItemCount = 0;
-
         // ------------------------------------------------------------------ //
         //  Internal types
         // ------------------------------------------------------------------ //
@@ -91,7 +89,6 @@
                 .ToDictionary(
                 grouping => grouping.Key,
                 grouping => grouping.SelectMany(lot => lot.OriginalSlots.Where(slot => !slot.IsEmptyItem && !IsKey(slot, allKeys)))
-                    .Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount))
                     .ToList());
 
             // I'm not parsing shops or most npc events. Don't randomize those keys.
@@ -179,11 +176,6 @@
             {
                 itemLot.TakeItems(shuffledGeneral);
             }
-
-            var nonRandomLots = allLots.Where(lot => lot.LotType != LotType.RandomEnemyDrop && lot.LotType != LotType.Store).ToList();
-            var allOriginalItems = nonRandomLots.SelectMany(lot => lot.OriginalSlots);
-            var allNewItems = nonRandomLots.SelectMany(lot => lot.NewSlots);
-            var missingItems = allOriginalItems.Except(allNewItems).ToList();
 
             // ---- Phase 4: write each lot ------------------------------------
             foreach (var lot in allLots)

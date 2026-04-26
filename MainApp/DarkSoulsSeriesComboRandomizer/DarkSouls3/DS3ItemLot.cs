@@ -1,9 +1,17 @@
-﻿using static SoulsFormats.PARAM;
+﻿using SoulsFormats;
+using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
     public class DS3ItemLot : IItemLot
     {
+        private static readonly List<HashSet<int>> linkedItemLots = new()
+        {
+            new() { 52300, 62300 },
+            new() { 52302, 62320 },
+            new() { 50902, 60910 }
+        };
+
         private const string ItemIdFieldPattern = "ItemLotId{0}";
         private const string ItemCategoryFieldPattern = "LotItemCategory0{0}";
         private const string ItemWeightFieldPattern = "LotItemBasePoint0{0}";
@@ -12,7 +20,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         public readonly int ID;
         public List<LotSlot> OriginalSlots;
         public List<LotSlot> NewSlots;
-        private readonly Row originalRow;
+        private readonly List<Row> originalRows;
         public LotType type;
 
         private static Dictionary<int, DS3ItemLot> lotCache = new();
@@ -27,16 +35,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         SoulsGame IItemLot.Game => SoulsGame.DS3;
 
-        internal DS3ItemLot(List<LotSlot> slots, Row originalRow, LotType type)
+        internal DS3ItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type)
         {
-            ID = originalRow.ID;
+            ID = originalRows.First().ID;
             OriginalSlots = slots;
             NewSlots = new List<LotSlot>(OriginalSlots.Count);
-            this.originalRow = originalRow;
+            this.originalRows = originalRows;
             this.type = type;
         }
 
-        public static DS3ItemLot Parse(Row itemLot, LotType lotTypeGuess)
+        public static DS3ItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM fullItemLotParamTable)
         {
             if (lotCache.TryGetValue(itemLot.ID, out DS3ItemLot? value))
             {
@@ -75,9 +83,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 slots.Reverse();
             }
 
+            // Sometimes two item lots are linked. e.g. Oscar gives the Asylum F2 East key in dialog, or on death.
+            // In those cases, link the equivalent lots, so that they always contain the same item.
+            var linkedLotIds = linkedItemLots.SingleOrDefault(set => set.Contains(itemLot.ID)) ?? new HashSet<int> { itemLot.ID };
+            var linkedLots = linkedLotIds.Select(lotId => fullItemLotParamTable.Rows.Single(row => row.ID == lotId)).ToList();
+
             var actualLotType = lotTypeGuess == LotType.UnspecifiedEnemy ? slots.Count > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop : lotTypeGuess;
-            var parsed = new DS3ItemLot(slots, itemLot, actualLotType);
-            lotCache[itemLot.ID] = parsed;
+            var parsed = new DS3ItemLot(slots, linkedLots, actualLotType);
+            foreach (var linkedLot in linkedLots)
+            {
+                lotCache[linkedLot.ID] = parsed;
+            }
             return parsed;
         }
 
@@ -103,38 +119,30 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
-                    if (slot.SourceGame == SoulsGame.DS3)
-                    {
-                        NewSlots.Add(slot);
-                    }
-                    else
-                    {
-                        var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS3);
-                        NewSlots.Add(new LotSlot(SoulsGame.DS3, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
-                    }
-                }
-                else if (!partialFill)
-                {
-                    ItemRandomizer.MissingItemCount++;
-                    //throw new Exception("Ran out of items!");
+                    NewSlots.Add(slot);
                 }
             }
         }
 
         public void Write()
         {
-            int i = 1;
-            foreach (var slot in NewSlots)
+            foreach (var originalRow in originalRows)
             {
-                originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
-                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
-                // DS3 usually normalizes total weight to 1000.
-                // This may not add to 1000, but it should be close enough.
-                // If this is one of the few non-guaranteed drops that sums to 100 instead,
-                // congrats, you get lots of drops.
-                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight * 10;
-                originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = slot.ItemType;
-                i++;
+                int i = 1;
+                foreach (var slot in NewSlots)
+                {
+                    var resolvedId = slot.SourceGame == SoulsGame.DS3 ? slot.ItemId : CrossGameMappings.GetMappedItem(new(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS3);
+                    var resolvedType = slot.SourceGame == SoulsGame.DS3 ? slot.ItemType : SoulsItemType.Goods;
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
+                    originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
+                    // DS3 usually normalizes total weight to 1000.
+                    // This may not add to 1000, but it should be close enough.
+                    // If this is one of the few non-guaranteed drops that sums to 100 instead,
+                    // congrats, you get lots of drops.
+                    originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight * 10;
+                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = resolvedId;
+                    i++;
+                }
             }
         }
     }
