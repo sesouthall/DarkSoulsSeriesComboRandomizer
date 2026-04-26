@@ -131,8 +131,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 int i = 1;
                 foreach (var slot in NewSlots)
                 {
-                    var resolvedId = slot.SourceGame == SoulsGame.DS3 ? slot.ItemId : CrossGameMappings.GetMappedItem(new(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS3);
-                    var resolvedType = slot.SourceGame == SoulsGame.DS3 ? slot.ItemType : SoulsItemType.Goods;
+                    var (resolvedId, resolvedType) = slot.ResolveFor(SoulsGame.DS3);
                     originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DS3 usually normalizes total weight to 1000.

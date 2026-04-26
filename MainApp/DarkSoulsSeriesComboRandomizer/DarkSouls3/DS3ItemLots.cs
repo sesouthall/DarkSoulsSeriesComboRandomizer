@@ -73,14 +73,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.NewSlots)
+                    foreach (var itemSlot in itemLocation.NewSlots.Where(slot => !slot.IsEmptyItem))
                     {
-                        var itemName = itemSlot.ItemType switch
+                        var (resolvedId, resolvedType) = itemSlot.ResolveFor(SoulsGame.DS3);
+                        var itemName = resolvedType switch
                         {
-                            SoulsItemType.Weapon => weaponNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
-                            SoulsItemType.Armor => armorNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
-                            SoulsItemType.Accessory => accessoryNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
-                            SoulsItemType.Goods => goodsNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
+                            SoulsItemType.Weapon => weaponNameFMG.FirstOrDefault(fmg => fmg[resolvedId] != null)?[resolvedId] ?? string.Empty,
+                            SoulsItemType.Armor => armorNameFMG.FirstOrDefault(fmg => fmg[resolvedId] != null)?[resolvedId] ?? string.Empty,
+                            SoulsItemType.Accessory => accessoryNameFMG.FirstOrDefault(fmg => fmg[resolvedId] != null)?[resolvedId] ?? string.Empty,
+                            SoulsItemType.Goods => goodsNameFMG.FirstOrDefault(fmg => fmg[resolvedId] != null)?[resolvedId] ?? string.Empty,
                             _ => ""
                         };
                         File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);

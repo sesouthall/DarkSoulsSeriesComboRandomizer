@@ -68,14 +68,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.NewSlots)
+                    foreach (var itemSlot in itemLocation.NewSlots.Where(slot => !slot.IsEmptyItem))
                     {
-                        var itemName = itemSlot.ItemType switch
+                        var (resolvedId, resolvedType) = itemSlot.ResolveFor(SoulsGame.DSR);
+                        var itemName = resolvedType switch
                         {
-                            SoulsItemType.Weapon => weaponNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Armor => armorNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Accessory => accessoryNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Goods => goodsNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Weapon => weaponNameFMG[resolvedId],
+                            SoulsItemType.Armor => armorNameFMG[resolvedId],
+                            SoulsItemType.Accessory => accessoryNameFMG[resolvedId],
+                            SoulsItemType.Goods => goodsNameFMG[resolvedId],
                             _ => ""
                         };
                         File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);

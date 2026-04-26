@@ -122,7 +122,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 int i = 0;
                 foreach (var slot in NewSlots)
                 {
-                    var resolvedId = slot.SourceGame == SoulsGame.DS2S ? slot.ItemId : CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS2S);
+                    var (resolvedId, resolvedType) = slot.ResolveFor(SoulsGame.DS2S);
                     originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DS2 weights are direct percentages

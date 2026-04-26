@@ -11,5 +11,16 @@
         int Weight,
         int Amount,
         bool IsEmptyItem = false
-    );
+    )
+    {
+        public (int, SoulsItemType) ResolveFor(SoulsGame game)
+        {
+            if (game == SourceGame)
+            {
+                return (ItemId, ItemType);
+            }
+
+            return (CrossGameMappings.GetMappedItem(new SoulsItem(SourceGame, ItemType, ItemId), game), SoulsItemType.Goods);
+        }
+    }
 }

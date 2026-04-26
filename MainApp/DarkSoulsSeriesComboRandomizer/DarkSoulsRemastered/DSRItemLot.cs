@@ -208,8 +208,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 int i = 1;
                 foreach (var slot in NewSlots)
                 {
-                    var resolvedId = slot.SourceGame == SoulsGame.DSR ? slot.ItemId : CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DSR);
-                    var resolvedType = slot.SourceGame == SoulsGame.DSR ? slot.ItemType : SoulsItemType.Goods;
+                    var (resolvedId, resolvedType) = slot.ResolveFor(SoulsGame.DSR);
                     originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish

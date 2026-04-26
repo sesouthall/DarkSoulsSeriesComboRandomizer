@@ -110,9 +110,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.NewSlots)
+                    foreach (var itemSlot in itemLocation.NewSlots.Where(slot => !slot.IsEmptyItem))
                     {
-                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemNamesFMG[itemSlot.ItemId]}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);
+                        var (resolvedId, resolvedType) = itemSlot.ResolveFor(SoulsGame.DS2S);
+                        var itemName = itemNamesFMG[resolvedId];
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);
                     }
                 }
             }
