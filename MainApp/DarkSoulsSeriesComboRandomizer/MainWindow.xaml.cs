@@ -265,14 +265,14 @@ namespace DarkSoulsSeriesComboRandomizer
                     _installer.InstallStaticChanges();
                 });
 
-                Dispatcher.Invoke(() => StatusText.Text = "Creating randomized regulation files…");
+                Dispatcher.Invoke(() => StatusText.Text = "Creating randomized item placements…");
 
                 await Task.Run(() =>
                 {
                     _installer.CreateRandomizedRegulationFilesIfNeeded();
                 });
 
-                Dispatcher.Invoke(() => StatusText.Text = "Installing regulation files…");
+                Dispatcher.Invoke(() => StatusText.Text = "Installing randomized item placements…");
 
                 await Task.Run(() =>
                 {
@@ -299,8 +299,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     });
                     return;
                 }
-
-                if (!saveBackupResults.Succeeded)
+                else if (!saveBackupResults.Succeeded)
                 {
                     MessageBox.Show(string.Join("\n\n", saveBackupResults.Errors), "Error with game saves", MessageBoxButton.OK, MessageBoxImage.Error);
                     _installer.Dispose();
@@ -315,12 +314,11 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 Dispatcher.Invoke(() => StatusText.Text = "Starting coordination server…");
 
-                MessageBox.Show(@"The mod will now launch each game, one at a time.
-Please set Dark Souls 1 to Offline Mode.
-If this is a new save, please create a character in each game. In DS2, proceed through character creation with the Fire Keepers.
-If this is an existing save, just load the existing characters.
-Once a character has been loaded, open the start menu. The game will be paused and minimized, and the next will start.
-Once all three games have loaded characters, DS1 will be resumed for new saves, or the last game you were in for existing saves.", "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("The mod will now launch each game, one at a time.\n" +
+"If this is a new save, please create a character in each game. In DS2, proceed through character creation with the Fire Keepers.\n" +
+"If this is an existing save, just load the existing characters.\n" +
+"Once a character has been loaded, open the start menu. The game will be paused and minimized, and the next will start.\n" +
+"Once all three games have loaded characters, DS1 will be resumed for new saves, or the last game you were in for existing saves.", "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 _server = new GameCoordinationServer(
                     DS1PathBox.Text,

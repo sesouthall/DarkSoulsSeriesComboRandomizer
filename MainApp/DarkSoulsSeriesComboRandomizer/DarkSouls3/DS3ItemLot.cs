@@ -140,7 +140,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                     // If this is one of the few non-guaranteed drops that sums to 100 instead,
                     // congrats, you get lots of drops.
                     originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight * 10;
-                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = resolvedId;
+                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = resolvedType;
                     i++;
                 }
             }
