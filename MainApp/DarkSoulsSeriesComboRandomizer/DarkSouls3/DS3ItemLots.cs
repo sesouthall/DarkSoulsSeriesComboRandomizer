@@ -62,33 +62,31 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             regulationFile.Files.Single(f => f.Name.Contains("ItemLotParam")).Bytes = itemLotParam.Write();
             RegulationDecryptor.EncryptDS3Regulation(Path.Combine(saveDir, "Data0.bdt"), regulationFile);
 
-            var itemTextFile = BND4.Read(Path.Combine(rootDir, "ComboRandomizer", "msg", "engus", "item_dlc2.msgbnd"));
+            var itemTextFile = BND4.Read(Path.Combine(rootDir, "ComboRandomizer", "msg", "engus", "item_dlc2.msgbnd.dcx"));
 
-            var weaponNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(WeaponNameFMGFileName)).Bytes);
-            var armorNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(ArmorNameFMGFileName)).Bytes);
-            var accessoryNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(AccessoryNameFMGFileName)).Bytes);
-            var goodsNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(GoodsNameFMGFileName)).Bytes);
+            var weaponNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(WeaponNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
+            var armorNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(ArmorNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
+            var accessoryNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(AccessoryNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
+            var goodsNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(GoodsNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
 
             foreach (var map in Map.DS3Maps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.Slots)
+                    foreach (var itemSlot in itemLocation.NewSlots)
                     {
                         var itemName = itemSlot.ItemType switch
                         {
-                            SoulsItemType.Weapon => weaponNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Armor => armorNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Accessory => accessoryNameFMG[itemSlot.ItemId],
-                            SoulsItemType.Goods => goodsNameFMG[itemSlot.ItemId],
+                            SoulsItemType.Weapon => weaponNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
+                            SoulsItemType.Armor => armorNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
+                            SoulsItemType.Accessory => accessoryNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
+                            SoulsItemType.Goods => goodsNameFMG.FirstOrDefault(fmg => fmg[itemSlot.ItemId] != null)?[itemSlot.ItemId] ?? string.Empty,
                             _ => ""
                         };
-                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName}"]);
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);
                     }
                 }
             }
-
-            ClearDataFileCache();
         }
 
         private Dictionary<string, (BHD5, FileStream)> ds3DataFileCache = new Dictionary<string, (BHD5, FileStream)>();
@@ -121,9 +119,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         {
             foreach (var dataFileAndKey in dataFilesAndKeys)
             {
-                using var bhdStream = CryptographyUtil.DecryptRsa($@"{rootDir}\{dataFileAndKey.Item1}.bhd", dataFileAndKey.Item2);
-                var bhd = BHD5.Read(bhdStream, BHD5.Game.DarkSouls3);
-                using var bdt = File.OpenRead($@"{rootDir}\{dataFileAndKey.Item1}.bdt");
+                var (bhd, bdt) = ReadDS3DataFile(dataFileAndKey.Item1, dataFileAndKey.Item2);
 
                 foreach (var bucket in bhd.Buckets)
                 {
@@ -207,7 +203,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private IEnumerable<DS3ItemLot> ParseItemLotChain(int itemLotNumber, LotType lotTypeGuess)
         {
             Row? itemLot;
-            while ((itemLot = itemLotParam?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
+            while ((itemLot = itemLotParam.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
                 yield return DS3ItemLot.Parse(itemLot, lotTypeGuess);
                 itemLotNumber++;

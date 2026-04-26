@@ -1,19 +1,27 @@
-﻿using static SoulsFormats.PARAM;
+﻿using SoulsFormats;
+using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
     public class DS2SotFSItemLot : IItemLot
     {
+        // Item lots that should always drop the same items. For example,
+        // the Persuer's main fight, and the one-time fight outside the
+        // Cardinal Tower bonfire.
+        private static readonly List<HashSet<int>> linkedItemLots = new()
+        {
+            new() {318000, 60008000},
+        };
+
         private const string ItemIdFieldPattern = "item_lot_{0}";
         private const string ItemWeightFieldPattern = "chance_lot_{0}";
         private const string ItemAmountFieldPattern = "amount_lot_{0}";
 
         public readonly int ID;
-        public List<LotSlot> Slots;
-        private readonly Row originalRow;
+        public List<LotSlot> OriginalSlots;
+        public List<LotSlot> NewSlots;
+        private readonly List<Row> originalRows;
         public LotType type;
-
-        private int nextSlotToFill = 0;
 
         private static Dictionary<int, DS2SotFSItemLot> lotCache = new();
 
@@ -21,23 +29,26 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         LotType IItemLot.LotType => type;
 
-        IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+        IReadOnlyList<LotSlot> IItemLot.OriginalSlots => OriginalSlots;
+
+        IReadOnlyList<LotSlot> IItemLot.NewSlots => NewSlots;
 
         SoulsGame IItemLot.Game => SoulsGame.DS2S;
 
-        private DS2SotFSItemLot(List<LotSlot> slots, Row originalRow, LotType type)
+        internal DS2SotFSItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type)
         {
-            ID = originalRow.ID;
-            Slots = slots;
-            this.originalRow = originalRow;
+            ID = originalRows.First().ID;
+            OriginalSlots = slots;
+            NewSlots = new List<LotSlot>(OriginalSlots.Count);
+            this.originalRows = originalRows;
             this.type = type;
         }
 
-        public static DS2SotFSItemLot Parse(Row itemLot, LotType lotTypeGuess)
+        public static DS2SotFSItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM fullItemLotParamTable)
         {
-            if (lotCache.ContainsKey(itemLot.ID))
+            if (lotCache.TryGetValue(itemLot.ID, out DS2SotFSItemLot? value))
             {
-                return lotCache[itemLot.ID];
+                return value;
             }
 
             // DS2 uses 10 (no item) to represent an empty item in the ItemLotParam2_Other table (treasure from chests, corpses, boss drops, etc.)
@@ -59,33 +70,41 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
             // DS2 drop chances are already normalized to 100, with an implicit empty drop picking up the rest of the drop chance
 
+            // Sometimes two item lots are linked. e.g. Oscar gives the Asylum F2 East key in dialog, or on death.
+            // In those cases, link the equivalent lots, so that they always contain the same item.
+            var linkedLotIds = linkedItemLots.SingleOrDefault(set => set.Contains(itemLot.ID)) ?? [itemLot.ID];
+            var linkedLots = linkedLotIds.Select(lotId => fullItemLotParamTable.Rows.Single(row => row.ID == lotId)).ToList();
+
             var actualLotType = lotTypeGuess == LotType.UnspecifiedEnemy ? slots.Count(slot => slot.Weight < 100) > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop : lotTypeGuess;
-            var parsed = new DS2SotFSItemLot(slots, itemLot, actualLotType);
-            lotCache[itemLot.ID] = parsed;
+            var parsed = new DS2SotFSItemLot(slots, linkedLots, actualLotType);
+            foreach (var linkedLot in linkedLots)
+            {
+                lotCache[linkedLot.ID] = parsed;
+            }
             return parsed;
         }
 
         public bool CanTake()
         {
-            return nextSlotToFill < Slots.Count;
+            return NewSlots.Count < OriginalSlots.Count;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems)
+        public void TakeItems(Queue<LotSlot> unassignedItems, bool partialFill = false)
         {
             // DS2 supports multiple drops from a single item lot, so guaranteed treasures can
             // have more than one item in them. That means a key can get assinged to a lot without
             // fully filling it. To support that, count each item as it's placed and don't start blocking
             // calls until all slots are filled.
-            if (nextSlotToFill >= Slots.Count)
+            if (NewSlots.Count >= OriginalSlots.Count)
             {
                 return;
             }
 
-            for (var i = 0; i < Slots.Count; i++)
+            for (var i = NewSlots.Count; i < OriginalSlots.Count; i++)
             {
-                if (Slots[i].IsEmptyItem)
+                if (OriginalSlots[i].IsEmptyItem)
                 {
-                    nextSlotToFill++;
+                    NewSlots.Add(OriginalSlots[i]);
                     continue;
                 }
 
@@ -93,33 +112,40 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 {
                     if (slot.SourceGame == SoulsGame.DS2S)
                     {
-                        Slots[i] = slot;
+                        NewSlots.Add(slot);
                     }
                     else
                     {
                         var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS2S);
-                        Slots[i] = new LotSlot(SoulsGame.DS2S, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
+                        NewSlots.Add(new LotSlot(SoulsGame.DS2S, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
                     }
-                    nextSlotToFill++;
+                }
+                else if (!partialFill)
+                {
+                    ItemRandomizer.MissingItemCount++;
+                    //throw new Exception("Ran out of items!");
                 }
             }
         }
 
         public void Write()
         {
-            int i = 0;
-            foreach (var slot in Slots)
+            foreach (var originalRow in originalRows)
             {
-                originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
-                originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
-                // DS2 weights are direct percentages
-                // Since we've already normalized the weights for a drop to add to 100,
-                // using them directly should be fine. If this is a drop table with lots
-                // of items and it picks up lots of common ones, it could go above 100
-                // but that shouldn't break anything, it'll just cause the enemy to always
-                // drop something, potentially multiple things.
-                originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
-                i++;
+                int i = 0;
+                foreach (var slot in NewSlots)
+                {
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
+                    originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
+                    // DS2 weights are direct percentages
+                    // Since we've already normalized the weights for a drop to add to 100,
+                    // using them directly should be fine. If this is a drop table with lots
+                    // of items and it picks up lots of common ones, it could go above 100
+                    // but that shouldn't break anything, it'll just cause the enemy to always
+                    // drop something, potentially multiple things.
+                    originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
+                    i++;
+                }
             }
         }
     }

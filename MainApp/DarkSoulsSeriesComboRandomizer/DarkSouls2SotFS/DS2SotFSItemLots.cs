@@ -110,9 +110,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.Slots)
+                    foreach (var itemSlot in itemLocation.NewSlots)
                     {
-                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemNamesFMG[itemSlot.ItemId]}: {map.FriendlyName}"]);
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemNamesFMG[itemSlot.ItemId]}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);
                     }
                 }
             }
@@ -189,7 +189,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 {
                     var eventItemLotNumber = entityItemLots[(parsedMap.FileName, enemy.ID)];
                     var lotType = GetEventLotType(eventItemLotNumber);
-                    AssignLotChainToCorrectMap(parsedMap, new List<IItemLot> { DS2SotFSItemLot.Parse(itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber), lotType) });
+                    AssignLotChainToCorrectMap(parsedMap, new List<IItemLot> { DS2SotFSItemLot.Parse(itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber), lotType, itemLotParamOther) });
                 }
             }
 
@@ -197,7 +197,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 var itemLotNumber = mapObject.MapObjectInstanceParamID;
                 if (itemLotNumber <= 0) continue; // No actual drop at this treasure
-                AssignLotChainToCorrectMap(parsedMap, ParseOtherItemLotChain((uint)itemLotNumber, LotType.UnspecifiedEnemy));
+                AssignLotChainToCorrectMap(parsedMap, ParseOtherItemLotChain((uint)itemLotNumber, LotType.Treasure));
             }
         }
 
@@ -225,9 +225,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private IEnumerable<DS2SotFSItemLot> ParseEnemyItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
         {
             Row? itemLot;
-            while ((itemLot = itemLotParamChr?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
+            while ((itemLot = itemLotParamChr.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
-                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess);
+                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess, itemLotParamChr);
                 itemLotNumber++;
             }
         }
@@ -235,9 +235,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private IEnumerable<DS2SotFSItemLot> ParseOtherItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
         {
             Row? itemLot;
-            while ((itemLot = itemLotParamOther?.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
+            while ((itemLot = itemLotParamOther.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
             {
-                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess);
+                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess, itemLotParamOther);
                 itemLotNumber++;
             }
         }

@@ -88,11 +88,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private const string ItemAmountFieldPattern = "lotItemNum0{0}";
 
         public readonly int ID;
-        public List<LotSlot> Slots;
+        public List<LotSlot> OriginalSlots;
+        public List<LotSlot> NewSlots;
         private readonly List<Row> originalRows;
         public LotType type;
-
-        private bool alreadyTaken = false;
 
         private static Dictionary<int, DSRItemLot> lotCache = new();
 
@@ -100,23 +99,26 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         LotType IItemLot.LotType => type;
 
-        IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+        IReadOnlyList<LotSlot> IItemLot.OriginalSlots => OriginalSlots;
+
+        IReadOnlyList<LotSlot> IItemLot.NewSlots => NewSlots;
 
         SoulsGame IItemLot.Game => SoulsGame.DSR;
 
-        private DSRItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type)
+        internal DSRItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type)
         {
             ID = originalRows.First().ID;
-            Slots = slots;
+            OriginalSlots = slots;
+            NewSlots = new List<LotSlot>(OriginalSlots.Count);
             this.originalRows = originalRows;
             this.type = type;
         }
 
         public static DSRItemLot Parse(Row itemLot, LotType lotTypeGuess, PARAM fullItemLotParamTable)
         {
-            if (lotCache.ContainsKey(itemLot.ID))
+            if (lotCache.TryGetValue(itemLot.ID, out DSRItemLot? value))
             {
-                return lotCache[itemLot.ID];
+                return value;
             }
 
             var slots = ParseLotSlots(itemLot);
@@ -174,35 +176,42 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public bool CanTake()
         {
-            return !alreadyTaken;
+            return NewSlots.Count < OriginalSlots.Count;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems)
+        public void TakeItems(Queue<LotSlot> unassignedItems, bool partialFill = false)
         {
-            if (alreadyTaken)
+            if (NewSlots.Count >= OriginalSlots.Count)
             {
                 return;
             }
 
-            for (var i = 0; i < Slots.Count; i++)
+            for (var i = 0; i < OriginalSlots.Count; i++)
             {
-                if (Slots[i].IsEmptyItem) continue;
+                if (OriginalSlots[i].IsEmptyItem)
+                {
+                    NewSlots.Add(OriginalSlots[i]);
+                    continue;
+                }
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
                     if (slot.SourceGame == SoulsGame.DSR)
                     {
-                        Slots[i] = slot;
+                        NewSlots.Add(slot);
                     }
                     else
                     {
                         var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DSR);
-                        Slots[i] = new LotSlot(SoulsGame.DSR, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
+                        NewSlots.Add(new LotSlot(SoulsGame.DSR, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
                     }
                 }
+                else if (!partialFill)
+                {
+                    ItemRandomizer.MissingItemCount++;
+                    //throw new Exception("Ran out of items!");
+                }
             }
-
-            alreadyTaken = true;
         }
 
         public void Write()
@@ -210,7 +219,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             foreach (var originalRow in originalRows)
             {
                 int i = 1;
-                foreach (var slot in Slots)
+                foreach (var slot in NewSlots)
                 {
                     originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;

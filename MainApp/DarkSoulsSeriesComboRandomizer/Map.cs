@@ -40,7 +40,6 @@
         FirstLordSoul,
         SecondLordSoul,
         ThirdLordSoul,
-        FourthLordSoul,
         KilnOfTheFirstFlame,
         NorthernUndeadAsylum,
         NorthernUndeadAsylumF2East,
@@ -74,7 +73,7 @@
         HiddenChamber,
         HavelArmorRoom,
         DragonAerieDragonShrine,
-        MajulaShadeWoods,
+        MajulaShadedWoods,
         HeidesTowerNomansWharf,
         FloodedPassageSideRoom,
         HeidesTowerOfFlame,
@@ -135,7 +134,7 @@
         PaintedWorldSecondHalf,
         DregHeap,
         RingedCity,
-        FilianloresRest,
+        FilianoresRest,
     }
 
     public static class MapNameExtensions
@@ -180,7 +179,6 @@
             MapName.FirstLordSoul => "First Lord Soul",
             MapName.SecondLordSoul => "Second Lord Soul",
             MapName.ThirdLordSoul => "Third Lord Soul",
-            MapName.FourthLordSoul => "Fourth Lord Soul",
             MapName.KilnOfTheFirstFlame => "Kiln of the First Flame",
             MapName.NorthernUndeadAsylum => "Northern Undead Asylum",
             MapName.NorthernUndeadAsylumF2East => "Northern Undead Asylum F2 East",
@@ -214,7 +212,7 @@
             MapName.HiddenChamber => "Hidden Chamber",
             MapName.HavelArmorRoom => "Havel Armor Room",
             MapName.DragonAerieDragonShrine => "Dragon Aerie & Dragon Shrine",
-            MapName.MajulaShadeWoods => "Majula <-> Shaded Woods",
+            MapName.MajulaShadedWoods => "Majula <-> Shaded Woods",
             MapName.HeidesTowerNomansWharf => "Heide's Tower <-> No-man's Wharf",
             MapName.FloodedPassageSideRoom => "Flooded Passage Side Room",
             MapName.HeidesTowerOfFlame => "Heide's Tower of Flame",
@@ -275,7 +273,7 @@
             MapName.PaintedWorldSecondHalf => "Painted World Second Half",
             MapName.DregHeap => "Dreg Heap",
             MapName.RingedCity => "Ringed City",
-            MapName.FilianloresRest => "Filianore's Rest",
+            MapName.FilianoresRest => "Filianore's Rest",
 
             _ => throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown MapName")
         };
@@ -330,7 +328,6 @@
             (MapName.FirstLordSoul,                       "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
             (MapName.SecondLordSoul,                      "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
             (MapName.ThirdLordSoul,                       "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
-            (MapName.FourthLordSoul,                      "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
             (MapName.KilnOfTheFirstFlame,                 "m18_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
             (MapName.NorthernUndeadAsylum,                "m18_01_00_00", SoulsGame.DSR, new List<string>{ "Undead Asylum Courtyard", "Undead Asylum Sewer" },                                                                 new List<MapName>{ }),
             (MapName.NorthernUndeadAsylumF2East,          "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ MapName.NorthernUndeadAsylum }),
@@ -365,7 +362,7 @@
         [
             (MapName.ThingsBetwixt,                        "m10_02_00_00", SoulsGame.DS2S, new List<string>{ "Fire Keepers' Dwelling" },                                                                       new List<MapName>{ MapName.Majula }),
             (MapName.ThingsBetwixtPostStatue,              "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ MapName.ThingsBetwixt }),
-            (MapName.Majula,                               "m10_04_00_00", SoulsGame.DS2S, new List<string>{ "The Far Fire" },                                                                                 new List<MapName>{ MapName.ThingsBetwixt, MapName.ForestOfFallenGiants, MapName.MajulaShadeWoods, MapName.HeidesTowerOfFlame, MapName.HuntsmansCopseUndeadPurgatory, MapName.GraveOfSaints }),
+            (MapName.Majula,                               "m10_04_00_00", SoulsGame.DS2S, new List<string>{ "The Far Fire" },                                                                                 new List<MapName>{ MapName.ThingsBetwixt, MapName.ForestOfFallenGiants, MapName.MajulaShadedWoods, MapName.HeidesTowerOfFlame, MapName.HuntsmansCopseUndeadPurgatory, MapName.GraveOfSaints }),
             (MapName.MajulaHouse,                          "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ MapName.Majula }),
             (MapName.LenigrastsHouse,                      "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ }),
             (MapName.DragonTalonRoom,                      "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ }),
@@ -391,7 +388,7 @@
             (MapName.HiddenChamber,                        "m00_00_00_00", SoulsGame.DS2S, new List<string>{ "Hidden Chamber" },                                                                               new List<MapName>{ MapName.TheGutterBlackGulch }),
             (MapName.HavelArmorRoom,                       "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ }),
             (MapName.DragonAerieDragonShrine,              "m10_27_00_00", SoulsGame.DS2S, new List<string>{ "Dragon Aerie", "Shrine Entrance" },                                                              new List<MapName>{ MapName.AldiasKeep }),
-            (MapName.MajulaShadeWoods,                     "m10_29_00_00", SoulsGame.DS2S, new List<string>{ "Old Akelarre" },                                                                                 new List<MapName>{ MapName.ShadedWoodsShrineOfWinter }),
+            (MapName.MajulaShadedWoods,                     "m10_29_00_00", SoulsGame.DS2S, new List<string>{ "Old Akelarre" },                                                                                 new List<MapName>{ MapName.ShadedWoodsShrineOfWinter }),
             (MapName.HeidesTowerNomansWharf,               "m10_30_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ MapName.HeidesTowerOfFlame, MapName.NomansWharf }),
             (MapName.FloodedPassageSideRoom,               "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ }),
             (MapName.HeidesTowerOfFlame,                   "m10_31_00_00", SoulsGame.DS2S, new List<string>{ "Heide's Ruin", "Tower of Flame", "The Blue Cathedral" },                                         new List<MapName>{ MapName.Majula, MapName.HeidesTowerNomansWharf }),
@@ -486,8 +483,8 @@
             (MapName.PaintedWorldOfAriandel,               "m45_00_00_00", SoulsGame.DS3, new List<string>{ "Snowfield", "Rope Bridge Cave", "Corvian Settlement", "Ariandel Chapel", "Sister Friede", "Depths of the Painting", "Champion's Gravetender" },                new List<MapName>{ }),
             (MapName.PaintedWorldSecondHalf,               "m00_00_00_00", SoulsGame.DS3, new List<string>{ "Snowy Mountain Pass" },                                                                                                                                        new List<MapName>{ MapName.PaintedWorldOfAriandel, MapName.DregHeap }),
             (MapName.DregHeap,                             "m50_00_00_00", SoulsGame.DS3, new List<string>{ "The Dreg Heap", "Earthen Peak Ruins", "Within the Earthen Peak Ruins", "The Deamon Prince" },                                                                  new List<MapName>{ }),
-            (MapName.RingedCity,                           "m51_00_00_00", SoulsGame.DS3, new List<string>{ "Mausoleum Lookout", "Ringed Inner Wall", "Ringed City Streets", "Shared Grave", "Church of Filianore", "Darkeater Midir" },                                    new List<MapName>{ MapName.FilianloresRest }),
-            (MapName.FilianloresRest,                      "m51_01_00_00", SoulsGame.DS3, new List<string>{ "Filianore's Rest", "Slave Knight Gael" },                                                                                                                      new List<MapName>{ }),
+            (MapName.RingedCity,                           "m51_00_00_00", SoulsGame.DS3, new List<string>{ "Mausoleum Lookout", "Ringed Inner Wall", "Ringed City Streets", "Shared Grave", "Church of Filianore", "Darkeater Midir" },                                    new List<MapName>{ MapName.FilianoresRest }),
+            (MapName.FilianoresRest,                      "m51_01_00_00", SoulsGame.DS3, new List<string>{ "Filianore's Rest", "Slave Knight Gael" },                                                                                                                      new List<MapName>{ }),
         ]);
 
         public static Dictionary<MapName, HashSet<int>> DS3NonDefaultMapItemLots = new()
@@ -506,7 +503,7 @@
 
         public static IReadOnlyDictionary<MapName, Map> AllMaps = DSRMaps.Concat(DS2Maps).Concat(DS3Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-        private Map(MapName name, string fileName, SoulsGame sourceGame, IReadOnlyList<string> bonfires)
+        internal Map(MapName name, string fileName, SoulsGame sourceGame, IReadOnlyList<string> bonfires)
         {
             Name = name;
             FriendlyName = name.ToFriendlyName();
@@ -602,12 +599,18 @@
 
         private void VisitAllConnectedMaps(Action<Map> visitor)
         {
-            Queue<Map> mapsToSearch = new Queue<Map>();
-            HashSet<Map> visitedMaps = new HashSet<Map>();
+            Queue<Map> mapsToSearch = new();
+            HashSet<Map> visitedMaps = [];
             mapsToSearch.Enqueue(this);
             while (mapsToSearch.Count > 0)
             {
                 var nextMap = mapsToSearch.Dequeue();
+                if (visitedMaps.Contains(nextMap))
+                {
+                    // There may be (are) multiple ways to reach each map, so it could get added to the queue
+                    // multiple times before being visited. Don't re-visit maps.
+                    continue;
+                }
                 visitor(nextMap);
                 visitedMaps.Add(nextMap);
                 foreach (var newMap in nextMap.connectedMaps.Where(connectedMap => !visitedMaps.Contains(connectedMap)))

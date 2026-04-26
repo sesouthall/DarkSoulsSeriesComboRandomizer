@@ -54,9 +54,9 @@ namespace DarkSoulsSeriesComboRandomizer
             }
             return destination switch
             {
-                SoulsGame.DSR => dsrMapping!.Single(kvp => kvp.Value == original).Key,
-                SoulsGame.DS2S => ds2Mapping!.Single(kvp => kvp.Value == original).Key,
-                SoulsGame.DS3 => ds3Mapping!.Single(kvp => kvp.Value == original).Key,
+                SoulsGame.DSR => dsrMapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
+                SoulsGame.DS2S => ds2Mapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
+                SoulsGame.DS3 => ds3Mapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
                 _ => throw new ArgumentOutOfRangeException(nameof(destination), $"{destination} is not a known SoulsGame")
             };
         }

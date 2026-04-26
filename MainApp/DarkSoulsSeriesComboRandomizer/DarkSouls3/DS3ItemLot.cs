@@ -1,5 +1,4 @@
-﻿using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
-using static SoulsFormats.PARAM;
+﻿using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
@@ -11,11 +10,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private const string ItemAmountFieldPattern = "LotItemNum{0}";
 
         public readonly int ID;
-        public List<LotSlot> Slots;
+        public List<LotSlot> OriginalSlots;
+        public List<LotSlot> NewSlots;
         private readonly Row originalRow;
         public LotType type;
-
-        private bool alreadyTaken = false;
 
         private static Dictionary<int, DS3ItemLot> lotCache = new();
 
@@ -23,23 +21,26 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         LotType IItemLot.LotType => type;
 
-        IReadOnlyList<LotSlot> IItemLot.Slots => Slots;
+        IReadOnlyList<LotSlot> IItemLot.OriginalSlots => OriginalSlots;
+
+        IReadOnlyList<LotSlot> IItemLot.NewSlots => NewSlots;
 
         SoulsGame IItemLot.Game => SoulsGame.DS3;
 
-        private DS3ItemLot(List<LotSlot> slots, Row originalRow, LotType type)
+        internal DS3ItemLot(List<LotSlot> slots, Row originalRow, LotType type)
         {
             ID = originalRow.ID;
-            Slots = slots;
+            OriginalSlots = slots;
+            NewSlots = new List<LotSlot>(OriginalSlots.Count);
             this.originalRow = originalRow;
             this.type = type;
         }
 
         public static DS3ItemLot Parse(Row itemLot, LotType lotTypeGuess)
         {
-            if (lotCache.ContainsKey(itemLot.ID))
+            if (lotCache.TryGetValue(itemLot.ID, out DS3ItemLot? value))
             {
-                return lotCache[itemLot.ID];
+                return value;
             }
 
             var tempSlots = new List<LotSlot>();
@@ -82,41 +83,48 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public bool CanTake()
         {
-            return !alreadyTaken;
+            return NewSlots.Count < OriginalSlots.Count;
         }
 
-        public void TakeItems(Queue<LotSlot> unassignedItems)
+        public void TakeItems(Queue<LotSlot> unassignedItems, bool partialFill = false)
         {
-            if (alreadyTaken)
+            if (NewSlots.Count >= OriginalSlots.Count)
             {
                 return;
             }
 
-            for (var i = 0; i < Slots.Count; i++)
+            for (var i = 0; i < OriginalSlots.Count; i++)
             {
-                if (Slots[i].IsEmptyItem) continue;
+                if (OriginalSlots[i].IsEmptyItem)
+                {
+                    NewSlots.Add(OriginalSlots[i]);
+                    continue;
+                }
 
                 if (unassignedItems.TryDequeue(out var slot))
                 {
                     if (slot.SourceGame == SoulsGame.DS3)
                     {
-                        Slots[i] = slot;
+                        NewSlots.Add(slot);
                     }
                     else
                     {
                         var resolvedId = CrossGameMappings.GetMappedItem(new SoulsItem(slot.SourceGame, slot.ItemType, slot.ItemId), SoulsGame.DS3);
-                        Slots[i] = new LotSlot(SoulsGame.DS3, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount);
+                        NewSlots.Add(new LotSlot(SoulsGame.DS3, resolvedId, SoulsItemType.Goods, slot.Weight, slot.Amount));
                     }
                 }
+                else if (!partialFill)
+                {
+                    ItemRandomizer.MissingItemCount++;
+                    //throw new Exception("Ran out of items!");
+                }
             }
-
-            alreadyTaken = true;
         }
 
         public void Write()
         {
             int i = 1;
-            foreach (var slot in Slots)
+            foreach (var slot in NewSlots)
             {
                 originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.ItemId;
                 originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;

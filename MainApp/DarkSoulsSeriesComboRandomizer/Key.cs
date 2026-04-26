@@ -125,7 +125,7 @@
                                                                              (MapName.BrumeTowerWithOnlyTowerKey, MapName.BrumeTowerWithBothKeys) ]),                 // Scorching Iron Scepter
             NewKey(53600000, SoulsItemType.Goods, SoulsGame.DS2S, 50375500, [(MapName.FrozenEleumLoyce, MapName.FrozenEleumLoyceAfterAava)]),                         // Eye of the Priestess
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10165120, [(MapName.ThingsBetwixt, MapName.ThingsBetwixtPostStatue)]),                              // Fragrant Branch of Yore
-            NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10176180, [(MapName.Majula, MapName.MajulaShadeWoods)]),                                            // Fragrant Branch of Yore
+            NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10176180, [(MapName.Majula, MapName.MajulaShadedWoods)]),                                           // Fragrant Branch of Yore
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10185110, [(MapName.HeidesTowerNomansWharf, MapName.FloodedPassageSideRoom)]),                      // Fragrant Branch of Yore
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10256160, [(MapName.TheLostBastilleBelfryLuna, MapName.RuinSentinelBuilding)]),                     // Fragrant Branch of Yore
             NewKey(60537000, SoulsItemType.Goods, SoulsGame.DS2S, 10256450, [(MapName.TheLostBastilleBelfryLuna, MapName.StraidsCell)]),                              // Fragrant Branch of Yore (TODO: Add Straid's Store)

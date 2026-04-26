@@ -39,6 +39,8 @@
     /// </summary>
     public static class ItemRandomizer
     {
+        public static int MissingItemCount = 0;
+
         // ------------------------------------------------------------------ //
         //  Internal types
         // ------------------------------------------------------------------ //
@@ -72,20 +74,33 @@
         public static void Randomize(
             Map startMap,
             IReadOnlyDictionary<MapName, Map> allMaps,
-            IEnumerable<Key> allKeys,
+            IReadOnlyList<Key> allKeys,
             IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots,
             Random? random = null)
         {
             random ??= new Random();
 
+            // Get all the item lots from all maps for easy re-assignment later
+            var allLots = allMaps.Values
+                .SelectMany(m => m.ItemLocations.Where(location => !lockedLots.Contains((location.ID, m.SourceGame))))
+                .Distinct()
+                .ToList();
+
+            // Get all drops across all games, organized by how they drop
+            var dropsByCategory = allLots.GroupBy(lot => lot.LotType)
+                .ToDictionary(
+                grouping => grouping.Key,
+                grouping => grouping.SelectMany(lot => lot.OriginalSlots.Where(slot => !slot.IsEmptyItem && !IsKey(slot, allKeys)))
+                    .Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount))
+                    .ToList());
+
             // I'm not parsing shops or most npc events. Don't randomize those keys.
+            // Also, if a key is in a locked slot, don't randomize it.
             var keyList = new List<KeyInstance>();
             foreach (var key in allKeys)
             {
-                var defaultLot = allMaps.Values.Where(map => map.SourceGame == key.originalGame)
-                    .SelectMany(map => map.ItemLocations)
-                    .FirstOrDefault(location => location.ID == key.defaultLotNumber);
-                var defaultSlot = defaultLot?.Slots.Single(slot => slot.ItemId == key.itemId);
+                var defaultLot = allLots.FirstOrDefault(location => location.ID == key.defaultLotNumber);
+                var defaultSlot = defaultLot?.OriginalSlots.Single(slot => slot.ItemId == key.itemId);
                 if (defaultSlot != null)
                 {
                     keyList.Add(new(key, defaultSlot));
@@ -100,26 +115,13 @@
                 }
             }
 
-            // ---- discover every lot in the fully-unlocked graph -------------
-            // (ignoring locks) so we know the complete universe to randomize.
-            // Don't include keys, since they will all be placed separately.
-            var allLots = allMaps.Values
-                .SelectMany(m => m.ItemLocations.Where(location => !lockedLots.Contains((location.ID, m.SourceGame))))
-                .ToList();
-            var dropsByCategory = allLots.GroupBy(lot => lot.LotType)
-                .ToDictionary(
-                grouping => grouping.Key,
-                grouping => grouping.SelectMany(lot => lot.Slots.Where(slot => !slot.IsEmptyItem && !IsKey(slot, keyList)))
-                    .Select(slot => new LotSlot(slot.SourceGame, slot.ItemId, slot.ItemType, slot.Weight, slot.Amount))
-                    .ToList());
-
             // ---- Phase 1: reachability-aware key placement ----------
-            // This must go first to make sure the player isn't trapped in the prison tower.
-            PlaceArchiveTowerCellAndGiantDoorKeys(ref keyList, allMaps, lockedLots, random);
-
             // Shuffle the key instances as a starting order; the eligible-first
             // logic below will override strict ordering when needed.
-            var remaining = keyList.OrderBy(_ => random.Next(keyList.Count)).ToList();
+            var remaining = keyList.OrderBy(_ => random.Next()).ToList();
+
+            // This must go first to make sure the player can't be trapped in the prison tower.
+            PlaceArchiveTowerCellAndGiantDoorKeys(ref remaining, allMaps, lockedLots, random);
 
             var connectedSensFortress = false;
             var keyQueue = new Queue<LotSlot>();
@@ -144,7 +146,7 @@
                     .FirstOrDefault(lot => lot.CanTake()) ?? throw new Exception("Ran out of slots before keys!");
                 
                 keyQueue.Enqueue(keyToPlace.Slot);
-                targetLot.TakeItems(keyQueue);
+                targetLot.TakeItems(keyQueue, partialFill: true);
                 keyToPlace.Key.Collect();
                 remaining.Remove(keyToPlace);
 
@@ -162,18 +164,26 @@
             // ---- Phase 2: shuffle RandomEnemyDrop slots ---------------------
             var shuffledEnemySlots = new Queue<LotSlot>(dropsByCategory[LotType.RandomEnemyDrop].OrderBy(_ => random.Next()));
 
-            foreach(var itemLot in startMap.GetAccessibleItemLots(lot => lot.LotType == LotType.RandomEnemyDrop))
+            foreach(var itemLot in allLots.Where(lot => lot.LotType == LotType.RandomEnemyDrop))
             {
                 itemLot.TakeItems(shuffledEnemySlots);
             }
 
             // ---- Phase 3: shuffle remaining general slots -------------------
-            var shuffledGeneral = new Queue<LotSlot>(dropsByCategory[LotType.Boss].Concat(dropsByCategory[LotType.GenericEvent]).Concat(dropsByCategory[LotType.GuaranteedEnemyDrop]).Concat(dropsByCategory[LotType.Treasure]).OrderBy(_ => random.Next()));
+            var shuffledGeneral = new Queue<LotSlot>(dropsByCategory[LotType.Boss].Concat(dropsByCategory[LotType.GenericEvent])
+                                                                                  .Concat(dropsByCategory[LotType.GuaranteedEnemyDrop])
+                                                                                  .Concat(dropsByCategory[LotType.Treasure])
+                                                                                  .OrderBy(_ => random.Next()));
 
-            foreach(var itemLot in startMap.GetAccessibleItemLots(lot => lot.LotType != LotType.RandomEnemyDrop && lot.LotType != LotType.Store))
+            foreach(var itemLot in allLots.Where(lot => lot.LotType != LotType.RandomEnemyDrop && lot.LotType != LotType.Store))
             {
                 itemLot.TakeItems(shuffledGeneral);
             }
+
+            var nonRandomLots = allLots.Where(lot => lot.LotType != LotType.RandomEnemyDrop && lot.LotType != LotType.Store).ToList();
+            var allOriginalItems = nonRandomLots.SelectMany(lot => lot.OriginalSlots);
+            var allNewItems = nonRandomLots.SelectMany(lot => lot.NewSlots);
+            var missingItems = allOriginalItems.Except(allNewItems).ToList();
 
             // ---- Phase 4: write each lot ------------------------------------
             foreach (var lot in allLots)
@@ -188,33 +198,45 @@
 
         private static void PlaceArchiveTowerCellAndGiantDoorKeys(ref List<KeyInstance> allKeys, IReadOnlyDictionary<MapName, Map> allMaps, IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots, Random random)
         {
+            var towerCellMap = allMaps[MapName.TowerCell];
+            var keyQueue = new Queue<LotSlot>();
+
             // The Tower Cell Key must be accessible from the Tower Cell.
             // If that bonfire has cross-game connections, this fans out quite a bit.
             // If not, this is the guard's drop.
-            var towerCellKey = allKeys.Single(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2004);
-            var towerCellMap = allMaps[MapName.TowerCell];
-            var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure);
-            availableLots.AddRange(towerCellMap.ItemLocations); // include jailer, even though he isn't a boss/treasure drop
-            var keyQueue = new Queue<LotSlot>();
-            keyQueue.Enqueue(towerCellKey.Slot);
-            availableLots.OrderBy(_ => random.Next()).First(lot => lot.CanTake()).TakeItems(keyQueue);
-            towerCellKey.Key.Collect();
-            allKeys.Remove(towerCellKey);
+            // If it's 
+            var towerCellKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2004);
+            if (towerCellKey != null)
+            {
+                var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                    .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
+                    .ToList();
+                availableLots.AddRange(towerCellMap.ItemLocations); // include jailer, even though he isn't a boss/treasure drop
+                keyQueue.Enqueue(towerCellKey.Slot);
+                availableLots.OrderBy(_ => random.Next()).First(lot => lot.CanTake()).TakeItems(keyQueue);
+                towerCellKey.Key.Collect();
+                allKeys.Remove(towerCellKey);
+            }
 
             // Similarly, the Archive Giant Door Key must be accessible from the Prison Tower.
             // This is more flexible than the Tower Cell, but may still be limited to only slots in the tower if the prison bonfire doesn't link outside.
-            var towerGiantDoorKey = allKeys.Single(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2005);
-            availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure);
-            keyQueue.Clear();
-            keyQueue.Enqueue(towerGiantDoorKey.Slot);
-            availableLots.OrderBy(_ => random.Next()).First(lot => lot.CanTake()).TakeItems(keyQueue);
-            towerGiantDoorKey.Key.Collect();
-            allKeys.Remove(towerGiantDoorKey);
+            var towerGiantDoorKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2005);
+            if (towerGiantDoorKey != null)
+            {
+                var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                    .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
+                    .ToList();
+                keyQueue.Clear();
+                keyQueue.Enqueue(towerGiantDoorKey.Slot);
+                availableLots.OrderBy(_ => random.Next()).First(lot => lot.CanTake()).TakeItems(keyQueue);
+                towerGiantDoorKey.Key.Collect();
+                allKeys.Remove(towerGiantDoorKey);
+            }
         }
 
-        private static bool IsKey(LotSlot slot, List<KeyInstance> allKeys)
+        private static bool IsKey(LotSlot slot, IReadOnlyList<Key> allKeys)
         {
-            return allKeys.Any(keyInstance => keyInstance.Slot == slot);
+            return allKeys.Any(key => key.originalGame == slot.SourceGame && key.itemId == slot.ItemId && key.itemType == slot.ItemType);
         }
     }
 }

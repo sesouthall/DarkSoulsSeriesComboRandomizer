@@ -68,7 +68,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
-                    foreach (var itemSlot in itemLocation.Slots)
+                    foreach (var itemSlot in itemLocation.NewSlots)
                     {
                         var itemName = itemSlot.ItemType switch
                         {
@@ -78,7 +78,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                             SoulsItemType.Goods => goodsNameFMG[itemSlot.ItemId],
                             _ => ""
                         };
-                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName}"]);
+                        File.AppendAllLines(Path.Combine(saveDir, "Hints.txt"), [$"{itemName}: {map.FriendlyName} ({(itemLocation.LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure")})"]);
                     }
                 }
             }
