@@ -12,14 +12,16 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private BND4 regulationFile;
         private PARAM itemLotParamChr;
         private PARAM itemLotParamOther;
+        private PARAM enemyParam;
 
-        private DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther)
+        private DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther, PARAM enemyParam)
         {
             this.rootDir = rootDir;
             this.saveDir = saveDir;
             this.regulationFile = regulationFile;
             this.itemLotParamChr = itemLotParamChr;
             this.itemLotParamOther = itemLotParamOther;
+            this.enemyParam = enemyParam;
         }
 
         public static DS2SotFSItemLots New(string rootDir, string saveDir)
@@ -28,8 +30,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
             var itemLotParamChr = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Chr", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
             var itemLotParamOther = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Other", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
+            var enemyParam = PARAMUtils.LoadParam(regulationFile, "EnemyParam", @"ConfigFiles\PARAM\DS2S\Defs\CHR_PARAM.xml");
 
-            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther);
+            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther, enemyParam);
         }
 
         public void Load()
@@ -40,10 +43,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 {
                     var parsedMap = Map.DS2Maps.Values.Single(map => mapFile.Contains(map.FileName));
 
-                    if (TryReadPackedFile($"/param/generatorparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorData) && generatorData != null)
+                    if (TryReadPackedFile($"/param/generatorparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorData) &&
+                        TryReadPackedFile($"/param/generatorregistparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorRegistData))
                     {
                         generatorData.ApplyParamdef(PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_PARAM.xml"));
-                        LoadMapLocationData(mapData, generatorData, parsedMap);
+                        generatorRegistData.ApplyParamdef(PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\GENERATOR_REGIST_PARAM.xml"));
+                        LoadMapLocationData(mapData, generatorData, generatorRegistData, parsedMap);
                     }
                 }
             }
@@ -171,7 +176,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             return false;
         }
 
-        private void LoadMapLocationData(MSB2 mapData, PARAM generatorData, Map parsedMap)
+        private void LoadMapLocationData(MSB2 mapData, PARAM generatorData, PARAM generatorRegistData, Map parsedMap)
         {
             foreach (var enemy in generatorData.Rows)
             {
@@ -185,6 +190,19 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 if (itemLotNumber.HasValue && itemLotNumber.Value != 0)
                 {
                     AssignLotChainToCorrectMap(parsedMap, ParseEnemyItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                }
+                var generatorRegistrationNumber = (uint?)enemy["GeneratorRegistParam"]?.Value;
+                if (generatorRegistrationNumber.HasValue && generatorRegistrationNumber.Value != 0)
+                {
+                    var enemyParamId = (int?)generatorRegistData.Rows.SingleOrDefault(row => row.ID == generatorRegistrationNumber.Value)?["EnemyParamID"]?.Value;
+                    if (enemyParamId.HasValue && enemyParamId.Value != 0)
+                    {
+                        var dropLotNumber = (int?)enemyParam.Rows.SingleOrDefault(row => row.ID == enemyParamId.Value)?["death_itemlot_id"]?.Value;
+                        if (dropLotNumber.HasValue && dropLotNumber.Value != 0)
+                        {
+                            AssignLotChainToCorrectMap(parsedMap, ParseEnemyItemLotChain(Convert.ToUInt32(dropLotNumber.Value), LotType.UnspecifiedEnemy));
+                        }
+                    }
                 }
 
                 if (entityItemLots.ContainsKey((parsedMap.FileName, enemy.ID)))

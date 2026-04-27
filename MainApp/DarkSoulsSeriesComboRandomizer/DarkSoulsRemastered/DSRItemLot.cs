@@ -209,12 +209,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 foreach (var slot in NewSlots)
                 {
                     var (resolvedId, resolvedType) = slot.ResolveFor(SoulsGame.DSR);
-                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = resolvedId;
+                    originalRow[string.Format(ItemIdFieldPattern, i)].Value = slot.IsEmptyItem ? 0 : resolvedId;
                     originalRow[string.Format(ItemAmountFieldPattern, i)].Value = slot.Amount;
                     // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish
                     // 100 seems more common, so use that.
                     originalRow[string.Format(ItemWeightFieldPattern, i)].Value = slot.Weight;
-                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = resolvedType;
+                    originalRow[string.Format(ItemCategoryFieldPattern, i)].Value = slot.IsEmptyItem ? -1 : resolvedType;
                     i++;
                 }
             }

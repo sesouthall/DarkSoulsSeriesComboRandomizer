@@ -107,8 +107,10 @@ namespace DarkSoulsItemMigrator
                             var warpToDS2Condition = new ESD.Condition(warpToDS2CommandStateId, [87, 132, 130, warpToDS2MenuIndex, 0, 0, 0, 149, 161]);
                             addDialogToBonfireState.EntryCommands.Add(warpToDS1MenuOption);
                             addDialogToBonfireState.EntryCommands.Add(warpToDS2MenuOption);
-                            stateGroup[4].Conditions.Add(warpToDS1Condition);
-                            stateGroup[4].Conditions.Add(warpToDS2Condition);
+                            // The Firelink Shrine bonfire needs these added to state group 5, not 4.
+                            var conditionsStateGroup = scriptFile.Name.Contains("t400000") ? 5 : 4;
+                            stateGroup[conditionsStateGroup].Conditions.Add(warpToDS1Condition);
+                            stateGroup[conditionsStateGroup].Conditions.Add(warpToDS2Condition);
                             editedStateGroup = true;
                         }
                     }
