@@ -41,7 +41,7 @@ namespace DarkSoulsItemMigrator
 
             var goodsParam = PARAM.Read(paramBnd.Bnd.Files.Single(f => f.Name.Contains("EquipParamGoods")).Bytes);
             goodsParam.ApplyParamdef(PARAMDEF.XmlDeserialize(GoodsParamdefPath));
-            DefaultParamRow = goodsParam.Rows.Single(row => row.ID == 117); // Sunlight Medal
+            DefaultParamRow = goodsParam.Rows.Single(row => row.ID == 375); // Sunlight Medal
 
             ItemTypes = new List<ItemType>
             {
