@@ -1,4 +1,8 @@
-﻿namespace DarkSoulsSeriesComboRandomizer
+﻿using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
+using DarkSoulsSeriesComboRandomizer.DarkSouls3;
+using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
+
+namespace DarkSoulsSeriesComboRandomizer
 {
     public enum MapName
     {
@@ -288,8 +292,8 @@
         public readonly IReadOnlyList<string> Bonfires;
         public List<IItemLot> ItemLocations = [];
         public List<Map> connectedMaps = [];
-
-        public static IReadOnlyDictionary<MapName, Map> DSRMaps { get; } = ParseMapDefinitions(
+            
+        public static IReadOnlyDictionary<MapName, Map> GetDSRMaps() => ParseMapDefinitions(
         [
             (MapName.DS1StartingCell,                     "m00_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
             (MapName.Depths,                              "m10_00_00_00", SoulsGame.DSR, new List<string>{ },                                                                                                                  new List<MapName>{ }),
@@ -357,8 +361,8 @@
             { MapName.NorthernUndeadAsylumF2West,          new HashSet<int>{ 1810060 } },
             { MapName.FirelinkShrine,                      new HashSet<int>{ 1810070 } }, // Technically not in Firelink, this is the item on the left as you leave the Asylum. I didn't feel like making another zone for it.
         };
-
-        public static IReadOnlyDictionary<MapName, Map> DS2Maps { get; } = ParseMapDefinitions(
+            
+        public static IReadOnlyDictionary<MapName, Map> GetDS2Maps() => ParseMapDefinitions(
         [
             (MapName.ThingsBetwixt,                        "m10_02_00_00", SoulsGame.DS2S, new List<string>{ "Fire Keepers' Dwelling" },                                                                       new List<MapName>{ MapName.Majula }),
             (MapName.ThingsBetwixtPostStatue,              "m00_00_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ MapName.ThingsBetwixt }),
@@ -421,7 +425,7 @@
             (MapName.MemoryOfTheKing,                      "m50_38_00_00", SoulsGame.DS2S, new List<string>{ },                                                                                                new List<MapName>{ }),
         ]);
 
-        public static Dictionary<MapName, HashSet<int>> DS2NonDefaultMapItemLots = new()
+        public static readonly IReadOnlyDictionary<MapName, HashSet<int>> DS2NonDefaultMapItemLots = new Dictionary<MapName, HashSet<int>>()
         {
             { MapName.ThingsBetwixtPostStatue,              new HashSet<int>{ 10026100 } },
             { MapName.ForestOfFallenGiantsPostSoldierKey,   new HashSet<int>{ 10106070, 10106080, 10106120, 10106610, 10106010, 10106630, 10106620, 10106430, 10105120, 10106370, 10106370, 318000 } },
@@ -453,8 +457,8 @@
             { MapName.FrozenEleumLoyceAfterAava,            new HashSet<int>{ 50375710, 690000, 50376760, 50376750, 50376010, 50376060, 50376310, 50376320, 50376180, 50376190, 50376660, 50375560, 50376200, 50376630, 50376690, 50376680, 50376670, 50376610, 50376620, 50376640, 50376650, 50376520, 50376420, 50376430, 50376440, 50375540, 50375520, 50375510, 50376570, 50376300, 50376580, 50376770, 50376510, 50375740, 50376400, 50375680, 50375580, 50375590, 50375600, 50375610, 50375550, 50376150, 50375690, 50375700, 50375660, 50376380, 50375670 } },
             { MapName.ReinderValley,                        new HashSet<int>{ 50376730, 50376210, 50376740, 50376220, 50376230, 50376460, 50376710, 50376470 } },
         };
-
-        public static IReadOnlyDictionary<MapName, Map> DS3Maps { get; } = ParseMapDefinitions(
+            
+        public static IReadOnlyDictionary<MapName, Map> GetDS3Maps() => ParseMapDefinitions(
         [
             (MapName.HighWallOfLothricGarden,              "m30_00_00_00", SoulsGame.DS3, new List<string>{ "High Wall of Lothric", "Vordt of the Boreal Valley", "Tower on the Wall" },                                                                                    new List<MapName>{ }),
             (MapName.OceirosGarden,                        "m00_00_00_00", SoulsGame.DS3, new List<string>{ "Oceiros, the Consumed King", "Dancer of the Boreal Valley" },                                                                                                  new List<MapName>{ MapName.HighWallOfLothricGarden, MapName.UntendedGraves }),
@@ -487,7 +491,7 @@
             (MapName.FilianoresRest,                      "m51_01_00_00", SoulsGame.DS3, new List<string>{ "Filianore's Rest", "Slave Knight Gael" },                                                                                                                      new List<MapName>{ }),
         ]);
 
-        public static Dictionary<MapName, HashSet<int>> DS3NonDefaultMapItemLots = new()
+        public static readonly IReadOnlyDictionary<MapName, HashSet<int>> DS3NonDefaultMapItemLots = new Dictionary<MapName, HashSet<int>>()
         {
             { MapName.DarkwraithCell,                      new HashSet<int>{ 60940 } },
             { MapName.OceirosGarden,                       new HashSet<int>{ 3000540, 3000000, 3000530, 3000480, 3000430, 3000431, 3000432, 3000433, 3000470, 3000630, 3000620, 3000510, 3000570, 3000520, 3000500, 2020, 3000840, 3000800 } },
@@ -500,8 +504,6 @@
             { MapName.FirelinkRoof,                        new HashSet<int>{ 4000160, 4000180, 4000700 } }, // If not assuming tree skip, include in Firelink Tower, otherwise include in Firelink
             { MapName.PaintedWorldSecondHalf,              new HashSet<int>{ 4500310, 4500320, 4500330, 4500340, 4500350, 4500360, 4500370, 4500380, 4500390, 4500400, 4500410, 4500420, 4500430, 4500460, 4500470, 4500471, 4500472, 4500473, 4500480, 4500570, 4500571, 2300 } },
         };
-
-        public static IReadOnlyDictionary<MapName, Map> AllMaps = DSRMaps.Concat(DS2Maps).Concat(DS3Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
         internal Map(MapName name, string fileName, SoulsGame sourceGame, IReadOnlyList<string> bonfires)
         {
@@ -534,17 +536,17 @@
             return mapsByName;
         }
 
-        public static void LoadCrossGameWarps(List<BonfireTriple> bonfireMapping)
+        internal static void LoadCrossGameWarps(List<BonfireTriple> bonfireMapping, DSRItemLots dsrItems, DS2SotFSItemLots ds2Items, DS3ItemLots ds3Items)
         {
             foreach (var bonfireTriple in bonfireMapping)
             {
-                var dsrMap = DSRMaps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
-                var ds2Map = DS2Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
-                var ds3Map = DS3Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
+                var dsrMap = dsrItems.Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
+                var ds2Map = ds2Items.Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
+                var ds3Map = ds3Items.Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
 
                 if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)") // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
                 {
-                    var coiledSword = Key.DS3Keys.Single(key => key.itemId == 2137);
+                    var coiledSword = ds3Items.Keys.Single(key => key.itemId == 2137);
                     coiledSword.AddUnlockedConnection((ds3Map, dsrMap));
                     coiledSword.AddUnlockedConnection((ds3Map, ds2Map));
                 }
@@ -560,18 +562,18 @@
             }
         }
 
-        public static void HandleDS3FirelinkRoofSkip(bool allow)
+        internal static void HandleDS3FirelinkRoofSkip(bool allow, DS3ItemLots ds3Items)
         {
             if (allow)
             {
-                var firelink = Map.DS3Maps[MapName.CemetaryFirelinkUntendedGraves];
-                var firelinkRoof = Map.DS3Maps[MapName.FirelinkRoof];
+                var firelink = ds3Items.Maps[MapName.CemetaryFirelinkUntendedGraves];
+                var firelinkRoof = ds3Items.Maps[MapName.FirelinkRoof];
                 firelink.connectedMaps.Add(firelinkRoof);
             }
             else
             {
-                var firelinkTower = Map.DS3Maps[MapName.FirelinkTower];
-                var firelinkRoof = Map.DS3Maps[MapName.FirelinkRoof];
+                var firelinkTower = ds3Items.Maps[MapName.FirelinkTower];
+                var firelinkRoof = ds3Items.Maps[MapName.FirelinkRoof];
                 firelinkTower.connectedMaps.Add(firelinkRoof);
             }
         }

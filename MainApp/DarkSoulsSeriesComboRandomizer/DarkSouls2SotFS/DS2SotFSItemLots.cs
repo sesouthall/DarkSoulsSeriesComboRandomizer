@@ -5,24 +5,10 @@ using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
-    internal class DS2SotFSItemLots
+    internal class DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther, PARAM enemyParam, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
     {
-        private readonly string rootDir;
-        private readonly string saveDir;
-        private BND4 regulationFile;
-        private PARAM itemLotParamChr;
-        private PARAM itemLotParamOther;
-        private PARAM enemyParam;
-
-        private DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther, PARAM enemyParam)
-        {
-            this.rootDir = rootDir;
-            this.saveDir = saveDir;
-            this.regulationFile = regulationFile;
-            this.itemLotParamChr = itemLotParamChr;
-            this.itemLotParamOther = itemLotParamOther;
-            this.enemyParam = enemyParam;
-        }
+        public IReadOnlyDictionary<MapName, Map> Maps { get; } = maps;
+        public IReadOnlyList<Key> Keys { get; } = keys;
 
         public static DS2SotFSItemLots New(string rootDir, string saveDir)
         {
@@ -32,7 +18,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             var itemLotParamOther = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Other", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
             var enemyParam = PARAMUtils.LoadParam(regulationFile, "EnemyParam", @"ConfigFiles\PARAM\DS2S\Defs\CHR_PARAM.xml");
 
-            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther, enemyParam);
+            var maps = Map.GetDSRMaps();
+            var keys = Key.ConstructDS2Keys(maps);
+
+            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther, enemyParam, maps, keys);
         }
 
         public void Load()
@@ -41,7 +30,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 if (TryReadPackedFile(mapFile, (bytes) => MSB2.Read(bytes), out var mapData))
                 {
-                    var parsedMap = Map.DS2Maps.Values.Single(map => mapFile.Contains(map.FileName));
+                    var parsedMap = Maps.Values.Single(map => mapFile.Contains(map.FileName));
 
                     if (TryReadPackedFile($"/param/generatorparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorData) &&
                         TryReadPackedFile($"/param/generatorregistparam_{parsedMap.FileName}.param", (bytes) => PARAM.Read(bytes), out var generatorRegistData))
@@ -111,7 +100,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
             var itemNamesFMG = FMG.Read(Path.Combine(rootDir, "ComboRandomizer", "menu", "text", "english", "itemname.fmg"));
 
-            foreach (var map in Map.DS2Maps.Values)
+            foreach (var map in Maps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
@@ -228,7 +217,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             if (Map.DS2NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
                 var actualMapName = Map.DS2NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
-                var actualMap = Map.DS2Maps.Values.Single(map => map.Name == actualMapName);
+                var actualMap = Maps.Values.Single(map => map.Name == actualMapName);
                 actualMap.ItemLocations.AddRange(itemLots);
             }
             else

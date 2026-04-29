@@ -6,22 +6,10 @@ using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
-    internal class DS3ItemLots
+    internal class DS3ItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParam, PARAM npcParam, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
     {
-        private readonly string rootDir;
-        private readonly string saveDir;
-        private BND4 regulationFile;
-        private PARAM itemLotParam;
-        private PARAM npcParam;
-
-        private DS3ItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParam, PARAM npcParam)
-        {
-            this.rootDir = rootDir;
-            this.saveDir = saveDir;
-            this.regulationFile = regulationFile;
-            this.itemLotParam = itemLotParam;
-            this.npcParam = npcParam;
-        }
+        public IReadOnlyDictionary<MapName, Map> Maps { get; } = maps;
+        public IReadOnlyList<Key> Keys { get; } = keys;
 
         public static DS3ItemLots New(string rootDir, string saveDir)
         {
@@ -30,7 +18,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             var itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS3\Defs\ItemLotParam.xml");
             var npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS3\Defs\NpcParam.xml");
 
-            return new DS3ItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam);
+            var maps = Map.GetDS3Maps();
+            var keys = Key.ConstructDS3Keys(maps);
+
+            return new DS3ItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam, maps, keys);
         }
 
         public void Load()
@@ -39,7 +30,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             {
                 if (TryReadPackedFile(mapFile, (bytes) => MSB3.Read(bytes), out var mapData))
                 {
-                    var parsedMap = Map.DS3Maps.Values.Single(map => mapFile.Contains(map.FileName));
+                    var parsedMap = Maps.Values.Single(map => mapFile.Contains(map.FileName));
                     LoadMapLocationData(mapData, parsedMap);
                 }
             }
@@ -69,7 +60,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             var accessoryNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(AccessoryNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
             var goodsNameFMG = itemTextFile.Files.Where(f => f.Name.Contains(GoodsNameFMGFileName)).Select(file => FMG.Read(file.Bytes));
 
-            foreach (var map in Map.DS3Maps.Values)
+            foreach (var map in Maps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
@@ -187,7 +178,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             if (Map.DS3NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
                 var actualMapName = Map.DS3NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
-                var actualMap = Map.DS3Maps.Values.Single(map => map.Name == actualMapName);
+                var actualMap = Maps.Values.Single(map => map.Name == actualMapName);
                 actualMap.ItemLocations.AddRange(itemLots);
             }
             else

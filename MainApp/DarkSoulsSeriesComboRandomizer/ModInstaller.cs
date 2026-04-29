@@ -24,6 +24,8 @@ namespace DarkSoulsSeriesComboRandomizer
         private static readonly string DS3SaveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsIII");
         private const string DS3SaveFileName = "DS30000.sl2";
 
+        private static readonly string BonfireMappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
+
         public void InstallStaticChanges()
         {
             if (Directory.GetFiles(backupFolderPath).Length > 0)
@@ -78,14 +80,10 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private static void CreateBonfireMappings()
         {
-            var bonfireMappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
-            if (!File.Exists(bonfireMappingsFile))
+            if (!File.Exists(BonfireMappingsFile))
             {
-                File.Copy(Path.Combine("ConfigFiles", "BonfireMappings.txt"), bonfireMappingsFile);
+                File.Copy(Path.Combine("ConfigFiles", "BonfireMappings.txt"), BonfireMappingsFile);
             }
-
-            var bonfireMappings = BonfireTriple.ParseBonfireMappings(bonfireMappingsFile);
-            Map.LoadCrossGameWarps(bonfireMappings);
         }
 
         public void CreateRandomizedRegulationFilesIfNeeded()
@@ -107,14 +105,21 @@ namespace DarkSoulsSeriesComboRandomizer
             ds2Items.Load();
             ds3Items.Load();
 
-            Map.HandleDS3FirelinkRoofSkip(options.allowFirelinkRoofSkip);
+            var bonfireMappings = BonfireTriple.ParseBonfireMappings(BonfireMappingsFile);
+            Map.LoadCrossGameWarps(bonfireMappings, dsrItems, ds2Items, ds3Items);
+
+            Map.HandleDS3FirelinkRoofSkip(options.allowFirelinkRoofSkip, ds3Items);
 
             var unrandomizedLots = DSRItemLots.StartingItemLots.Select(itemLotId => (itemLotId, SoulsGame.DSR)) // Don't randomize the DS1 starting gear...
                 .Append((DSRItemLots.EstusFlaskLot, SoulsGame.DSR)) // The DS1 Estus Flask...
                 .Append((DS2SotFSItemLots.EstusFlaskLot, SoulsGame.DS2S)) // The DS2 Estus Flask..
                 .Append((DS3ItemLots.AshenEstusFlaskLot, SoulsGame.DS3)) // or the DS3 Ashen Estus Flask.
                 .ToList();                                               // DS3 regular Estus Flask is a starting item, so no need to handle it for now.
-            ItemRandomizer.Randomize(Map.AllMaps[MapName.DS1StartingCell], Map.AllMaps, Key.AllKeys, unrandomizedLots, new Random(options.seed));
+
+            var allMaps = dsrItems.Maps.Concat(ds2Items.Maps).Concat(ds3Items.Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            var allKeys = dsrItems.Keys.Concat(ds2Items.Keys).Concat(ds3Items.Keys).ToList();
+
+            ItemRandomizer.Randomize(allMaps[MapName.DS1StartingCell], allMaps, allKeys, unrandomizedLots, new Random(options.seed));
 
             dsrItems.Save();
             ds2Items.Save();

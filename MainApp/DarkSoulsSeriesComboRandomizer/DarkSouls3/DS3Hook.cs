@@ -136,7 +136,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             Array.Copy(bytes, 0, asm, 0x10, 4);
             bytes = BitConverter.GetBytes((ulong)GameMan.Resolve() + 0xACC);
             Array.Copy(bytes, 0, asm, 0x19, 8);
-            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS3Offsets.BonfireWarpMethodOffset);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule!.BaseAddress + DS3Offsets.BonfireWarpMethodOffset);
             Array.Copy(bytes, 0, asm, 0x29, 8);
 
             Execute(asm);

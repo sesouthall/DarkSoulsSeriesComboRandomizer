@@ -87,7 +87,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         {
             byte[] asm = (byte[])DSRAssembly.RemoveItem.Clone();
 
-            var dbgEvent_Global_objAddress = this.Process.MainModule.BaseAddress + DSROffsets.DbgEvent_Global_objOffset;
+            var dbgEvent_Global_objAddress = this.Process.MainModule!.BaseAddress + DSROffsets.DbgEvent_Global_objOffset;
             byte[] bytes = BitConverter.GetBytes((ulong)dbgEvent_Global_objAddress);
             Array.Copy(bytes, 0, asm, 0x6, 8);
             bytes = BitConverter.GetBytes((ulong)category);

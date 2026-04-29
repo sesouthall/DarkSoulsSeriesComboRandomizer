@@ -26,14 +26,23 @@ namespace DarkSoulsSeriesComboRandomizerTests
         [Trait("Category", "Integration")]
         public void AllMaps_ShouldReturnAReasonableNumberOfRandomEnemyDrops()
         {
-            foreach (var key in Key.AllKeys)
+            var dsrItems = DSRItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED", "");
+            var ds2Items = DS2SotFSItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game", "");
+            var ds3Items = DS3ItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game", "");
+
+            dsrItems.Load();
+            ds2Items.Load();
+            ds3Items.Load();
+
+            foreach (var key in dsrItems.Keys.Concat(ds2Items.Keys).Concat(ds3Items.Keys))
             {
                 key.Collect();
             }
 
-            var ds1Firelink = Map.DSRMaps[MapName.FirelinkShrine];
-            var majula = Map.DS2Maps[MapName.Majula];
-            var ds3Firelink = Map.DS3Maps[MapName.CemetaryFirelinkUntendedGraves];
+
+            var ds1Firelink = dsrItems.Maps[MapName.FirelinkShrine];
+            var majula = ds2Items.Maps[MapName.Majula];
+            var ds3Firelink = ds3Items.Maps[MapName.CemetaryFirelinkUntendedGraves];
             ds1Firelink.connectedMaps.Add(majula);
             ds1Firelink.connectedMaps.Add(ds3Firelink);
             majula.connectedMaps.Add(ds1Firelink);
@@ -41,17 +50,14 @@ namespace DarkSoulsSeriesComboRandomizerTests
             ds3Firelink.connectedMaps.Add(ds1Firelink);
             ds3Firelink.connectedMaps.Add(majula);
 
-            var undeadParish = Map.DSRMaps[MapName.UndeadBurgUndeadParish];
-            var sensFortress = Map.DSRMaps[MapName.SensFortress];
+            var undeadParish = dsrItems.Maps[MapName.UndeadBurgUndeadParish];
+            var sensFortress = dsrItems.Maps[MapName.SensFortress];
             undeadParish.connectedMaps.Add(sensFortress);
             sensFortress.connectedMaps.Add(undeadParish);
 
-            DSRItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED", "").Load();
-            DS2SotFSItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game", "").Load();
-            DS3ItemLots.New(@"C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game", "").Load();
-
-            var accessibleRandomDrops = Map.AllMaps[MapName.DS1StartingCell].GetAccessibleItemLots(lot => lot.LotType == LotType.RandomEnemyDrop);
-            var allRandomDrops = Map.AllMaps.Values.SelectMany(map => map.ItemLocations).Where(lot => lot.LotType == LotType.RandomEnemyDrop).ToList();
+            var allMaps = dsrItems.Maps.Concat(ds2Items.Maps).Concat(ds3Items.Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            var accessibleRandomDrops = allMaps[MapName.DS1StartingCell].GetAccessibleItemLots(lot => lot.LotType == LotType.RandomEnemyDrop);
+            var allRandomDrops = allMaps.Values.SelectMany(map => map.ItemLocations).Where(lot => lot.LotType == LotType.RandomEnemyDrop).ToList();
             var missing = allRandomDrops.Except(accessibleRandomDrops);
             missing.Should().BeEmpty("Getting all random drops directly should be equivalent to getting all random drops from the connected maps.");
         }

@@ -3,24 +3,12 @@ using System.IO;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 {
-    internal class DSRItemLots
+    internal class DSRItemLots(string rootDir, string saveDir, BND3 regulationFile, PARAM itemLotParam, PARAM npcParam, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
     {
-        private readonly string rootDir;
-        private readonly string saveDir;
-        private readonly BND3 regulationFile;
-        private readonly PARAM itemLotParam;
-        private readonly PARAM npcParam;
+        public IReadOnlyDictionary<MapName, Map> Maps { get; } = maps;
+        public IReadOnlyList<Key> Keys { get; } = keys;
 
         private string MapFolder => Path.Combine(rootDir, "map", "MapStudio");
-
-        public DSRItemLots(string rootDir, string saveDir, BND3 regulationFile, PARAM itemLotParam, PARAM npcParam)
-        {
-            this.rootDir = rootDir;
-            this.saveDir = saveDir;
-            this.regulationFile = regulationFile;
-            this.itemLotParam = itemLotParam;
-            this.npcParam = npcParam;
-        }
 
         public static DSRItemLots New(string rootDir, string saveDir)
         {
@@ -29,14 +17,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             var itemLotParam = PARAMUtils.LoadParam(regulationFile, "ItemLotParam", @"ConfigFiles\PARAM\DS1R\Defs\ItemLotParam.xml");
             var npcParam = PARAMUtils.LoadParam(regulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
 
-            return new DSRItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam);
+            var maps = Map.GetDSRMaps();
+            var keys = Key.ConstructDS1Keys(maps);
+
+            return new DSRItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam, maps, keys);
         }
 
         public void Load()
         {
             foreach (var mapFile in Directory.GetFiles(MapFolder))
             {
-                var matchingParsedMap = Map.DSRMaps.Values.SingleOrDefault(parsedMap => mapFile.Contains(parsedMap.FileName));
+                var matchingParsedMap = Maps.Values.SingleOrDefault(parsedMap => mapFile.Contains(parsedMap.FileName));
                 if (matchingParsedMap != null)
                 {
                     var mapData = MSB1.Read(mapFile);
@@ -64,7 +55,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             var accessoryNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(AccessoryNameFMGFileName)).Bytes);
             var goodsNameFMG = FMG.Read(itemTextFile.Files.First(f => f.Name.Contains(GoodsNameFMGFileName)).Bytes);
 
-            foreach (var map in Map.DSRMaps.Values)
+            foreach (var map in Maps.Values)
             {
                 foreach (var itemLocation in map.ItemLocations)
                 {
@@ -134,7 +125,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             if (Map.DS1NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
                 var actualMapName = Map.DS1NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
-                var actualMap = Map.DSRMaps.Values.Single(map => map.Name == actualMapName);
+                var actualMap = Maps.Values.Single(map => map.Name == actualMapName);
                 actualMap.ItemLocations.AddRange(itemLots);
             }
             else
@@ -142,7 +133,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 defaultMap.ItemLocations.AddRange(itemLots);
             }
         }
-
 
         private static LotType GetEventLotType(int itemLotNumber)
         {

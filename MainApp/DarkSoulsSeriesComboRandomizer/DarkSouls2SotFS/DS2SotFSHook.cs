@@ -139,7 +139,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Array.Copy(bytes, 0, asm, 0x6, 8);
             bytes = BitConverter.GetBytes(flag);
             Array.Copy(bytes, 0, asm, 0xF, 4);
-            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS2SotFSOffsets.ReadEventFlagMethodOffset);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule!.BaseAddress + DS2SotFSOffsets.ReadEventFlagMethodOffset);
             Array.Copy(bytes, 0, asm, 0x15, 8);
             bytes = BitConverter.GetBytes((ulong)resultMemory);
             Array.Copy(bytes, 0, asm, 0x21, 8);
@@ -161,7 +161,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             Array.Copy(bytes, 0, asm, 0xF, 4);
             bytes = BitConverter.GetBytes(active);
             Array.Copy(bytes, 0, asm, 0x15, 1);
-            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule.BaseAddress + DS2SotFSOffsets.WriteEventFlagMethodOffset);
+            bytes = BitConverter.GetBytes((ulong)this.Process.MainModule!.BaseAddress + DS2SotFSOffsets.WriteEventFlagMethodOffset);
             Array.Copy(bytes, 0, asm, 0x1B, 8);
 
             Execute(asm);
