@@ -285,13 +285,12 @@ namespace DarkSoulsSeriesComboRandomizer
 
     public class Map
     {
-        public readonly MapName Name;
         public readonly string FriendlyName;
         public readonly string FileName;
         public readonly SoulsGame SourceGame;
         public readonly IReadOnlyList<string> Bonfires;
-        public List<IItemLot> ItemLocations = [];
-        public List<Map> connectedMaps = [];
+        public readonly List<IItemLot> ItemLocations = [];
+        internal HashSet<Map> connectedMaps = [];
             
         public static IReadOnlyDictionary<MapName, Map> GetDSRMaps() => ParseMapDefinitions(
         [
@@ -505,10 +504,9 @@ namespace DarkSoulsSeriesComboRandomizer
             { MapName.PaintedWorldSecondHalf,              new HashSet<int>{ 4500310, 4500320, 4500330, 4500340, 4500350, 4500360, 4500370, 4500380, 4500390, 4500400, 4500410, 4500420, 4500430, 4500460, 4500470, 4500471, 4500472, 4500473, 4500480, 4500570, 4500571, 2300 } },
         };
 
-        internal Map(MapName name, string fileName, SoulsGame sourceGame, IReadOnlyList<string> bonfires)
+        internal Map(string friendlyName, string fileName, SoulsGame sourceGame, IReadOnlyList<string> bonfires)
         {
-            Name = name;
-            FriendlyName = name.ToFriendlyName();
+            FriendlyName = friendlyName;
             FileName = fileName;
             SourceGame = sourceGame;
             Bonfires = bonfires;
@@ -520,7 +518,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
             foreach (var mapDefinition in mapDefinitions)
             {
-                var map = new Map(mapDefinition.Name, mapDefinition.FileName, mapDefinition.SourceGame, mapDefinition.Bonfires);
+                var map = new Map(mapDefinition.Name.ToFriendlyName(), mapDefinition.FileName, mapDefinition.SourceGame, mapDefinition.Bonfires);
                 mapsByName.Add(mapDefinition.Name, map);
             }
 
@@ -546,18 +544,16 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)") // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
                 {
-                    var coiledSword = ds3Items.Keys.Single(key => key.itemId == 2137);
+                    var coiledSword = ds3Items.Keys.Single(key => key.Item == new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 2137));
                     coiledSword.AddUnlockedConnection((ds3Map, dsrMap));
                     coiledSword.AddUnlockedConnection((ds3Map, ds2Map));
+                    dsrMap.ConnectTo(ds2Map);
                 }
                 else
                 {
-                    dsrMap.connectedMaps.Add(ds2Map);
-                    dsrMap.connectedMaps.Add(ds3Map);
-                    ds2Map.connectedMaps.Add(dsrMap);
-                    ds2Map.connectedMaps.Add(ds3Map);
-                    ds3Map.connectedMaps.Add(dsrMap);
-                    ds3Map.connectedMaps.Add(ds2Map);
+                    dsrMap.ConnectTo(ds2Map);
+                    dsrMap.ConnectTo(ds3Map);
+                    ds2Map.ConnectTo(ds3Map);
                 }
             }
         }
@@ -578,28 +574,18 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        public bool CanReach(MapName mapName)
+        public void ConnectTo(Map other)
         {
-            var result = false;
-            VisitAllConnectedMaps(map => result = result || map.Name == mapName);
-            return result;
+            this.connectedMaps.Add(other);
+            other.connectedMaps.Add(this);
         }
 
         public bool CanUse(Key key)
         {
-            var result = false;
-            VisitAllConnectedMaps(map => result = result || key.ConnectionsUnlocked.Any(connection => connection.Item1 == map || connection.Item2 == map));
-            return result;
+            return key.ConnectionsUnlocked.Any(connection => connection.Item1 == this || connection.Item2 == this);
         }
 
-        public List<IItemLot> GetAccessibleItemLots(Func<IItemLot, bool> lotSelector)
-        {
-            var result = new List<IItemLot>();
-            VisitAllConnectedMaps(map => result.AddRange(map.ItemLocations.Where(lotSelector)));
-            return result;
-        }
-
-        private void VisitAllConnectedMaps(Action<Map> visitor)
+        public IEnumerable<Map> AllConnectedMaps()
         {
             Queue<Map> mapsToSearch = new();
             HashSet<Map> visitedMaps = [];
@@ -613,7 +599,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     // multiple times before being visited. Don't re-visit maps.
                     continue;
                 }
-                visitor(nextMap);
+                yield return nextMap;
                 visitedMaps.Add(nextMap);
                 foreach (var newMap in nextMap.connectedMaps.Where(connectedMap => !visitedMaps.Contains(connectedMap)))
                 {

@@ -5,9 +5,7 @@
     // everything needed to write it back into any game's lot param.
     // ---------------------------------------------------------------
     public record LotSlot(
-        SoulsGame SourceGame,
-        int ItemId,
-        SoulsItemType ItemType,
+        SoulsItem Item,
         int Weight,
         int Amount,
         bool IsEmptyItem = false
@@ -15,12 +13,12 @@
     {
         public (int, SoulsItemType) ResolveFor(SoulsGame game)
         {
-            if (game == SourceGame)
+            if (game == Item.Game)
             {
-                return (ItemId, ItemType);
+                return (Item.OriginalId, Item.ItemType);
             }
 
-            return (CrossGameMappings.GetMappedItem(new SoulsItem(SourceGame, ItemType, ItemId), game), SoulsItemType.Goods);
+            return (CrossGameMappings.GetMappedItem(Item, game), SoulsItemType.Goods);
         }
     }
 }

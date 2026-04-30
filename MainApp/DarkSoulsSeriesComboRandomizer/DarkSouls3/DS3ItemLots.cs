@@ -35,6 +35,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 }
             }
 
+            LoadTalkData();
+
             ClearDataFileCache();
         }
 
@@ -140,10 +142,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                     AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
                 }
                 
-
-                if (entityItemLots.ContainsKey(enemy.EntityID))
+                if (entityItemLots.TryGetValue(enemy.EntityID, out int lotId))
                 {
-                    var lotId = entityItemLots[enemy.EntityID];
                     AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(lotId, GetEventLotType(lotId)));
                 }
             }
@@ -158,16 +158,18 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
             foreach (var part in mapData.Parts.Objects)
             {
-                if (entityItemLots.ContainsKey(part.EntityID))
+                if (entityItemLots.TryGetValue(part.EntityID, out int itemLotNumber))
                 {
-                    var itemLotNumber = entityItemLots[part.EntityID];
                     AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber, GetEventLotType(itemLotNumber)));
                 }
             }
+        }
 
-            foreach (var talkLot in talkLots.Where(lot => lot.Item2 == parsedMap.Name))
+        private void LoadTalkData()
+        {
+            foreach (var talkLot in talkLots)
             {
-                AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(talkLot.Item1, LotType.GenericEvent));
+                AssignLotChainToCorrectMap(Maps[talkLot.Item2], ParseItemLotChain(talkLot.Item1, LotType.GenericEvent));
             }
         }
 
@@ -178,7 +180,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             if (Map.DS3NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
                 var actualMapName = Map.DS3NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
-                var actualMap = Maps.Values.Single(map => map.Name == actualMapName);
+                var actualMap = Maps[actualMapName];
                 actualMap.ItemLocations.AddRange(itemLots);
             }
             else
@@ -203,7 +205,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         }
 
         // Stolen shamelessly from TheFifthMatt's SoulsRandomizers
-        private static readonly Dictionary<int, int> entityItemLots = new Dictionary<int, int>()
+        private static readonly Dictionary<int, int> entityItemLots = new()
         {
             // Bosses. Event 970
             { 3000800, 2000 },
@@ -411,8 +413,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         // sometimes they are the zone that must be reached to trigger the dialog to get the item
         // Technically, it's possible to get to the triggering zone without having access to the
         // NPC/statue/other dialog location, but these won't get key items, so it should be fine.
-        private static readonly List<(int, MapName)> talkLots = new List<(int, MapName)>
-        {
+        private static readonly List<(int, MapName)> talkLots =
+        [
             ( 4207, MapName.LothricCastle ), // Great Lightning Spear
             ( 4217, MapName.UndeadSettlement ), // Warmth
             ( 4220, MapName.RoadOfSacrificesFarronKeep ), // Watchdogs of Farron covenant item
@@ -461,11 +463,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             ( 66220, MapName.RingedCity ), // Seigbrau from Lapp
             ( 66300, MapName.RingedCity ), // Sacred Chime of Filianore
             ( 66310, MapName.RingedCity ), // Titanite Slab from Shira
-        };
+        ];
 
         // From UXM's full DS3 file list
-        private static List<string> mapFiles = new List<string>
-        {
+        private static readonly List<string> mapFiles =
+        [
             "/map/mapstudio/m30_00_00_00.msb.dcx",
             "/map/mapstudio/m30_01_00_00.msb.dcx",
             "/map/mapstudio/m31_00_00_00.msb.dcx",
@@ -482,11 +484,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             "/map/mapstudio/m50_00_00_00.msb.dcx",
             "/map/mapstudio/m51_00_00_00.msb.dcx",
             "/map/mapstudio/m51_01_00_00.msb.dcx",
-        };
+        ];
 
         // From UXM's ArchiveKeys
-        private static List<(string, string)> dataFilesAndKeys = new List<(string, string)>
-        {
+        private static readonly List<(string, string)> dataFilesAndKeys =
+        [
             ("Data1", @"-----BEGIN RSA PUBLIC KEY-----
 MIIBCwKCAQEA05hqyboW/qZaJ3GBIABFVt1X1aa0/sKINklvpkTRC+5Ytbxvp18L
 M1gN6gjTgSJiPUgdlaMbptVa66MzvilEk60aHyVVEhtFWy+HzUZ3xRQm6r/2qsK3
@@ -549,7 +551,7 @@ sswoErHxxP8TZNxkHm7Ram7Oqtn7LQnMTYxsBgZZ34yJkRtAmZnGoCu5YaUR5euk
 jur5aLDDntQHGx5zuNtc78gMGwlmPqDhgTusKPO4VyKvoL0kITYvukoXJATaa1HI
 WVUjhLm+/uj8r8PNgolerDeS+8FM5Bpe9QIEHwCZLw==
 -----END RSA PUBLIC KEY-----")
-        };
+        ];
 
         public const int AshenEstusFlaskLot = 4000505;
     }

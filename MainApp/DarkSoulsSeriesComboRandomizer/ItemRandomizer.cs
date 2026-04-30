@@ -97,7 +97,7 @@
             foreach (var key in allKeys)
             {
                 var defaultLot = allLots.FirstOrDefault(location => location.ID == key.defaultLotNumber);
-                var defaultSlot = defaultLot?.OriginalSlots.Single(slot => slot.ItemId == key.itemId);
+                var defaultSlot = defaultLot?.OriginalSlots.Single(slot => slot.Item == key.Item);
                 if (defaultSlot != null)
                 {
                     keyList.Add(new(key, defaultSlot));
@@ -125,7 +125,8 @@
             while (remaining.Count > 0)
             {
                 // Get the next key that unlocks a new map
-                var keyToPlace = remaining.FirstOrDefault(keySlotPair => startMap.CanUse(keySlotPair.Key));
+                var currentlyAccessibleMaps = startMap.AllConnectedMaps();
+                var keyToPlace = remaining.FirstOrDefault(keySlotPair => currentlyAccessibleMaps.Any(map => map.CanUse(keySlotPair.Key)));
 
                 if (keyToPlace == null)
                 {
@@ -138,7 +139,7 @@
                 }
 
                 // Find reachable, unclaimed Treasure/Boss lots
-                var targetLot = startMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                var targetLot = currentlyAccessibleMaps.SelectMany(map => map.ItemLocations.Where(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure))
                     .OrderBy(_ => random.Next())
                     .FirstOrDefault(lot => lot.CanTake()) ?? throw new Exception("Ran out of slots before keys!");
                 
@@ -148,12 +149,9 @@
                 remaining.Remove(keyToPlace);
 
                 // There's no key for this connection. Activate it when the player can reach both levers.
-                if (startMap.CanReach(MapName.UndeadBurgUndeadParish) && startMap.CanReach(MapName.Blighttown) && !connectedSensFortress)
+                if (currentlyAccessibleMaps.Contains(allMaps[MapName.UndeadBurgUndeadParish]) && currentlyAccessibleMaps.Contains(allMaps[MapName.Blighttown]) && !connectedSensFortress)
                 {
-                    var undeadBurgMap = allMaps[MapName.UndeadBurgUndeadParish];
-                    var sensFortressMap = allMaps[MapName.SensFortress];
-                    undeadBurgMap.connectedMaps.Add(sensFortressMap);
-                    sensFortressMap.connectedMaps.Add(undeadBurgMap);
+                    allMaps[MapName.UndeadBurgUndeadParish].ConnectTo(allMaps[MapName.SensFortress]);
                     connectedSensFortress = true;
                 }
             }
@@ -197,10 +195,11 @@
             // If that bonfire has cross-game connections, this fans out quite a bit.
             // If not, this is the guard's drop.
             // If it's 
-            var towerCellKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2004);
+            var towerCellKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 2004));
             if (towerCellKey != null)
             {
-                var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                var connectedMaps = towerCellMap.AllConnectedMaps();
+                var availableLots = connectedMaps.SelectMany(map => map.ItemLocations.Where(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure))
                     .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
                     .ToList();
                 availableLots.AddRange(towerCellMap.ItemLocations); // include jailer, even though he isn't a boss/treasure drop
@@ -212,10 +211,11 @@
 
             // Similarly, the Archive Giant Door Key must be accessible from the Prison Tower.
             // This is more flexible than the Tower Cell, but may still be limited to only slots in the tower if the prison bonfire doesn't link outside.
-            var towerGiantDoorKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.originalGame == SoulsGame.DSR && keySlotPair.Key.itemId == 2005);
+            var towerGiantDoorKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 2005));
             if (towerGiantDoorKey != null)
             {
-                var availableLots = towerCellMap.GetAccessibleItemLots(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure)
+                var connectedMaps = towerCellMap.AllConnectedMaps();
+                var availableLots = connectedMaps.SelectMany(map => map.ItemLocations.Where(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure))
                     .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
                     .ToList();
                 keyQueue.Clear();
@@ -228,7 +228,7 @@
 
         private static bool IsKey(LotSlot slot, IReadOnlyList<Key> allKeys)
         {
-            return allKeys.Any(key => key.originalGame == slot.SourceGame && key.itemId == slot.ItemId && key.itemType == slot.ItemType);
+            return allKeys.Any(key => key.Item == slot.Item);
         }
     }
 }

@@ -11,11 +11,17 @@ namespace DarkSoulsSeriesComboRandomizerTests
         public void TakeItems_ShouldOnlyTakeAsManyItemsAsTheItemLotOriginallyHad()
         {
             var paramDef = PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
-            var itemLot = new DS2SotFSItemLot(new List<LotSlot> { new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, true), new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false) }, new List<SoulsFormats.PARAM.Row> { new PARAM.Row(1, "foo", paramDef) }, LotType.RandomEnemyDrop);
+            var itemLot = new DS2SotFSItemLot(
+                [
+                    new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, true),
+                    new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false)
+                ],
+                [new PARAM.Row(1, "foo", paramDef)],
+                LotType.RandomEnemyDrop);
             var itemsToPlace = new Queue<LotSlot>();
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
 
             itemLot.TakeItems(itemsToPlace);
             itemsToPlace.Should().HaveCount(2);
@@ -27,15 +33,22 @@ namespace DarkSoulsSeriesComboRandomizerTests
         public void TakeItems_ShouldFillTheRestOfTheSlotsWhenPartiallyFilled()
         {
             var paramDef = PARAMDEF.XmlDeserialize(@"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
-            var itemLot = new DS2SotFSItemLot(new List<LotSlot> { new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, true), new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false), new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false) }, new List<SoulsFormats.PARAM.Row> { new PARAM.Row(1, "foo", paramDef) }, LotType.RandomEnemyDrop);
+            var itemLot = new DS2SotFSItemLot(
+                [
+                    new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, true),
+                    new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false),
+                    new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false)
+                ],
+                [new PARAM.Row(1, "foo", paramDef)],
+                LotType.RandomEnemyDrop);
             var itemsToPlace = new Queue<LotSlot>();
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
             
             itemLot.TakeItems(itemsToPlace, partialFill: true);
             itemsToPlace.Should().BeEmpty();
 
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
-            itemsToPlace.Enqueue(new LotSlot(SoulsGame.DS2S, 1, SoulsItemType.Goods, 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
+            itemsToPlace.Enqueue(new LotSlot(new SoulsItem(SoulsGame.DS2S, SoulsItemType.Goods, 1), 1, 1, false));
 
             itemLot.TakeItems(itemsToPlace);
             itemsToPlace.Should().HaveCount(1);

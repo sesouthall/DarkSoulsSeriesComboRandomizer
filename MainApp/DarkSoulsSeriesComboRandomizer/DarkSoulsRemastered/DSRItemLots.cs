@@ -125,7 +125,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             if (Map.DS1NonDefaultMapItemLots.Values.Any(set => set.Contains(itemLots.First().ID)))
             {
                 var actualMapName = Map.DS1NonDefaultMapItemLots.Single(kvp => kvp.Value.Contains(itemLots.First().ID)).Key;
-                var actualMap = Maps.Values.Single(map => map.Name == actualMapName);
+                var actualMap = Maps[actualMapName];
                 actualMap.ItemLocations.AddRange(itemLots);
             }
             else

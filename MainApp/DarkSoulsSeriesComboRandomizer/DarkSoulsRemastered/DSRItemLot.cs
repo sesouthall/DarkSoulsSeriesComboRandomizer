@@ -150,7 +150,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
                 if (weight > 0)
                 {
-                    tempSlots.Add(new LotSlot(SoulsGame.DSR, itemId, parsedCategory, weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == -1));
+                    tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DSR, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == -1));
                 }
             }
 

@@ -63,7 +63,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
                 if (weight > 0)
                 {
-                    tempSlots.Add(new LotSlot(SoulsGame.DS3, itemId, parsedCategory, weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
+                    tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DS3, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
                 }
             }
 

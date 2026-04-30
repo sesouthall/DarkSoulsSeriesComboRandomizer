@@ -64,7 +64,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
                 if (weight > 0)
                 {
-                    slots.Add(new LotSlot(SoulsGame.DS2S, itemId, category, weight, amount, IsEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0));
+                    slots.Add(new LotSlot(new SoulsItem(SoulsGame.DS2S, category, itemId), weight, amount, IsEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0));
                 }
             }
 
