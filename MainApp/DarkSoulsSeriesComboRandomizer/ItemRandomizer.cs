@@ -195,7 +195,7 @@
             // If that bonfire has cross-game connections, this fans out quite a bit.
             // If not, this is the guard's drop.
             // If it's 
-            var towerCellKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 2004));
+            var towerCellKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == Key.ArchiveTowerCellKey);
             if (towerCellKey != null)
             {
                 var connectedMaps = towerCellMap.AllConnectedMaps();
@@ -211,7 +211,7 @@
 
             // Similarly, the Archive Giant Door Key must be accessible from the Prison Tower.
             // This is more flexible than the Tower Cell, but may still be limited to only slots in the tower if the prison bonfire doesn't link outside.
-            var towerGiantDoorKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 2005));
+            var towerGiantDoorKey = allKeys.SingleOrDefault(keySlotPair => keySlotPair.Key.Item == Key.ArchiveTowerGiantDoorKey;
             if (towerGiantDoorKey != null)
             {
                 var connectedMaps = towerCellMap.AllConnectedMaps();

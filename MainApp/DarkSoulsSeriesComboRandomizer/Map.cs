@@ -544,7 +544,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)") // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
                 {
-                    var coiledSword = ds3Items.Keys.Single(key => key.Item == new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 2137));
+                    var coiledSword = ds3Items.Keys.Single(key => key.Item == Key.CoiledSword);
                     coiledSword.AddUnlockedConnection((ds3Map, dsrMap));
                     coiledSword.AddUnlockedConnection((ds3Map, ds2Map));
                     dsrMap.ConnectTo(ds2Map);
