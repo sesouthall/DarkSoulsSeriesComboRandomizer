@@ -1,11 +1,10 @@
 ﻿using SoulsFormats;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
-    internal class DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther, PARAM enemyParam, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
+    internal class DS2SotFSItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParamChr, PARAM itemLotParamOther, PARAM enemyParam, ItemLotFactory lotFactory, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
     {
         public IReadOnlyDictionary<MapName, Map> Maps { get; } = maps;
         public IReadOnlyList<Key> Keys { get; } = keys;
@@ -18,10 +17,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             var itemLotParamOther = PARAMUtils.LoadParam(regulationFile, "ItemLotParam2_Other", @"ConfigFiles\PARAM\DS2S\Defs\ITEM_LOT_PARAM2.xml");
             var enemyParam = PARAMUtils.LoadParam(regulationFile, "EnemyParam", @"ConfigFiles\PARAM\DS2S\Defs\CHR_PARAM.xml");
 
+            var crossGameMapping = SoulsItemCsvParser.ParseFile(Path.Combine("ConfigFiles", "DS2S_injected_items.csv"));
+            var reverseMapping = crossGameMapping.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+            var lotSerializer = new DS2SotFSLotSlotSerializer(reverseMapping);
+            var lotFactory = new ItemLotFactory(SoulsGame.DS2S, linkedItemLots, lotSerializer);
+
             var maps = Map.GetDSRMaps();
             var keys = Key.ConstructDS2Keys(maps);
 
-            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther, enemyParam, maps, keys);
+            return new DS2SotFSItemLots(rootDir, saveDir, regulationFile, itemLotParamChr, itemLotParamOther, enemyParam, lotFactory, maps, keys);
         }
 
         public void Load()
@@ -116,7 +120,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             ClearDataFileCache();
         }
 
-        private Dictionary<string, (BHD5, FileStream)> ds2DataFileCache = new Dictionary<string, (BHD5, FileStream)>();
+        private readonly Dictionary<string, (BHD5, FileStream)> ds2DataFileCache = [];
 
         private (BHD5, FileStream) ReadDS2DataFile(string fileName, string key)
         {
@@ -170,7 +174,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             foreach (var enemy in generatorData.Rows)
             {
                 // Skip NG+ enemies
-                if (enemy.Cells.Any(cell => cell.Def.InternalName == "AppearanceEventId") && (uint)enemy["AppearanceEventId"].Value >= 2 && (uint)enemy["AppearanceEventId"].Value <= 8)
+                if (enemy.Cells.Any(cell => cell.Def.InternalName == "AppearanceEventId") &&
+                    (uint)enemy["AppearanceEventId"].Value >= 2 &&
+                    (uint)enemy["AppearanceEventId"].Value <= 8)
                 {
                     continue;
                 }
@@ -178,7 +184,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 var itemLotNumber = (uint?)enemy["ItemLotID1"]?.Value;
                 if (itemLotNumber.HasValue && itemLotNumber.Value != 0)
                 {
-                    AssignLotChainToCorrectMap(parsedMap, ParseEnemyItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                    AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(Convert.ToInt32(itemLotNumber.Value), itemLotParamChr, LotType.UnspecifiedEnemy));
                 }
                 var generatorRegistrationNumber = (uint?)enemy["GeneratorRegistParam"]?.Value;
                 if (generatorRegistrationNumber.HasValue && generatorRegistrationNumber.Value != 0)
@@ -189,7 +195,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                         var dropLotNumber = (int?)enemyParam.Rows.SingleOrDefault(row => row.ID == enemyParamId.Value)?["death_itemlot_id"]?.Value;
                         if (dropLotNumber.HasValue && dropLotNumber.Value != 0)
                         {
-                            AssignLotChainToCorrectMap(parsedMap, ParseEnemyItemLotChain(Convert.ToUInt32(dropLotNumber.Value), LotType.UnspecifiedEnemy));
+                            AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(dropLotNumber.Value, itemLotParamChr, LotType.UnspecifiedEnemy));
                         }
                     }
                 }
@@ -198,7 +204,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 {
                     var eventItemLotNumber = entityItemLots[(parsedMap.FileName, enemy.ID)];
                     var lotType = GetEventLotType(eventItemLotNumber);
-                    AssignLotChainToCorrectMap(parsedMap, new List<IItemLot> { DS2SotFSItemLot.Parse(itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber), lotType, itemLotParamOther) });
+                    // This item lot gets parsed directly because DS2 uses sequential event item lots
+                    // to represent NG+ drops
+                    var parsedLot = lotFactory.Parse([itemLotParamOther.Rows.Single(row => row.ID == eventItemLotNumber)],
+                        lotType);
+                    AssignLotChainToCorrectMap(parsedMap, [parsedLot]);
                 }
             }
 
@@ -206,11 +216,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 var itemLotNumber = mapObject.MapObjectInstanceParamID;
                 if (itemLotNumber <= 0) continue; // No actual drop at this treasure
-                AssignLotChainToCorrectMap(parsedMap, ParseOtherItemLotChain((uint)itemLotNumber, LotType.Treasure));
+                AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(itemLotNumber, itemLotParamOther, LotType.Treasure));
             }
         }
 
-        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<IItemLot> itemLots)
+        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<ItemLot> itemLots)
         {
             if (!itemLots.Any()) return;
 
@@ -229,26 +239,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         private static LotType GetEventLotType(int itemLotNumber)
         {
             return 100000 <= itemLotNumber && itemLotNumber < 900000 ? LotType.Boss : LotType.GenericEvent;
-        }
-
-        private IEnumerable<DS2SotFSItemLot> ParseEnemyItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
-        {
-            Row? itemLot;
-            while ((itemLot = itemLotParamChr.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
-            {
-                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess, itemLotParamChr);
-                itemLotNumber++;
-            }
-        }
-
-        private IEnumerable<DS2SotFSItemLot> ParseOtherItemLotChain(uint itemLotNumber, LotType lotTypeGuess)
-        {
-            Row? itemLot;
-            while ((itemLot = itemLotParamOther.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
-            {
-                yield return DS2SotFSItemLot.Parse(itemLot, lotTypeGuess, itemLotParamOther);
-                itemLotNumber++;
-            }
         }
 
         // Key discovery logic and archive names taken from UXM
@@ -347,6 +337,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             // Other?
             { ("m10_10_00_00", 86), 1751000 }, // Cale gives House Key
         };
+
+        // Item lots that should always drop the same items. For example,
+        // the Persuer's main fight, and the one-time fight outside the
+        // Cardinal Tower bonfire.
+        private static readonly List<HashSet<int>> linkedItemLots =
+        [
+            [318000, 60008000],
+        ];
 
         public const int EstusFlaskLot = 1700000;
     }

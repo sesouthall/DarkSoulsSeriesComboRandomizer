@@ -2,11 +2,10 @@
 using SoulsFormats.Cryptography;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
-    internal class DS3ItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParam, PARAM npcParam, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
+    internal class DS3ItemLots(string rootDir, string saveDir, BND4 regulationFile, PARAM itemLotParam, PARAM npcParam, ItemLotFactory lotFactory, IReadOnlyDictionary<MapName, Map> maps, IReadOnlyList<Key> keys)
     {
         public IReadOnlyDictionary<MapName, Map> Maps { get; } = maps;
         public IReadOnlyList<Key> Keys { get; } = keys;
@@ -21,7 +20,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             var maps = Map.GetDS3Maps();
             var keys = Key.ConstructDS3Keys(maps);
 
-            return new DS3ItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam, maps, keys);
+            var crossGameMapping = SoulsItemCsvParser.ParseFile(Path.Combine("ConfigFiles", "DS3_injected_items.csv"));
+            var reverseMapping = crossGameMapping.ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+            var lotSerializer = new DS3LotSlotSerializer(reverseMapping);
+            var lotFactory = new ItemLotFactory(SoulsGame.DS3, linkedItemLots, lotSerializer);
+
+            return new DS3ItemLots(rootDir, saveDir, regulationFile, itemLotParam, npcParam, lotFactory, maps, keys);
         }
 
         public void Load()
@@ -83,7 +87,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             }
         }
 
-        private Dictionary<string, (BHD5, FileStream)> ds3DataFileCache = new Dictionary<string, (BHD5, FileStream)>();
+        private readonly Dictionary<string, (BHD5, FileStream)> ds3DataFileCache = [];
 
         private (BHD5, FileStream) ReadDS3DataFile(string fileName, string key)
         {
@@ -139,12 +143,12 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 var itemLotNumber = (int?) npcParam?.Rows.FirstOrDefault(row => row.ID == enemy.NPCParamID)?["ItemLotId1"]?.Value;
                 if (itemLotNumber.HasValue && itemLotNumber.Value != -1)
                 {
-                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber.Value, LotType.UnspecifiedEnemy));
+                    AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(itemLotNumber.Value, itemLotParam, LotType.UnspecifiedEnemy));
                 }
                 
                 if (entityItemLots.TryGetValue(enemy.EntityID, out int lotId))
                 {
-                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(lotId, GetEventLotType(lotId)));
+                    AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(lotId, itemLotParam, GetEventLotType(lotId)));
                 }
             }
 
@@ -153,14 +157,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 if (!mapData.Parts.Objects.Any(o => o.Name == treasure.TreasurePartName)) continue; // Treasure isn't obtainable
                 var itemLotNumber = treasure.ItemLot1;
                 if (itemLotNumber == -1) continue; // No actual drop at this treasure
-                AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber, LotType.Treasure));
+                AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(itemLotNumber, itemLotParam, LotType.Treasure));
             }
 
             foreach (var part in mapData.Parts.Objects)
             {
                 if (entityItemLots.TryGetValue(part.EntityID, out int itemLotNumber))
                 {
-                    AssignLotChainToCorrectMap(parsedMap, ParseItemLotChain(itemLotNumber, GetEventLotType(itemLotNumber)));
+                    AssignLotChainToCorrectMap(parsedMap, lotFactory.ParseChain(itemLotNumber, itemLotParam, GetEventLotType(itemLotNumber)));
                 }
             }
         }
@@ -169,11 +173,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         {
             foreach (var talkLot in talkLots)
             {
-                AssignLotChainToCorrectMap(Maps[talkLot.Item2], ParseItemLotChain(talkLot.Item1, LotType.GenericEvent));
+                AssignLotChainToCorrectMap(Maps[talkLot.Item2], lotFactory.ParseChain(talkLot.Item1, itemLotParam, LotType.GenericEvent));
             }
         }
 
-        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<IItemLot> itemLots)
+        private void AssignLotChainToCorrectMap(Map defaultMap, IEnumerable<ItemLot> itemLots)
         {
             if (!itemLots.Any()) return;
 
@@ -192,16 +196,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         private static LotType GetEventLotType(int itemLotNumber)
         {
             return 2000 <= itemLotNumber && itemLotNumber < 2500 ? LotType.Boss : LotType.GenericEvent;
-        }
-
-        private IEnumerable<DS3ItemLot> ParseItemLotChain(int itemLotNumber, LotType lotTypeGuess)
-        {
-            Row? itemLot;
-            while ((itemLot = itemLotParam.Rows.SingleOrDefault(row => row.ID == itemLotNumber)) != null)
-            {
-                yield return DS3ItemLot.Parse(itemLot, lotTypeGuess, itemLotParam);
-                itemLotNumber++;
-            }
         }
 
         // Stolen shamelessly from TheFifthMatt's SoulsRandomizers
@@ -463,6 +457,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             ( 66220, MapName.RingedCity ), // Seigbrau from Lapp
             ( 66300, MapName.RingedCity ), // Sacred Chime of Filianore
             ( 66310, MapName.RingedCity ), // Titanite Slab from Shira
+        ];
+
+        private static readonly List<HashSet<int>> linkedItemLots =
+        [
+            [52300, 62300],
+            [52302, 62320],
+            [50902, 60910]
         ];
 
         // From UXM's full DS3 file list

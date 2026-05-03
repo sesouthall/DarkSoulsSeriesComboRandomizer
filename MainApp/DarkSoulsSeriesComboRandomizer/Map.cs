@@ -289,7 +289,7 @@ namespace DarkSoulsSeriesComboRandomizer
         public readonly string FileName;
         public readonly SoulsGame SourceGame;
         public readonly IReadOnlyList<string> Bonfires;
-        public readonly List<IItemLot> ItemLocations = [];
+        public readonly List<ItemLot> ItemLocations = [];
         internal HashSet<Map> connectedMaps = [];
             
         public static IReadOnlyDictionary<MapName, Map> GetDSRMaps() => ParseMapDefinitions(
