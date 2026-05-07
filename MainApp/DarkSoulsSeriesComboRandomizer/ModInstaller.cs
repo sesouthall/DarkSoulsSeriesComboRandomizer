@@ -26,6 +26,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void InstallStaticChanges()
         {
+            Directory.CreateDirectory(backupFolderPath);
             if (Directory.GetFiles(backupFolderPath).Length > 0)
             {
                 // Cleanup didn't happen, or failed last time
@@ -48,6 +49,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 File.Copy(file, vanillaFile);
             }
             // Since DSR doesn't use a mod loader, we have to manually backup and restore the regulation file
+
             File.Copy(DSRRegulationFilePath, Path.Combine(backupFolderPath, "GameParam.parambnd.dcx"));
 
             // DS2 uses ModEngine 1. Copy everything over. ModEngine will handle replacing files.
@@ -81,6 +83,7 @@ namespace DarkSoulsSeriesComboRandomizer
             var bonfireMappingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BonfireMappings.txt");
             if (!File.Exists(bonfireMappingsFile))
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(bonfireMappingsFile)!);
                 File.Copy(Path.Combine("ConfigFiles", "BonfireMappings.txt"), bonfireMappingsFile);
             }
 
@@ -230,22 +233,33 @@ Please check {SaveFolderPath} and remove any extra files named {saveFileName}.")
             {
                 var vanillaFile = file.Replace(ds1ModdedFilePath, dsrRoot);
                 var backupFile = file.Replace(ds1ModdedFilePath, backupFolderPath);
-                File.Delete(vanillaFile);
-                if (File.Exists(backupFile))
+                if ((Path.GetFileName(file) == "dinput8.dll" || Path.GetFileName(file) == "steam_appid.txt") && File.Exists(file))
                 {
+                    File.Delete(vanillaFile);
+                }
+                else if (File.Exists(backupFile))
+                {
+                    File.Delete(vanillaFile);
                     File.Move(backupFile, vanillaFile);
                 }
             }
             // Also restore the regulation file, since it isn't handled with the rest of them.
-            File.Delete(DSRRegulationFilePath);
-            File.Move(Path.Combine(backupFolderPath, "GameParam.parambnd.dcx"), DSRRegulationFilePath);
+            var ds1RegulationBackup = Path.Combine(backupFolderPath, "GameParam.parambind.dcx");
+            if (File.Exists(ds1RegulationBackup))
+            {
+                File.Delete(DSRRegulationFilePath);
+                File.Move(Path.Combine(backupFolderPath, "GameParam.parambnd.dcx"), DSRRegulationFilePath);
+            }
 
             // DS2 - No files got replaced, just delete them.
             var ds2ModdedFilePath = Path.Combine("PreModdedGameFiles", "DS2S");
             foreach (var file in Directory.GetFiles(ds2ModdedFilePath, "*", SearchOption.AllDirectories))
             {
                 var destinationPath = file.Replace(ds2ModdedFilePath, ds2Root);
-                File.Delete(destinationPath);
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(destinationPath);
+                }
             }
 
             // DS3 - Restore DarkSoulsIII.exe, delete everything else
@@ -254,9 +268,13 @@ Please check {SaveFolderPath} and remove any extra files named {saveFileName}.")
             {
                 var vanillaFile = file.Replace(ds3ModdedFilePath, ds3Root);
                 var backupFile = file.Replace(ds3ModdedFilePath, backupFolderPath);
-                File.Delete(vanillaFile);
-                if (File.Exists(backupFile))
+                if (Path.GetFileName(file) != "DarkSoulsIII.exe" && File.Exists(vanillaFile))
                 {
+                    File.Delete(vanillaFile);
+                }
+                else if (File.Exists(backupFile))
+                {
+                    File.Delete(vanillaFile);
                     File.Move(backupFile, vanillaFile);
                 }
             }
