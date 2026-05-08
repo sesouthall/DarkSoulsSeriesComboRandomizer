@@ -182,6 +182,18 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
             mapping = parsedMappings->GetByDS3BonfireId((*warpInfo)->LastBonfire);
         }
 #endif // DS3
+        else if (warpInfo == NULL)
+        {
+            printf_s("Could not find pointer to warp info");
+        }
+        else if (*warpInfo == NULL)
+        {
+            printf_s("Warp info object is not initialized");
+        }
+        else
+        {
+            printf_s("Last bonfire (%d) is not found in bonfire mappings", (*warpInfo)->LastBonfire);
+        }
 
         if (mapping == NULL)
         {
@@ -248,8 +260,6 @@ bool Begin(uint64_t qModuleHandle)
 #ifdef DSR
     void* warpInfo_sp = sp::mem::aob_scan("48 8B 05 xx xx xx xx 0F 28 01 66 0F 7F 80 xx xx 00 00 C6 80");
     warpInfo = sp::mem::pointer<ChrClassWarp*>((void*)((uint64_t)warpInfo_sp + *(uint32_t*)((uint64_t)warpInfo_sp + 3) + 7)).resolve();
-    int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
-    int EzStateTalkEventCommandFunctionOffset = 0x4db340;
 #endif // DSR
 #ifdef DS3
     void* warpInfo_sp = sp::mem::aob_scan("48 8B xx xx xx xx 04 89 48 28 C3");
@@ -286,10 +296,12 @@ bool Begin(uint64_t qModuleHandle)
         0,
         NULL);
 
+#ifdef DS3
     Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
     pHookManager->Initialize();
     pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
     pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
+#endif
 
     return true;
 };
@@ -336,6 +348,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                     if (result.status() == dearxan::DearxanStatus::DearxanSuccess)
                     {
                         printf_s("Arxan disabled\n");
+                        int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
+                        int EzStateTalkEventCommandFunctionOffset = 0x4db340;
+                        Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
+                        pHookManager->Initialize();
+                        pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
+                        pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
                     }
                     else
                     {
