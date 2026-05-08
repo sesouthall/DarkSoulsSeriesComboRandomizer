@@ -74,6 +74,7 @@ namespace DarkSoulsSeriesComboRandomizer
         public void Pause()
         {
             ShowWindow(gameProcess.MainWindowHandle, 7);
+            Thread.Sleep(500);
             foreach (ProcessThread pT in gameProcess.Threads)
             {
                 IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);

@@ -39,7 +39,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             while (!shutdown)
             {
                 var inventory = hook.GetCurrentInventory();
-                var modItems = inventory.Where(item => item.category == 0x40000000 && item.id >= 10000);
+                var modItems = inventory.Where(item => item.category == 0x40000000 && item.id >= 10000 && item.id <= 14931);
                 foreach (var item in modItems)
                 {
                     hook.RemoveItem(item.category, item.id);

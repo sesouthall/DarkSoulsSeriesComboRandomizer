@@ -205,21 +205,22 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
         switch (commandId)
         {
         case CommandId::WarpToDS1:
-            printf_s("Warping to %s in DS1 with id %d", mapping->DS1BonfireName.c_str(), mapping->DS1BonfireId);
+            printf_s("Warping to %s in DS1 with id %d\n", mapping->DS1BonfireName.c_str(), mapping->DS1BonfireId);
             message = std::format("{}\n", mapping->DS1BonfireId);
             break;
         case CommandId::WarpToDS2:
-            printf_s("Warping to %s in DS2 with id %d", mapping->DS2BonfireName.c_str(), mapping->DS2BonfireId);
+            printf_s("Warping to %s in DS2 with id %d\n", mapping->DS2BonfireName.c_str(), mapping->DS2BonfireId);
             message = std::format("{}\n", mapping->DS2BonfireId);
             break;
         case CommandId::WarpToDS3:
-            printf_s("Warping to %s in DS3 with id %d", mapping->DS3BonfireName.c_str(), mapping->DS3BonfireId);
+            printf_s("Warping to %s in DS3 with id %d\n", mapping->DS3BonfireName.c_str(), mapping->DS3BonfireId);
             message = std::format("{}\n", mapping->DS3BonfireId);
             break;
         }
 
         DWORD length, written;
         length = (message.length() + 1) * sizeof(TCHAR);
+        printf_s("Pipe handle is %p", hPipe);
         WriteFile(hPipe, message.c_str(), length, &written, NULL);
         FlushFileBuffers(hPipe);
         printf_s("Wrote %d/%d characters from '%s'", written, length, message.c_str());
