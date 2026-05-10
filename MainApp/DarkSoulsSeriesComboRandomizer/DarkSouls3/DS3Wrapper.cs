@@ -45,7 +45,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             while (!shutdown)
             {
                 var inventory = hook.GetCurrentInventory();
-                var modItems = inventory.Where(item => item.id >= 0x403D0900);
+                var modItems = inventory.Where(item => item.id >= 0x403D0900 && item.id <= 0x403D1552);
                 foreach (var item in modItems)
                 {
                     hook.RemoveItem(item.inventoryIndex);

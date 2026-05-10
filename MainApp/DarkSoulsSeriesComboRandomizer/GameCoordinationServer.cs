@@ -124,6 +124,8 @@ namespace DarkSoulsSeriesComboRandomizer
                     throw new ArgumentOutOfRangeException(nameof(currentGame), $"{currentGame} is not a known SoulsGame");
             }
 
+            Thread.Sleep(500);
+
             if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
             {
                 ActiveGame = SoulsGame.DSR;

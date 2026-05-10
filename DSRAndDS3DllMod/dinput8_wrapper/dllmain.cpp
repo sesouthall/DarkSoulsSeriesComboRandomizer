@@ -182,6 +182,18 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
             mapping = parsedMappings->GetByDS3BonfireId((*warpInfo)->LastBonfire);
         }
 #endif // DS3
+        else if (warpInfo == NULL)
+        {
+            printf_s("Could not find pointer to warp info");
+        }
+        else if (*warpInfo == NULL)
+        {
+            printf_s("Warp info object is not initialized");
+        }
+        else
+        {
+            printf_s("Last bonfire (%d) is not found in bonfire mappings", (*warpInfo)->LastBonfire);
+        }
 
         if (mapping == NULL)
         {
@@ -193,21 +205,22 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
         switch (commandId)
         {
         case CommandId::WarpToDS1:
-            printf_s("Warping to %s in DS1 with id %d", mapping->DS1BonfireName.c_str(), mapping->DS1BonfireId);
+            printf_s("Warping to %s in DS1 with id %d\n", mapping->DS1BonfireName.c_str(), mapping->DS1BonfireId);
             message = std::format("{}\n", mapping->DS1BonfireId);
             break;
         case CommandId::WarpToDS2:
-            printf_s("Warping to %s in DS2 with id %d", mapping->DS2BonfireName.c_str(), mapping->DS2BonfireId);
+            printf_s("Warping to %s in DS2 with id %d\n", mapping->DS2BonfireName.c_str(), mapping->DS2BonfireId);
             message = std::format("{}\n", mapping->DS2BonfireId);
             break;
         case CommandId::WarpToDS3:
-            printf_s("Warping to %s in DS3 with id %d", mapping->DS3BonfireName.c_str(), mapping->DS3BonfireId);
+            printf_s("Warping to %s in DS3 with id %d\n", mapping->DS3BonfireName.c_str(), mapping->DS3BonfireId);
             message = std::format("{}\n", mapping->DS3BonfireId);
             break;
         }
 
         DWORD length, written;
         length = (message.length() + 1) * sizeof(TCHAR);
+        printf_s("Pipe handle is %p", hPipe);
         WriteFile(hPipe, message.c_str(), length, &written, NULL);
         FlushFileBuffers(hPipe);
         printf_s("Wrote %d/%d characters from '%s'", written, length, message.c_str());
@@ -248,8 +261,6 @@ bool Begin(uint64_t qModuleHandle)
 #ifdef DSR
     void* warpInfo_sp = sp::mem::aob_scan("48 8B 05 xx xx xx xx 0F 28 01 66 0F 7F 80 xx xx 00 00 C6 80");
     warpInfo = sp::mem::pointer<ChrClassWarp*>((void*)((uint64_t)warpInfo_sp + *(uint32_t*)((uint64_t)warpInfo_sp + 3) + 7)).resolve();
-    int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
-    int EzStateTalkEventCommandFunctionOffset = 0x4db340;
 #endif // DSR
 #ifdef DS3
     void* warpInfo_sp = sp::mem::aob_scan("48 8B xx xx xx xx 04 89 48 28 C3");
@@ -286,10 +297,12 @@ bool Begin(uint64_t qModuleHandle)
         0,
         NULL);
 
+#ifdef DS3
     Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
     pHookManager->Initialize();
     pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
     pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
+#endif
 
     return true;
 };
@@ -336,6 +349,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                     if (result.status() == dearxan::DearxanStatus::DearxanSuccess)
                     {
                         printf_s("Arxan disabled\n");
+                        int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
+                        int EzStateTalkEventCommandFunctionOffset = 0x4db340;
+                        Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
+                        pHookManager->Initialize();
+                        pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
+                        pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
                     }
                     else
                     {

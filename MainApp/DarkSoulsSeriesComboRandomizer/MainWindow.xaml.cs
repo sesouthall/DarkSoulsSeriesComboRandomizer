@@ -212,7 +212,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
             var saveFolder = Path.Combine(AppDataFolder, saveName);
             // If the save folder already exists...
-            if (Directory.Exists(Path.Combine(AppDataFolder, saveName)))
+            if (Directory.Exists(saveFolder))
             {
                 var seedFile = Path.Combine(saveFolder, "seed.txt");
                 // And it has a seed file...
@@ -226,7 +226,7 @@ namespace DarkSoulsSeriesComboRandomizer
                         var result = MessageBox.Show("A save with that name already exists. Overwrite?", "Overwrite?", MessageBoxButton.YesNo, MessageBoxImage.Question);
                         if (result == MessageBoxResult.Yes)
                         {
-                            Directory.Delete(Path.Combine(AppDataFolder, saveName), true);
+                            Directory.Delete(saveFolder, true);
                         }
                         else
                         {
@@ -239,7 +239,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 // Delete it.
                 else
                 {
-                    Directory.Delete(Path.Combine(AppDataFolder, saveName), true);
+                    Directory.Delete(saveFolder, true);
                 }
             }
             // If the save folder doesn't exist, Great!, it's a new save
@@ -347,6 +347,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 await Dispatcher.Invoke(async () =>
                 {
                     StatusText.Text = $"Error: {ex.Message}";
+                    MessageBox.Show($"Error: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     SetSetupControlsEnabled(true);
                     UpdatePlayButton();
 
