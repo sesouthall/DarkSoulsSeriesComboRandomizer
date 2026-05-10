@@ -31,8 +31,6 @@ namespace DarkSoulsSeriesComboRandomizer
             InitializeSeed();
             PopulateSaveList();
             UpdatePlayButton();
-
-            CrossGameMappings.Initialize();
         }
 
         // ── Initialisation helpers ────────────────────────────────────────────────
@@ -257,6 +255,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 var ds1Dir = Path.GetDirectoryName(DS1PathBox.Text)!;
                 var ds2Dir = Path.GetDirectoryName(DS2PathBox.Text)!;
                 var ds3Dir = Path.GetDirectoryName(DS3PathBox.Text)!;
+                var crossGameMappings = CrossGameMappings.New();
 
                 _installer = new ModInstaller(ds1Dir, ds2Dir, ds3Dir, options);
 
@@ -269,7 +268,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 await Task.Run(() =>
                 {
-                    _installer.CreateRandomizedRegulationFilesIfNeeded();
+                    _installer.CreateRandomizedRegulationFilesIfNeeded(crossGameMappings);
                 });
 
                 Dispatcher.Invoke(() => StatusText.Text = "Installing randomized item placements…");
@@ -323,7 +322,8 @@ namespace DarkSoulsSeriesComboRandomizer
                 _server = new GameCoordinationServer(
                     DS1PathBox.Text,
                     DS2PathBox.Text,
-                    DS3PathBox.Text);
+                    DS3PathBox.Text,
+                    crossGameMappings);
 
                 var lastGame = _installer.GetLastGame();
                 _server.Start(lastGame);

@@ -7,19 +7,11 @@
         public IReadOnlyList<(Map, Map)> ConnectionsUnlocked => connectionsUnlocked;
         private readonly List<(Map, Map)> connectionsUnlocked;
 
-        private Key(SoulsItem item, int defaultLotNumber, List<(Map, Map)> connectionsUnlocked)
+        internal Key(SoulsItem item, int defaultLotNumber, List<(Map, Map)> connectionsUnlocked)
         {
             this.Item = item;
             this.defaultLotNumber = defaultLotNumber;
             this.connectionsUnlocked = connectionsUnlocked;
-        }
-
-        public static Key NewKey(int itemId, SoulsItemType itemType, SoulsGame originalGame, int defaultLotNumber, List<(MapName, MapName)> mapsToConnect, IReadOnlyDictionary<MapName, Map> mapLookup)
-        {
-            var parsedMaps = mapsToConnect
-                .Select(pair => (mapLookup[pair.Item1], mapLookup[pair.Item2]))
-                .ToList();
-            return new Key(new SoulsItem(originalGame, itemType, itemId), defaultLotNumber, parsedMaps);
         }
 
         public static Key NewKey((SoulsItem originalItem, int defaultLotNumber, List<(MapName, MapName)> mapsToConnect) keyDefinition, IReadOnlyDictionary<MapName, Map> mapLookup)
@@ -152,7 +144,7 @@
             (KeyToNewLondoRuins,        1400500,     [(MapName.ValleyOfDrakes, MapName.NewLondoRuinsValleyOfDrakes)]),              
             (AnnexKey,                  1100140,     [(MapName.PaintedWorld, MapName.PaintedWorldAnnex)]),                          
             (DungeonCellKey,            1810000,     [(MapName.DS1StartingCell, MapName.NorthernUndeadAsylum)]),                    
-            (BigPilgrimsKey,            1081,        [(MapName.NorthernUndeadAsylum, MapName.FirelinkShrine)]),                     
+            (BigPilgrimsKey,            1081,        [(MapName.NorthernUndeadAsylum, MapName.NorthernUndeadAsylumExit)]),                     
             (UndeadAsylumF2EastKey,     1080,        [(MapName.NorthernUndeadAsylum, MapName.NorthernUndeadAsylumF2East)]),         
             (KeyToTheSeal,              1100,        [(MapName.NewLondoRuinsValleyOfDrakes, MapName.NewLondoRuinsPostSeal)]),       
             (KeyToDepths,               2510,        [(MapName.LowerUndeadBurg, MapName.Depths)]),                                  
@@ -211,7 +203,8 @@
             (HeavyIronKey,              10106360, [(MapName.IronKeepBelfrySol, MapName.BrumeTower)]),                                       
             (FrozenFlower,              20216110, [(MapName.ShadedWoodsShrineOfWinter, MapName.FrozenEleumLoyce)]),                         
             (EternalSanctumKey,         50356630, [(MapName.ShulvaSanctumCity, MapName.PriestessChamber)]),                                 
-            (BrumeTowerKey,             50366210, [(MapName.BrumeTower, MapName.BrumeTowerWithOnlyTowerKey)]),                              
+            (BrumeTowerKey,             50366210, [(MapName.BrumeTower, MapName.BrumeTowerWithOnlyTowerKey),
+                                                   (MapName.BrumeTowerWithOnlyScorchingIronScepter, MapName.BrumeTowerWithBothKeys)]),
             (GarrisonWardKey,           50376300, [(MapName.FrozenEleumLoyce, MapName.ReinderValley)]),                                     
             (DragonStone,               50355120, [(MapName.ShulvaSanctumCity, MapName.DragonSanctum)]),                                    
             (ScorchingIronScepter,      60014000, [(MapName.BrumeTower, MapName.BrumeTowerWithOnlyScorchingIronScepter),

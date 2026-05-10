@@ -2,7 +2,7 @@
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
-    public class DS3LotSlotSerializer(Dictionary<SoulsItem, int> crossGameItemMapping) : ILotSlotSerializer
+    public class DS3LotSlotSerializer(CrossGameMappings crossGameMappings) : ILotSlotSerializer
     {
         private const string ItemIdFieldPattern = "ItemLotId{0}";
         private const string ItemCategoryFieldPattern = "LotItemCategory0{0}";
@@ -46,24 +46,21 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             return slots;
         }
 
-        public void WriteToRow(Row row, LotSlot slot, int index)
+        public void WriteToRow(Row row, IReadOnlyList<LotSlot> slots)
         {
-            var resolvedId = slot.Item.OriginalId;
-            var resolvedType = slot.Item.ItemType;
-            var resolvedIndex = index + 1;
-            if (slot.Item.Game != SoulsGame.DS3)
+            foreach (var (slot, index) in slots.Select((slot, i) => (slot, i + 1)))
             {
-                resolvedId = crossGameItemMapping[slot.Item];
-                resolvedType = SoulsItemType.Goods;
+                var resolvedItem = crossGameMappings.GetMappedItem(slot.Item, SoulsGame.DS3);
+
+                row[string.Format(ItemIdFieldPattern, index)].Value = slot.IsEmptyItem ? 0 : resolvedItem.Id;
+                row[string.Format(ItemAmountFieldPattern, index)].Value = slot.Amount;
+                // DS3 usually normalizes total weight to 1000.
+                // This may not add to 1000, but it should be close enough.
+                // If this is one of the few non-guaranteed drops that sums to 100 instead,
+                // congrats, you get lots of drops.
+                row[string.Format(ItemWeightFieldPattern, index)].Value = slot.Weight * 10;
+                row[string.Format(ItemCategoryFieldPattern, index)].Value = slot.IsEmptyItem ? 0xFFFFFFFF : resolvedItem.Type;
             }
-            row[string.Format(ItemIdFieldPattern, resolvedIndex)].Value = slot.IsEmptyItem ? 0 : resolvedId;
-            row[string.Format(ItemAmountFieldPattern, resolvedIndex)].Value = slot.Amount;
-            // DS3 usually normalizes total weight to 1000.
-            // This may not add to 1000, but it should be close enough.
-            // If this is one of the few non-guaranteed drops that sums to 100 instead,
-            // congrats, you get lots of drops.
-            row[string.Format(ItemWeightFieldPattern, resolvedIndex)].Value = slot.Weight * 10;
-            row[string.Format(ItemCategoryFieldPattern, resolvedIndex)].Value = slot.IsEmptyItem ? 0xFFFFFFFF : resolvedType;
         }
     }
 }

@@ -1,64 +1,42 @@
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public static class CrossGameMappings
+    public class CrossGameMappings(Dictionary<int, SoulsItem> dsrMapping, Dictionary<int, SoulsItem> ds2Mapping, Dictionary<int, SoulsItem> ds3Mapping)
     {
-        private static Dictionary<int, SoulsItem>? dsrMapping;
-        private static Dictionary<int, SoulsItem>? ds2Mapping;
-        private static Dictionary<int, SoulsItem>? ds3Mapping;
-        private static bool initialized = false;
-
-        public static void Initialize()
+        public static CrossGameMappings New()
         {
-            if (initialized)
-            {
-                throw new InvalidOperationException($"{nameof(CrossGameMappings)} has already been initialized");
-            }
-            dsrMapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DSR_injected_items.csv");
-            ds2Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS2S_injected_items.csv");
-            ds3Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS3_injected_items.csv");
-            initialized = true;
+            var dsrMapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DSR_injected_items.csv");
+            var ds2Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS2S_injected_items.csv");
+            var ds3Mapping = SoulsItemCsvParser.ParseFile(@"ConfigFiles\DS3_injected_items.csv");
+            return new CrossGameMappings(dsrMapping, ds2Mapping, ds3Mapping);
         }
 
-        internal static void Initialize(Dictionary<int, SoulsItem> dsrMapping, Dictionary<int, SoulsItem> ds2Mapping, Dictionary<int, SoulsItem> ds3Mapping)
+        public SoulsItem GetSourceItem(int itemId, SoulsGame game)
         {
-            if (initialized)
-            {
-                throw new InvalidOperationException($"{nameof(CrossGameMappings)} has already been initialized");
-            }
-            CrossGameMappings.dsrMapping = dsrMapping;
-            CrossGameMappings.ds2Mapping = ds2Mapping;
-            CrossGameMappings.ds3Mapping = ds3Mapping;
-            initialized = true;
-        }
-
-        public static SoulsItem GetSourceItem(int itemId, SoulsGame game)
-        {
-            if (!initialized)
-            {
-                throw new InvalidOperationException($"{nameof(CrossGameMappings)} must be initialized before getting items from it");
-            }
             return game switch
             {
-                SoulsGame.DSR => dsrMapping![itemId],
-                SoulsGame.DS2S => ds2Mapping![itemId],
-                SoulsGame.DS3 => ds3Mapping![itemId],
+                SoulsGame.DSR => dsrMapping[itemId],
+                SoulsGame.DS2S => ds2Mapping[itemId],
+                SoulsGame.DS3 => ds3Mapping[itemId],
                 _ => throw new ArgumentOutOfRangeException(nameof(game), $"{game} is not a known SoulsGame")
             };
         }
 
-        public static int GetMappedItem(SoulsItem original, SoulsGame destination)
+        public SoulsItem GetMappedItem(SoulsItem original, SoulsGame destination)
         {
-            if (!initialized)
+            if (original.Game == destination)
             {
-                throw new InvalidOperationException($"{nameof(CrossGameMappings)} must be initialized before getting items from it");
+                return original;
             }
-            return destination switch
+
+            var mappedItemId = destination switch
             {
-                SoulsGame.DSR => dsrMapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
-                SoulsGame.DS2S => ds2Mapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
-                SoulsGame.DS3 => ds3Mapping!.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
+                SoulsGame.DSR => dsrMapping.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
+                SoulsGame.DS2S => ds2Mapping.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
+                SoulsGame.DS3 => ds3Mapping.Single(kvp => kvp.Value.IsNearlyMatching(original)).Key,
                 _ => throw new ArgumentOutOfRangeException(nameof(destination), $"{destination} is not a known SoulsGame")
             };
+
+            return new SoulsItem(destination, SoulsItemType.Goods, mappedItemId);
         }
     }
 }

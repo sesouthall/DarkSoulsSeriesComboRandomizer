@@ -2,7 +2,7 @@
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
-    public class DS2SotFSLotSlotSerializer(Dictionary<SoulsItem, int> crossGameItemMapping) : ILotSlotSerializer
+    public class DS2SotFSLotSlotSerializer(CrossGameMappings crossGameMappings) : ILotSlotSerializer
     {
         private const string ItemIdFieldPattern = "item_lot_{0}";
         private const string ItemWeightFieldPattern = "chance_lot_{0}";
@@ -30,22 +30,22 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             return slots;
         }
 
-        public void WriteToRow(Row row, LotSlot slot, int index)
+        public void WriteToRow(Row row, IReadOnlyList<LotSlot> slots)
         {
-            var resolvedId = slot.Item.OriginalId;
-            if (slot.Item.Game != SoulsGame.DS2S)
+            foreach (var (slot, index) in slots.Select((slot, i) => (slot, i)))
             {
-                resolvedId = crossGameItemMapping[slot.Item];
+                var resolvedItem = crossGameMappings.GetMappedItem(slot.Item, SoulsGame.DS2S);
+
+                row[string.Format(ItemIdFieldPattern, index)].Value = resolvedItem.Id;
+                row[string.Format(ItemAmountFieldPattern, index)].Value = slot.Amount;
+                // DS2 weights are direct percentages
+                // Since we've already normalized the weights for a drop to add to 100,
+                // using them directly should be fine. If this is a drop table with lots
+                // of items and it picks up lots of common ones, it could go above 100
+                // but that shouldn't break anything, it'll just cause the enemy to always
+                // drop something, potentially multiple things.
+                row[string.Format(ItemWeightFieldPattern, index)].Value = slot.Weight;
             }
-            row[string.Format(ItemIdFieldPattern, index)].Value = resolvedId;
-            row[string.Format(ItemAmountFieldPattern, index)].Value = slot.Amount;
-            // DS2 weights are direct percentages
-            // Since we've already normalized the weights for a drop to add to 100,
-            // using them directly should be fine. If this is a drop table with lots
-            // of items and it picks up lots of common ones, it could go above 100
-            // but that shouldn't break anything, it'll just cause the enemy to always
-            // drop something, potentially multiple things.
-            row[string.Format(ItemWeightFieldPattern, index)].Value = slot.Weight;
         }
     }
 }

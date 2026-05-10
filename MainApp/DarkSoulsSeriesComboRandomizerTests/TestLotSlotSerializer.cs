@@ -15,10 +15,10 @@ namespace DarkSoulsSeriesComboRandomizerTests
             return slotsToReturn ?? [];
         }
 
-        public void WriteToRow(PARAM.Row row, LotSlot slot, int index)
+        public void WriteToRow(PARAM.Row row, IReadOnlyList<LotSlot> slots)
         {
             writtenRows.Add(row);
-            writtenSlots.Add(slot);
+            writtenSlots.AddRange(slots);
         }
     }
 }

@@ -5,46 +5,43 @@ namespace DarkSoulsSeriesComboRandomizer
     public class ItemLot
     {
         public readonly int ID;
-        private readonly List<LotSlot> originalSlots;
         private readonly List<LotSlot> newSlots;
-        private readonly List<Row> originalRows;
-        public readonly SoulsGame Game;
+        private readonly IReadOnlyList<Row> originalRows;
         private readonly ILotSlotSerializer slotSerializer;
 
         public LotType LotType { get; }
 
-        public IReadOnlyList<LotSlot> OriginalSlots => originalSlots;
+        public IReadOnlyList<LotSlot> OriginalSlots { get; }
 
         public IReadOnlyList<LotSlot> NewSlots => newSlots;
 
-        internal ItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type, SoulsGame game, ILotSlotSerializer slotSerializer)
+        internal ItemLot(List<LotSlot> slots, List<Row> originalRows, LotType type, ILotSlotSerializer slotSerializer)
         {
             ID = originalRows.First().ID;
-            originalSlots = slots;
-            newSlots = new List<LotSlot>(originalSlots.Count);
+            OriginalSlots = slots;
+            newSlots = new List<LotSlot>(OriginalSlots.Count);
             this.originalRows = originalRows;
             this.LotType = type;
-            Game = game;
             this.slotSerializer = slotSerializer;
         }
 
         public bool CanTake()
         {
-            return newSlots.Count < originalSlots.Count;
+            return newSlots.Count < OriginalSlots.Count;
         }
 
         public void TakeItems(Queue<LotSlot> unassignedItems, bool partialFill = false)
         {
-            if (newSlots.Count >= originalSlots.Count)
+            if (newSlots.Count >= OriginalSlots.Count)
             {
                 return;
             }
 
-            for (var i = newSlots.Count; i < originalSlots.Count; i++)
+            for (var i = newSlots.Count; i < OriginalSlots.Count; i++)
             {
-                if (originalSlots[i].IsEmptyItem)
+                if (OriginalSlots[i].IsEmptyItem)
                 {
-                    newSlots.Add(originalSlots[i]);
+                    newSlots.Add(OriginalSlots[i]);
                     continue;
                 }
 
@@ -59,11 +56,22 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             foreach (var originalRow in originalRows)
             {
-                foreach (var (slot, index) in newSlots.Select((slot, i) => (slot, i)))
+                slotSerializer.WriteToRow(originalRow, NewSlots);
+            }
+        }
+
+        internal List<string> GetHintsLines(IItemNameLookupService itemNameLookup, string mapName)
+        {
+            var hintsLines = new List<string>();
+            var lotDescription = LotType == LotType.RandomEnemyDrop ? "Random Drop" : "Fixed Treasure";
+            foreach (var slot in NewSlots.Where(slot => !slot.IsEmptyItem))
+            {
+                if (itemNameLookup.TryGetItemName(slot.Item, out var itemName))
                 {
-                    slotSerializer.WriteToRow(originalRow, slot, index);
+                    hintsLines.Add($"{itemName}: {mapName} ({lotDescription})");
                 }
             }
+            return hintsLines;
         }
     }
 }

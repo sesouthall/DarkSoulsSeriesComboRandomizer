@@ -22,7 +22,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             };
 
             var testSerializer = new TestLotSlotSerializer();
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [], testSerializer);
+            var lotFactory = new ItemLotFactory([], testSerializer);
             lotFactory.ParseChain(1, itemLotParam, LotType.Treasure).Should().HaveCount(2);
         }
 
@@ -40,7 +40,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             };
 
             var testSerializer = new TestLotSlotSerializer();
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [[1,4]], testSerializer);
+            var lotFactory = new ItemLotFactory([[1, 4]], testSerializer);
             var lot1 = lotFactory.ParseChain(1, itemLotParam, LotType.Treasure).First();
             var lot4 = lotFactory.ParseChain(4, itemLotParam, LotType.Treasure).First();
             lot1.Should().BeSameAs(lot4);
@@ -52,7 +52,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
 
             var testSerializer = new TestLotSlotSerializer();
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [], testSerializer);
+            var lotFactory = new ItemLotFactory([], testSerializer);
             var _ = lotFactory.Parse([row], LotType.Treasure);
             testSerializer.parsedRows.Should().Contain(row);
         }
@@ -64,7 +64,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             var linkedRow = new PARAM.Row(2, "itemLot", itemLotParamDef);
 
             var testSerializer = new TestLotSlotSerializer();
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [], testSerializer);
+            var lotFactory = new ItemLotFactory([], testSerializer);
             var _ = lotFactory.Parse([row, linkedRow], LotType.Treasure);
             testSerializer.parsedRows.Should().HaveCount(1);
         }
@@ -76,7 +76,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
 
             var slot = new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Accessory, 1), 1, 1);
             var testSerializer = new TestLotSlotSerializer([slot]);
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [], testSerializer);
+            var lotFactory = new ItemLotFactory([], testSerializer);
             var parsedLot = lotFactory.Parse([row], LotType.Treasure);
             parsedLot.OriginalSlots.Should().HaveCount(1).And.Contain(slot);
         }
@@ -86,7 +86,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
         {
             var row1 = new PARAM.Row(1, "itemLot", itemLotParamDef);
             var row1Copy = new PARAM.Row(1, "itemLot", itemLotParamDef);
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [], new TestLotSlotSerializer());
+            var lotFactory = new ItemLotFactory([], new TestLotSlotSerializer());
             lotFactory.Parse([row1], LotType.Treasure).Should().BeSameAs(lotFactory.Parse([row1Copy], LotType.Treasure));
         }
 
@@ -95,7 +95,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
         {
             var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
             var linkedRow = new PARAM.Row(2, "itemLot", itemLotParamDef);
-            var lotFactory = new ItemLotFactory(SoulsGame.DSR, [[1, 2]], new TestLotSlotSerializer());
+            var lotFactory = new ItemLotFactory([[1, 2]], new TestLotSlotSerializer());
             lotFactory.Parse([row, linkedRow], LotType.Treasure).Should().BeSameAs(lotFactory.Parse([linkedRow], LotType.Treasure));
         }
     }

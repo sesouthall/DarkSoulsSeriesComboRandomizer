@@ -5,14 +5,14 @@ using System.IO;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public record RandomizerOptions(int seed, string saveName, bool allowFirelinkRoofSkip = false);
+    public record RandomizerOptions(int Seed, string SaveName, bool AllowFirelinkRoofSkip = false);
 
     internal class ModInstaller(string dsrRoot, string ds2Root, string ds3Root, RandomizerOptions options) : IDisposable
     {
         private bool disposedValue;
 
         private static readonly string backupFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", "BackupVanillaFiles");
-        public string SaveFolderPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", options.saveName);
+        public string SaveFolderPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer", options.SaveName);
         private string DSRRegulationFilePath => Path.Combine(dsrRoot, "param", "GameParam", "GameParam.parambnd.dcx");
 
         private static readonly string DS1SaveFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "NBGI", "DARK SOULS REMASTERED");
@@ -28,7 +28,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void InstallStaticChanges()
         {
-            if (Directory.GetFiles(backupFolderPath).Length > 0)
+            if (Directory.GetFiles(backupFolderPath, "*", SearchOption.AllDirectories).Length > 0)
             {
                 // Cleanup didn't happen, or failed last time
                 RevertChanges();
@@ -86,7 +86,7 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        public void CreateRandomizedRegulationFilesIfNeeded()
+        public void CreateRandomizedRegulationFilesIfNeeded(CrossGameMappings crossGameMappings)
         {
             if (Directory.Exists(SaveFolderPath))
             {
@@ -97,35 +97,42 @@ namespace DarkSoulsSeriesComboRandomizer
 
             Directory.CreateDirectory(SaveFolderPath);
 
-            var dsrItems = DSRItemLots.New(dsrRoot, SaveFolderPath);
-            var ds2Items = DS2SotFSItemLots.New(ds2Root, SaveFolderPath);
-            var ds3Items = DS3ItemLots.New(ds3Root, SaveFolderPath);
-
-            dsrItems.Load();
-            ds2Items.Load();
-            ds3Items.Load();
+            DSRFiles dsrGameFiles = new(dsrRoot);
+            var dsrMaps = MapFactory.DSRMaps(dsrGameFiles, crossGameMappings, [.. MapData.DS1StartingItemLots, MapData.DS1EstusFlaskLot]);
+            var dsrKeys = Key.ConstructDS1Keys(dsrMaps);
+            DS2SotFSFiles ds2GameFiles = new(ds2Root);
+            var ds2Maps = MapFactory.DS2SotFSMaps(ds2GameFiles, crossGameMappings, [MapData.DS2EstusFlaskLot]);
+            var ds2Keys = Key.ConstructDS2Keys(ds2Maps);
+            DS3Files ds3GameFiles = new(ds3Root);
+            var ds3Maps = MapFactory.DS3Maps(ds3GameFiles, crossGameMappings, [MapData.DS3AshenEstusFlaskLot]);
+            var ds3Keys = Key.ConstructDS3Keys(ds3Maps);
 
             var bonfireMappings = BonfireTriple.ParseBonfireMappings(BonfireMappingsFile);
-            Map.LoadCrossGameWarps(bonfireMappings, dsrItems, ds2Items, ds3Items);
+            Key coiledSword = ds3Keys.Single(key => key.Item == Key.CoiledSword);
+            Map.LoadCrossGameWarps(bonfireMappings, dsrMaps, ds2Maps, ds3Maps, coiledSword);
 
-            Map.HandleDS3FirelinkRoofSkip(options.allowFirelinkRoofSkip, ds3Items);
+            Map.HandleDS3FirelinkRoofSkip(options.AllowFirelinkRoofSkip, ds3Maps);
 
-            var unrandomizedLots = DSRItemLots.StartingItemLots.Select(itemLotId => (itemLotId, SoulsGame.DSR)) // Don't randomize the DS1 starting gear...
-                .Append((DSRItemLots.EstusFlaskLot, SoulsGame.DSR)) // The DS1 Estus Flask...
-                .Append((DS2SotFSItemLots.EstusFlaskLot, SoulsGame.DS2S)) // The DS2 Estus Flask..
-                .Append((DS3ItemLots.AshenEstusFlaskLot, SoulsGame.DS3)) // or the DS3 Ashen Estus Flask.
-                .ToList();                                               // DS3 regular Estus Flask is a starting item, so no need to handle it for now.
+            var allMaps = dsrMaps.Concat(ds2Maps).Concat(ds3Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            var allKeys = dsrKeys.Concat(ds2Keys).Concat(ds3Keys).ToList();
 
-            var allMaps = dsrItems.Maps.Concat(ds2Items.Maps).Concat(ds3Items.Maps).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            var allKeys = dsrItems.Keys.Concat(ds2Items.Keys).Concat(ds3Items.Keys).ToList();
+            ItemRandomizer.Randomize(allMaps[MapName.DS1StartingCell], allMaps, allKeys, new Random(options.Seed));
 
-            ItemRandomizer.Randomize(allMaps[MapName.DS1StartingCell], allMaps, allKeys, unrandomizedLots, new Random(options.seed));
+            dsrGameFiles.SaveItemLotChanges(SaveFolderPath);
+            ds2GameFiles.SaveItemLotChanges(SaveFolderPath);
+            ds3GameFiles.SaveItemLotChanges(SaveFolderPath);
 
-            dsrItems.Save();
-            ds2Items.Save();
-            ds3Items.Save();
+            var itemLookupService = new AggregateItemNameLookupService(
+                [
+                    new DSRItemNameLookupService(dsrGameFiles),
+                    new DS2SotFSItemNameLookupService(ds2GameFiles),
+                    new DS3ItemNameLookupService(ds3GameFiles)
+                ]);
 
-            File.WriteAllText(Path.Combine(SaveFolderPath, "seed.txt"), options.seed.ToString());
+            var hintsLines = allMaps.Values.SelectMany(map => map.GetHintsLines(itemLookupService));
+            File.WriteAllLines(Path.Combine(SaveFolderPath, "Hints"), hintsLines);
+
+            File.WriteAllText(Path.Combine(SaveFolderPath, "seed.txt"), options.Seed.ToString());
         }
 
         public void InstallRegulationFiles()

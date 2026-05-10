@@ -6,7 +6,7 @@ using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class GameCoordinationServer(string dsrExePath, string ds2ExePath, string ds3ExePath) : IDisposable
+    public class GameCoordinationServer(string dsrExePath, string ds2ExePath, string ds3ExePath, CrossGameMappings crossGameMappings) : IDisposable
     {
         private readonly DSRWrapper dsrWrapper = new(dsrExePath);
         private readonly DS2SotFSWrapper ds2Wrapper = new(ds2ExePath);
@@ -146,18 +146,18 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void SendItemToCorrectGame(SoulsGame sourceGame, int itemId, int quantity)
         {
-            var originalItem = CrossGameMappings.GetSourceItem(itemId, sourceGame);
+            var originalItem = crossGameMappings.GetSourceItem(itemId, sourceGame);
 
             switch (originalItem.Game)
             {
                 case SoulsGame.DSR:
-                    dsrWrapper.GiveItem(originalItem.ItemType, originalItem.OriginalId, quantity);
+                    dsrWrapper.GiveItem(originalItem.Type, originalItem.Id, quantity);
                     break;
                 case SoulsGame.DS2S:
-                    ds2Wrapper.GiveItem(originalItem.OriginalId, (short)quantity);
+                    ds2Wrapper.GiveItem(originalItem.Id, (short)quantity);
                     break;
                 case SoulsGame.DS3:
-                    ds3Wrapper.GiveItem(originalItem.ItemType, originalItem.OriginalId, quantity);
+                    ds3Wrapper.GiveItem(originalItem.Type, originalItem.Id, quantity);
                     break;
                 default:
                     throw new NotImplementedException();

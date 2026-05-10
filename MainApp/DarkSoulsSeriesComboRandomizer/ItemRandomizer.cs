@@ -65,22 +65,19 @@
         /// <param name="allKeys">
         ///     The full list of keys across all three games (Key.AllKeys).
         /// </param>
-        /// <param name="lockedLots">
-        ///     (IItemLot, SoulsGame) pairs whose contents must not be randomized.
-        /// </param>
         /// <param name="random">Optional seeded RNG; a new one is created if null.</param>
+        /// 
         public static void Randomize(
             Map startMap,
             IReadOnlyDictionary<MapName, Map> allMaps,
             IReadOnlyList<Key> allKeys,
-            IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots,
             Random? random = null)
         {
             random ??= new Random();
 
             // Get all the item lots from all maps for easy re-assignment later
             var allLots = allMaps.Values
-                .SelectMany(m => m.ItemLocations.Where(location => !lockedLots.Contains((location.ID, m.SourceGame))))
+                .SelectMany(m => m.ItemLocations)
                 .Distinct()
                 .ToList();
 
@@ -118,7 +115,7 @@
             var remaining = keyList.OrderBy(_ => random.Next()).ToList();
 
             // This must go first to make sure the player can't be trapped in the prison tower.
-            PlaceArchiveTowerCellAndGiantDoorKeys(ref remaining, allMaps, lockedLots, random);
+            PlaceArchiveTowerCellAndGiantDoorKeys(ref remaining, allMaps, random);
 
             var connectedSensFortress = false;
             var keyQueue = new Queue<LotSlot>();
@@ -149,7 +146,9 @@
                 remaining.Remove(keyToPlace);
 
                 // There's no key for this connection. Activate it when the player can reach both levers.
-                if (currentlyAccessibleMaps.Contains(allMaps[MapName.UndeadBurgUndeadParish]) && currentlyAccessibleMaps.Contains(allMaps[MapName.Blighttown]) && !connectedSensFortress)
+                if (currentlyAccessibleMaps.Contains(allMaps[MapName.UndeadBurgUndeadParish]) &&
+                    currentlyAccessibleMaps.Contains(allMaps[MapName.Blighttown]) &&
+                    !connectedSensFortress)
                 {
                     allMaps[MapName.UndeadBurgUndeadParish].ConnectTo(allMaps[MapName.SensFortress]);
                     connectedSensFortress = true;
@@ -186,7 +185,10 @@
         //  Helpers
         // ------------------------------------------------------------------ //
 
-        private static void PlaceArchiveTowerCellAndGiantDoorKeys(ref List<KeyInstance> allKeys, IReadOnlyDictionary<MapName, Map> allMaps, IReadOnlyList<(int LotId, SoulsGame Game)> lockedLots, Random random)
+        private static void PlaceArchiveTowerCellAndGiantDoorKeys(
+            ref List<KeyInstance> allKeys,
+            IReadOnlyDictionary<MapName, Map> allMaps,
+            Random random)
         {
             var towerCellMap = allMaps[MapName.TowerCell];
             var keyQueue = new Queue<LotSlot>();
@@ -200,7 +202,6 @@
             {
                 var connectedMaps = towerCellMap.AllConnectedMaps();
                 var availableLots = connectedMaps.SelectMany(map => map.ItemLocations.Where(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure))
-                    .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
                     .ToList();
                 availableLots.AddRange(towerCellMap.ItemLocations); // include jailer, even though he isn't a boss/treasure drop
                 keyQueue.Enqueue(towerCellKey.Slot);
@@ -216,7 +217,6 @@
             {
                 var connectedMaps = towerCellMap.AllConnectedMaps();
                 var availableLots = connectedMaps.SelectMany(map => map.ItemLocations.Where(lot => lot.LotType == LotType.Boss || lot.LotType == LotType.Treasure))
-                    .Where(lot => !lockedLots.Contains((lot.ID, lot.Game)))
                     .ToList();
                 keyQueue.Clear();
                 keyQueue.Enqueue(towerGiantDoorKey.Slot);

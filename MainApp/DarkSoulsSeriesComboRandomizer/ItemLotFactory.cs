@@ -3,7 +3,7 @@ using static SoulsFormats.PARAM;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class ItemLotFactory(SoulsGame game, List<HashSet<int>> linkedItemLots, ILotSlotSerializer lotSerializer)
+    public class ItemLotFactory(List<HashSet<int>> linkedItemLots, ILotSlotSerializer lotSerializer)
     {
         private readonly Dictionary<int, ItemLot> lotCache = [];
 
@@ -35,7 +35,7 @@ namespace DarkSoulsSeriesComboRandomizer
             var actualLotType = lotTypeGuess == LotType.UnspecifiedEnemy ?
                 (slots.Count(slot => slot.Weight < 100) > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop) :
                 lotTypeGuess;
-            var parsed = new ItemLot(slots, linkedItemLots, actualLotType, game, lotSerializer);
+            var parsed = new ItemLot(slots, linkedItemLots, actualLotType, lotSerializer);
             foreach (var linkedLot in linkedItemLots)
             {
                 lotCache[linkedLot.ID] = parsed;

@@ -2,7 +2,7 @@
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 {
-    public class DSRLotSlotSerializer(Dictionary<SoulsItem, int> crossGameItemMapping) : ILotSlotSerializer
+    public class DSRLotSlotSerializer(CrossGameMappings crossGameMappings) : ILotSlotSerializer
     {
         private const string ItemIdFieldPattern = "lotItemId0{0}";
         private const string ItemCategoryFieldPattern = "lotItemCategory0{0}";
@@ -46,22 +46,19 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             return slots;
         }
 
-        public void WriteToRow(Row row, LotSlot slot, int index)
+        public void WriteToRow(Row row, IReadOnlyList<LotSlot> slots)
         {
-            var resolvedId = slot.Item.OriginalId;
-            var resolvedType = slot.Item.ItemType;
-            var resolvedIndex = index + 1;
-            if (slot.Item.Game != SoulsGame.DSR)
+            foreach (var (slot, index) in slots.Select((slot, i) => (slot, i+1)))
             {
-                resolvedId = crossGameItemMapping[slot.Item];
-                resolvedType = SoulsItemType.Goods;
+                var resolvedItem = crossGameMappings.GetMappedItem(slot.Item, SoulsGame.DSR);
+
+                row[string.Format(ItemIdFieldPattern, index)].Value = slot.IsEmptyItem ? 0 : resolvedItem.Id;
+                row[string.Format(ItemAmountFieldPattern, index)].Value = slot.Amount;
+                // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish
+                // 100 seems more common, so use that.
+                row[string.Format(ItemWeightFieldPattern, index)].Value = slot.Weight;
+                row[string.Format(ItemCategoryFieldPattern, index)].Value = slot.IsEmptyItem ? -1 : resolvedItem.Type;
             }
-            row[string.Format(ItemIdFieldPattern, resolvedIndex)].Value = slot.IsEmptyItem ? 0 : resolvedId;
-            row[string.Format(ItemAmountFieldPattern, resolvedIndex)].Value = slot.Amount;
-            // DSR uses a mix of weights adding to 100-ish and weights adding to 1000-ish
-            // 100 seems more common, so use that.
-            row[string.Format(ItemWeightFieldPattern, resolvedIndex)].Value = slot.Weight;
-            row[string.Format(ItemCategoryFieldPattern, resolvedIndex)].Value = slot.IsEmptyItem ? -1 : resolvedType;
         }
     }
 }
