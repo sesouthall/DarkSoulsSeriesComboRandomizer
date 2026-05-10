@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32;
+using System.Diagnostics;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,16 +20,26 @@ namespace DarkSoulsSeriesComboRandomizer
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "DarkSoulsSeriesComboRandomizer");
 
+        private static readonly string SettingsFilePath =
+            Path.Combine(AppDataFolder, "settings.json");
+
         // ── Active session state ──────────────────────────────────────────────────
 
         private ModInstaller? _installer;
         private GameCoordinationServer? _server;
+
+        // Paths captured at Play time, used by error panel folder buttons
+        private string? _errorDs1Dir;
+        private string? _errorDs2Dir;
+        private string? _errorDs3Dir;
+        private string? _errorRunSaveName;
 
         // ── Construction ─────────────────────────────────────────────────────────
 
         public MainWindow()
         {
             InitializeComponent();
+            LoadSavedPaths();
             InitializeSeed();
             PopulateSaveList();
             UpdatePlayButton();
@@ -41,6 +53,58 @@ namespace DarkSoulsSeriesComboRandomizer
             int seed = rng.Next(0, int.MaxValue);
             SeedBox.Text = seed.ToString();
             SaveNameBox.Text = seed.ToString();
+        }
+
+        // ── Path persistence ──────────────────────────────────────────────────────
+
+        private record PathSettings(string DS1Path, string DS2Path, string DS3Path);
+
+        private void LoadSavedPaths()
+        {
+            try
+            {
+                if (!File.Exists(SettingsFilePath))
+                {
+                    return;
+                }
+                var json = File.ReadAllText(SettingsFilePath);
+                var settings = JsonSerializer.Deserialize<PathSettings>(json);
+                if (settings == null)
+                {
+                    return;
+                }
+                if (!string.IsNullOrWhiteSpace(settings.DS1Path))
+                {
+                    DS1PathBox.Text = settings.DS1Path;
+                }
+                if (!string.IsNullOrWhiteSpace(settings.DS2Path))
+                {
+                    DS2PathBox.Text = settings.DS2Path;
+                }
+                if (!string.IsNullOrWhiteSpace(settings.DS3Path))
+                {
+                    DS3PathBox.Text = settings.DS3Path;
+                }
+            }
+            catch
+            {
+                // Non-fatal; silently ignore corrupt/missing settings
+            }
+        }
+
+        private void SavePaths()
+        {
+            try
+            {
+                Directory.CreateDirectory(AppDataFolder);
+                var settings = new PathSettings(DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text);
+                var json = JsonSerializer.Serialize(settings);
+                File.WriteAllText(SettingsFilePath, json);
+            }
+            catch
+            {
+                // Non-fatal
+            }
         }
 
         private void PopulateSaveList()
@@ -139,6 +203,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 targetBox.Text = dlg.FileName;
                 UpdatePlayButton();
+                SavePaths();
             }
         }
 
@@ -149,6 +214,7 @@ namespace DarkSoulsSeriesComboRandomizer
             if (PlayButton != null)
             {
                 UpdatePlayButton();
+                SavePaths();
             }
         }
 
@@ -246,7 +312,13 @@ namespace DarkSoulsSeriesComboRandomizer
 
             // Grey everything out
             SetSetupControlsEnabled(false);
-            StatusText.Text = "Installing mod files…";
+            StatusText.Text = "Creating randomized item placements…";
+
+            // Capture for error panel use
+            _errorDs1Dir = null;
+            _errorDs2Dir = null;
+            _errorDs3Dir = null;
+            _errorRunSaveName = saveName;
 
             try
             {
@@ -255,58 +327,44 @@ namespace DarkSoulsSeriesComboRandomizer
                 var ds1Dir = Path.GetDirectoryName(DS1PathBox.Text)!;
                 var ds2Dir = Path.GetDirectoryName(DS2PathBox.Text)!;
                 var ds3Dir = Path.GetDirectoryName(DS3PathBox.Text)!;
+
+                _errorDs1Dir = ds1Dir;
+                _errorDs2Dir = ds2Dir;
+                _errorDs3Dir = ds3Dir;
                 var crossGameMappings = CrossGameMappings.New();
 
-                _installer = new ModInstaller(ds1Dir, ds2Dir, ds3Dir, options);
-
-                await Task.Run(() =>
-                {
-                    _installer.InstallStaticChanges();
-                });
-
-                Dispatcher.Invoke(() => StatusText.Text = "Creating randomized item placements…");
+                _installer = ModInstaller.New(ds1Dir, ds2Dir, ds3Dir, options);
 
                 await Task.Run(() =>
                 {
                     _installer.CreateRandomizedRegulationFilesIfNeeded(crossGameMappings);
                 });
 
-                Dispatcher.Invoke(() => StatusText.Text = "Installing randomized item placements…");
+                Dispatcher.Invoke(() => StatusText.Text = "Installing mod files…");
 
+                List<string>? installErrors = null;
                 await Task.Run(() =>
                 {
-                    _installer.InstallRegulationFiles();
+                    installErrors = _installer.InstallChanges();
                 });
 
-                Dispatcher.Invoke(() => StatusText.Text = "Backing up save files…");
-
-                SuccessOrError? saveBackupResults = null;
-                await Task.Run(() =>
+                if (installErrors != null && installErrors.Count != 0)
                 {
-                    saveBackupResults = _installer.InstallModSaveFiles();
-                });
-
-                if (saveBackupResults == null)
-                {
-                    MessageBox.Show("Something went wrong while switching to the randomizer's save files. Stopping randomizer.", "Unknown Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    _installer.Dispose();
-                    _installer = null;
-                    Dispatcher.Invoke(() =>
+                    var allErrors = string.Join(Environment.NewLine, installErrors);
+                    // Roll back and show error recovery panel
+                    await Dispatcher.Invoke(async () =>
                     {
-                        SetSetupControlsEnabled(true);
-                        UpdatePlayButton();
-                    });
-                    return;
-                }
-                else if (!saveBackupResults.Succeeded)
-                {
-                    MessageBox.Show(string.Join("\n\n", saveBackupResults.Errors), "Error with game saves", MessageBoxButton.OK, MessageBoxImage.Error);
-                    _installer.Dispose();
-                    _installer = null;
-                    Dispatcher.Invoke(() =>
-                    {
-                        SetSetupControlsEnabled(true);
-                        UpdatePlayButton();
+                        // The server has to stop before we can uninstall the mod files
+                        if (_server != null)
+                        {
+                            await _server.Stop();
+                        }
+                        _server?.Dispose();
+                        _server = null;
+                        _installer?.RevertChanges();
+                        _installer = null;
+
+                        ShowErrorPanel(allErrors);
                     });
                     return;
                 }
@@ -343,14 +401,9 @@ namespace DarkSoulsSeriesComboRandomizer
             }
             catch (Exception ex)
             {
-                // Roll back and re-enable UI on failure
+                // Roll back and show error recovery panel
                 await Dispatcher.Invoke(async () =>
                 {
-                    StatusText.Text = $"Error: {ex.Message}";
-                    MessageBox.Show($"Error: {ex.Message}\n{ex.StackTrace}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    SetSetupControlsEnabled(true);
-                    UpdatePlayButton();
-
                     // The server has to stop before we can uninstall the mod files
                     if (_server != null)
                     {
@@ -358,8 +411,10 @@ namespace DarkSoulsSeriesComboRandomizer
                     }
                     _server?.Dispose();
                     _server = null;
-                    _installer?.Dispose();
+                    _installer?.RevertChanges();
                     _installer = null;
+
+                    ShowErrorPanel(ex.Message);
                 });
             }
         }
@@ -379,24 +434,16 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 if (_server != null)
                 {
+                    MessageBox.Show("The mod will now resume each game, one at a time.\n" +
+"Please close them as they come up.\n" +
+"This ensures no data is lost from the save file and avoids the annoying start up notice.", "Shutdown Info", MessageBoxButton.OK, MessageBoxImage.Information);
                     await _server.Stop();
                 }
 
                 _server?.Dispose();
                 _server = null;
 
-                var result = _installer?.RestoreVanillaSaveFiles();
-
-                if (result == null)
-                {
-                    MessageBox.Show("Something went wrong while switching back to unmodded save files.", "Unknown Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                else if (!result.Succeeded)
-                {
-                    MessageBox.Show(string.Join("\n\n", result.Errors, "Error restoring unmodded saves", MessageBoxButton.OK, MessageBoxImage.Error));
-                }
-
-                _installer?.Dispose();
+                _installer?.RevertChanges();
                 _installer = null;
 
                 // Return to setup panel
@@ -415,8 +462,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 Dispatcher.Invoke(() =>
                 {
-                    StopStatusText.Text = $"Error while stopping: {ex.Message}";
-                    StopButton.IsEnabled = true;   // let user try again
+                    ShowErrorPanel(ex.Message);
                 });
             }
         }
@@ -464,5 +510,86 @@ namespace DarkSoulsSeriesComboRandomizer
                 }
             }
         }
+
+        // ── Error panel ───────────────────────────────────────────────────────────
+
+        private void ShowErrorPanel(string message)
+        {
+            ErrorMessageText.Text = message;
+            RecoveryInstructionsBox.Text = "";
+
+            // Show / hide folder buttons based on what info we have
+            OpenDS1GameFolderButton.IsEnabled = _errorDs1Dir != null && Directory.Exists(_errorDs1Dir);
+            OpenDS2GameFolderButton.IsEnabled = _errorDs2Dir != null && Directory.Exists(_errorDs2Dir);
+            OpenDS3GameFolderButton.IsEnabled = _errorDs3Dir != null && Directory.Exists(_errorDs3Dir);
+
+            var runSaveFolder = _errorRunSaveName != null
+                ? Path.Combine(AppDataFolder, _errorRunSaveName)
+                : null;
+            OpenRunSaveFolder.IsEnabled = runSaveFolder != null && Directory.Exists(runSaveFolder);
+
+            SetupPanel.Visibility = Visibility.Collapsed;
+            RunningPanel.Visibility = Visibility.Collapsed;
+            ErrorPanel.Visibility = Visibility.Visible;
+        }
+
+        private void ReturnToSetup_Click(object sender, RoutedEventArgs e)
+        {
+            ErrorPanel.Visibility = Visibility.Collapsed;
+            SetupPanel.Visibility = Visibility.Visible;
+
+            SetSetupControlsEnabled(true);
+            PopulateSaveList();
+            UpdatePlayButton();
+            StatusText.Text = "";
+
+            _errorDs1Dir = null;
+            _errorDs2Dir = null;
+            _errorDs3Dir = null;
+            _errorRunSaveName = null;
+        }
+
+        private static void OpenFolder(string? folder)
+        {
+            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+            {
+                MessageBox.Show($"Folder not found:\n{folder}", "Folder Not Found",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            Process.Start("explorer.exe", folder);
+        }
+
+        private void OpenDS1GameFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(_errorDs1Dir);
+
+        private void OpenDS2GameFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(_errorDs2Dir);
+
+        private void OpenDS3GameFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(_errorDs3Dir);
+
+        private void OpenDS1SaveFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "NBGI", "DARK SOULS REMASTERED"));
+
+        private void OpenDS2SaveFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "DarkSoulsII"));
+
+        private void OpenDS3SaveFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "DarkSoulsIII"));
+
+        private void OpenVanillaBackups_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(Path.Combine(AppDataFolder, "BackupVanillaFiles"));
+
+        private void OpenRunSaveFolder_Click(object sender, RoutedEventArgs e)
+            => OpenFolder(_errorRunSaveName != null
+                ? Path.Combine(AppDataFolder, _errorRunSaveName)
+                : null);
     }
 }

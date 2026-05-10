@@ -481,5 +481,120 @@
                            TextWrapping="Wrap"/>
             </StackPanel>
         </Grid>
+
+        <!-- Error Recovery Panel -->
+        <ScrollViewer x:Name="ErrorPanel"
+                      Visibility="Collapsed"
+                      VerticalScrollBarVisibility="Auto"
+                      Background="#1A1A1A">
+            <StackPanel Margin="28,22,28,22">
+
+                <!-- Title -->
+                <TextBlock Text="DARK SOULS SERIES COMBO RANDOMIZER"
+                           FontFamily="Segoe UI Black"
+                           FontSize="15"
+                           Foreground="#D4B483"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,6"/>
+                <Rectangle Height="1" Fill="#5A4A2A" Margin="0,0,0,20"/>
+
+                <!-- Error header -->
+                <TextBlock Text="AN ERROR HAS OCCURRED"
+                           FontFamily="Segoe UI Semibold"
+                           FontSize="13"
+                           Foreground="#C0392B"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,4"/>
+                <TextBlock x:Name="ErrorMessageText"
+                           Text=""
+                           Foreground="#E8A0A0"
+                           FontFamily="Consolas"
+                           FontSize="11"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,20"/>
+
+                <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>
+
+                <!-- Open Game Folders -->
+                <TextBlock Text="OPEN GAME FOLDERS" Style="{StaticResource SectionHeader}"/>
+                <WrapPanel Margin="0,0,0,6">
+                    <Button x:Name="OpenDS1GameFolderButton"
+                            Style="{StaticResource BrowseButton}"
+                            Content="DS1 Game Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS1GameFolder_Click"/>
+                    <Button x:Name="OpenDS2GameFolderButton"
+                            Style="{StaticResource BrowseButton}"
+                            Content="DS2 Game Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS2GameFolder_Click"/>
+                    <Button x:Name="OpenDS3GameFolderButton"
+                            Style="{StaticResource BrowseButton}"
+                            Content="DS3 Game Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS3GameFolder_Click"/>
+                </WrapPanel>
+
+                <!-- Open Save Folders -->
+                <TextBlock Text="OPEN SAVE FOLDERS" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
+                <WrapPanel Margin="0,0,0,6">
+                    <Button Style="{StaticResource BrowseButton}"
+                            Content="DS1 Save Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS1SaveFolder_Click"/>
+                    <Button Style="{StaticResource BrowseButton}"
+                            Content="DS2 Save Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS2SaveFolder_Click"/>
+                    <Button Style="{StaticResource BrowseButton}"
+                            Content="DS3 Save Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenDS3SaveFolder_Click"/>
+                </WrapPanel>
+
+                <!-- Open Randomizer Folders -->
+                <TextBlock Text="OPEN RANDOMIZER FOLDERS" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
+                <WrapPanel Margin="0,0,0,6">
+                    <Button Style="{StaticResource BrowseButton}"
+                            Content="Vanilla Backups Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenVanillaBackups_Click"/>
+                    <Button x:Name="OpenRunSaveFolder"
+                            Style="{StaticResource BrowseButton}"
+                            Content="Current Run Save Folder"
+                            Margin="0,0,8,8"
+                            Click="OpenRunSaveFolder_Click"/>
+                </WrapPanel>
+
+                <Rectangle Height="1" Fill="#3A2E14" Margin="0,8,0,16"/>
+
+                <!-- Manual Recovery Instructions -->
+                <TextBlock Text="MANUAL RECOVERY INSTRUCTIONS" Style="{StaticResource SectionHeader}"/>
+                <TextBlock Text="Use this area to record the steps needed to restore files to their original locations:"
+                           Style="{StaticResource FieldLabel}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,6"/>
+                <TextBox x:Name="RecoveryInstructionsBox"
+                         Style="{StaticResource DarkTextBox}"
+                         Height="160"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         VerticalScrollBarVisibility="Auto"
+                         VerticalContentAlignment="Top"
+                         Margin="0,0,0,20"/>
+
+                <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>
+
+                <!-- Back to Setup -->
+                <Button Style="{StaticResource ActionButton}"
+                        Content="◀  RETURN TO SETUP"
+                        HorizontalAlignment="Center"
+                        MinWidth="180"
+                        Click="ReturnToSetup_Click"/>
+
+            </StackPanel>
+        </ScrollViewer>
+
     </Grid>
 </Window>
