@@ -6,7 +6,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>True</UseWPF>
+    <PackageIcon></PackageIcon>
+    <ApplicationIcon>ConfigFiles\Icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="ConfigFiles\Icon.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <Page Include="App.xaml" />
@@ -29,6 +35,10 @@
     </None>
     <None Update="ConfigFiles\DSR_injected_items.csv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="ConfigFiles\icon.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
     <None Update="ConfigFiles\PARAM\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
