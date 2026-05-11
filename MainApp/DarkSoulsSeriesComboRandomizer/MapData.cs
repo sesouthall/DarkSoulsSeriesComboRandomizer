@@ -229,6 +229,7 @@
                     new(MapName.BastilleCells, Bonfires: [], MapsConnectedWithoutKeys: [], ItemLotSeeds: [10166440, 10166441, 10166330, 10166350]),
                     new(MapName.RuinSentinelBuilding, Bonfires: ["Servants' Quarters", "Upper Ramparts"], MapsConnectedWithoutKeys: [MapName.TheLostBastilleBelfryLuna], ItemLotSeeds: [10166270, 10166320, 325000, 10165210, 10166000, 10165080, 10166100, 10166150, 10166180, 10166290, 10166370, 10166020, 10166380, 10165130, 10165220, 10166160, 10165200, 10166170, 324000, 10165230, 10166250, 10166390]),
                     //new(MapName.BelfryLuna, ["Upper Ramparts"], [MapName.RuinSentinelBuilding], [10165220, 10166160, 10165200, 10166170, 324000, 10165230, 10166250, 10166390]), // I've decided to ignore Pharros Lockstones for now. If I do include them, this needs to come back.
+                    new(MapName.StraidsCell, Bonfires: ["Straid's Cell"], MapsConnectedWithoutKeys: [], ItemLotSeeds: [])
                 ]),
             new(MapName.HarvestValleyEarthenPeak, Bonfires: ["Poison Pool", "The Mines", "Lower Earthen Peak", "Central Earthen Peak", "Upper Earthen Peak"], MapsConnectedWithoutKeys: [MapName.HuntsmansCopseUndeadPurgatory, MapName.IronKeepBelfrySol], ExtraItemLots: new Dictionary<int, LotType>{ { 500000, LotType.Boss }, { 501000, LotType.Boss } },
                 []),

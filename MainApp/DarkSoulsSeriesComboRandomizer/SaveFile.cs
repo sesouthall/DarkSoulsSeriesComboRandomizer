@@ -69,6 +69,7 @@ Please determine which one you wish to keep and delete the others.";
                 var subFolder = vanillaSubFolders[0];
                 var vanillaFile = Path.Combine(vanillaFolder, subFolder, fileName);
                 var moddedFile = Path.Combine(moddedFolder, subFolder, fileName);
+                Directory.CreateDirectory(Path.Combine(moddedFolder, subFolder));
                 File.Move(vanillaFile, moddedFile, true);
             }
 

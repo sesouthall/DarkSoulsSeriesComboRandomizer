@@ -134,7 +134,7 @@ static undefined8 AddNewMenuOptions(undefined8 menuObject, FeOperatorTestBonfire
     return menuObject;
 }
 
-bool Begin(uint64_t qModuleHandle) 
+bool Begin(uint64_t qModuleHandle)
 {
     char dllpath[MAX_PATH];
     GetSystemDirectoryA(dllpath, MAX_PATH);
@@ -160,7 +160,13 @@ bool Begin(uint64_t qModuleHandle)
     Game::init();
 
     void* gameManagerImp_sp = sp::mem::aob_scan("48 8B 05 xx xx xx xx 48 8B 58 38 48 85 DB 74 xx F6");
-    gameManagerImp = (GameManagerImp *) sp::mem::pointer<uint8_t>((void*)((uint64_t)gameManagerImp_sp + *(uint32_t*)((uint64_t)gameManagerImp_sp + 3) + 7), {0x0}).resolve();
+    std::chrono::milliseconds gameManagerRefreshInterval(500);
+    while (gameManagerImp == 0)
+    {
+        gameManagerImp = (GameManagerImp*)sp::mem::pointer<uint8_t>((void*)((uint64_t)gameManagerImp_sp + *(uint32_t*)((uint64_t)gameManagerImp_sp + 3) + 7), { 0x0 }).resolve();
+        
+        std::this_thread::sleep_for(gameManagerRefreshInterval);
+    }
 
     char mappingFile[MAX_PATH] = "%LOCALAPPDATA%\\DarkSoulsSeriesComboRandomizer\\BonfireMappings.txt";
     DoEnvironmentSubstA(mappingFile, MAX_PATH);

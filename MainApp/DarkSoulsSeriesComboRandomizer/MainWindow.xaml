@@ -569,23 +569,6 @@
 
                 <Rectangle Height="1" Fill="#3A2E14" Margin="0,8,0,16"/>
 
-                <!-- Manual Recovery Instructions -->
-                <TextBlock Text="MANUAL RECOVERY INSTRUCTIONS" Style="{StaticResource SectionHeader}"/>
-                <TextBlock Text="Use this area to record the steps needed to restore files to their original locations:"
-                           Style="{StaticResource FieldLabel}"
-                           TextWrapping="Wrap"
-                           Margin="0,0,0,6"/>
-                <TextBox x:Name="RecoveryInstructionsBox"
-                         Style="{StaticResource DarkTextBox}"
-                         Height="160"
-                         TextWrapping="Wrap"
-                         AcceptsReturn="True"
-                         VerticalScrollBarVisibility="Auto"
-                         VerticalContentAlignment="Top"
-                         Margin="0,0,0,20"/>
-
-                <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>
-
                 <!-- Back to Setup -->
                 <Button Style="{StaticResource ActionButton}"
                         Content="◀  RETURN TO SETUP"

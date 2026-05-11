@@ -36,8 +36,15 @@ namespace DarkSoulsSeriesComboRandomizer
             foreach (var moddedFile in Directory.GetFiles(ds1ModdedFilePath, "*", SearchOption.AllDirectories))
             {
                 var vanillaFile = moddedFile.Replace(ds1ModdedFilePath, dsrRoot);
-                var backupFile = moddedFile.Replace(ds1ModdedFilePath, backupFolderPath);
-                filesToModify.Add(new BackedUpFile(vanillaFile, backupFile, moddedFile));
+                if (moddedFile.Contains("dinput8.dll") || moddedFile.Contains("steam_appid.txt"))
+                {
+                    filesToModify.Add(new AddedFile(vanillaFile, moddedFile));
+                }
+                else
+                {
+                    var backupFile = moddedFile.Replace(ds1ModdedFilePath, backupFolderPath);
+                    filesToModify.Add(new BackedUpFile(vanillaFile, backupFile, moddedFile));
+                }
             }
             // Since DSR doesn't use a mod loader, we have to manually backup and restore the regulation file
             string vanillaRegulationFile = Path.Combine(dsrRoot, "param", "GameParam", "GameParam.parambnd.dcx");
@@ -154,6 +161,12 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public List<string> InstallChanges()
         {
+            if (Directory.GetFiles(backupFolderPath, "*", SearchOption.AllDirectories).Length > 0)
+            {
+                // The last run failed to clean up. Do it now.
+                RevertChanges();
+            }
+
             var errors = new List<string>();
             foreach (var modFile in filesToModify)
             {

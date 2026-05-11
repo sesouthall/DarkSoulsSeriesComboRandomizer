@@ -14,14 +14,14 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public static Dictionary<MapName, Map> DS2SotFSMaps(DS2SotFSFiles gameFiles, CrossGameMappings crossGameMappings, List<int> lotsToIgnore)
         {
-            ItemLotFactory dsrLotFactory = new(MapData.DS1LinkedItemLots, new DS2SotFSLotSlotSerializer(crossGameMappings));
-            return new MapFactory(gameFiles, dsrLotFactory).ParseMapDefinitions(MapData.DS1MapDefinitions, lotsToIgnore);
+            ItemLotFactory ds2LotFactory = new(MapData.DS2LinkedItemLots, new DS2SotFSLotSlotSerializer(crossGameMappings));
+            return new MapFactory(gameFiles, ds2LotFactory).ParseMapDefinitions(MapData.DS2MapDefinitions, lotsToIgnore);
         }
 
         public static Dictionary<MapName, Map> DS3Maps(DS3Files gameFiles, CrossGameMappings crossGameMappings, List<int> lotsToIgnore)
         {
-            ItemLotFactory dsrLotFactory = new(MapData.DS1LinkedItemLots, new DS3LotSlotSerializer(crossGameMappings));
-            return new MapFactory(gameFiles, dsrLotFactory).ParseMapDefinitions(MapData.DS1MapDefinitions, lotsToIgnore);
+            ItemLotFactory ds3LotFactory = new(MapData.DS3LinkedItemLots, new DS3LotSlotSerializer(crossGameMappings));
+            return new MapFactory(gameFiles, ds3LotFactory).ParseMapDefinitions(MapData.DS3MapDefinitions, lotsToIgnore);
         }
 
         public Dictionary<MapName, Map> ParseMapDefinitions(List<FileBackedMapDefinition> fileBackedMapDefinitions, List<int> lotsToIgnore)

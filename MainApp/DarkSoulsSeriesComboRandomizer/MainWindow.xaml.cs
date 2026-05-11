@@ -414,7 +414,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     _installer?.RevertChanges();
                     _installer = null;
 
-                    ShowErrorPanel(ex.Message);
+                    ShowErrorPanel($"{ex.Message}\n{ex.StackTrace}");
                 });
             }
         }
@@ -462,7 +462,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 Dispatcher.Invoke(() =>
                 {
-                    ShowErrorPanel(ex.Message);
+                    ShowErrorPanel($"{ex.Message}\n{ex.StackTrace}");
                 });
             }
         }
@@ -516,7 +516,6 @@ namespace DarkSoulsSeriesComboRandomizer
         private void ShowErrorPanel(string message)
         {
             ErrorMessageText.Text = message;
-            RecoveryInstructionsBox.Text = "";
 
             // Show / hide folder buttons based on what info we have
             OpenDS1GameFolderButton.IsEnabled = _errorDs1Dir != null && Directory.Exists(_errorDs1Dir);

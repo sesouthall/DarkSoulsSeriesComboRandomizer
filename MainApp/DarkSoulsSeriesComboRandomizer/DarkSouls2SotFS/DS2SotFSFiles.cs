@@ -31,7 +31,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             }
         }
 
-        public FMG ItemNamesFMG => FMG.Read(Path.Combine("PreModdedGameFiles", "DS2S", "ComboRandomizer", "menu", "text", "english", "itemname.fmg"));
+        private FMG? itemNamesFMG = null;
+        public FMG ItemNamesFMG
+        {
+            get
+            {
+                itemNamesFMG ??= FMG.Read(Path.Combine("PreModdedGameFiles", "DS2S", "ComboRandomizer", "menu", "text", "english", "itemname.fmg"));
+                return itemNamesFMG;
+            }
+        }
 
         private BND4? regulationFile = null;
         private BND4 RegulationFile
@@ -39,11 +47,19 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             get
             {
                 regulationFile ??= ReadRegulationFile(Path.Combine("PreModdedGameFiles", "UnrandomizedRegulationFiles", RegulationFileName));
-                return RegulationFile;
+                return regulationFile;
             }
         }
 
-        private PARAM EnemyParam => PARAMUtils.LoadParam(RegulationFile, EnemyParamFileName, @"ConfigFiles\PARAM\DS2S\Defs\CHR_PARAM.xml");
+        private PARAM? enemyParam = null;
+        private PARAM EnemyParam
+        {
+            get
+            {
+                enemyParam ??= PARAMUtils.LoadParam(RegulationFile, EnemyParamFileName, @"ConfigFiles\PARAM\DS2S\Defs\CHR_PARAM.xml");
+                return enemyParam;
+            }
+        }
 
         public IEnumerable<int> GetEnemyItemLotIds(MapName mapName)
         {
@@ -57,8 +73,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             foreach (var enemy in generatorData.Rows)
             {
                 // Skip NG+ enemies
-                if ((uint)enemy["AppearanceEventId"].Value >= 2 &&
-                    (uint)enemy["AppearanceEventId"].Value <= 8)
+                if ((uint)enemy["AppearanceEventID"].Value >= 2 &&
+                    (uint)enemy["AppearanceEventID"].Value <= 8)
                 {
                     continue;
                 }
@@ -260,6 +276,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {MapName.HarvestValleyEarthenPeak, "/map/m10_17_00_00/m10_17_00_00.msb" },
             {MapName.NomansWharf, "/map/m10_18_00_00/m10_18_00_00.msb" },
             {MapName.IronKeepBelfrySol, "/map/m10_19_00_00/m10_19_00_00.msb" },
+            {MapName.HuntsmansCopseUndeadPurgatory, "/map/m10_23_00_00/m10_23_00_00.msb" },
             {MapName.TheGutterBlackGulch, "/map/m10_25_00_00/m10_25_00_00.msb" },
             {MapName.DragonAerieDragonShrine, "/map/m10_27_00_00/m10_27_00_00.msb" },
             {MapName.MajulaShadedWoods, "/map/m10_29_00_00/m10_29_00_00.msb" },

@@ -39,9 +39,25 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             }
         }
 
-        private PARAM NpcParam => PARAMUtils.LoadParam(RegulationFile, "NpcParam", @"ConfigFiles\PARAM\DS3\Defs\NpcParam.xml");
+        private PARAM? npcParam = null;
+        private PARAM NpcParam
+        {
+            get
+            {
+                npcParam ??= PARAMUtils.LoadParam(RegulationFile, "NpcParam", @"ConfigFiles\PARAM\DS3\Defs\NpcParam.xml");
+                return npcParam;
+            }
+        }
 
-        public BND4 ItemTextFile = BND4.Read(Path.Combine("PreModdedGameFiles", "DS3", "ComboRandomizer", "msg", "engus", "item_dlc2.msgbnd.dcx"));
+        private BND4? itemTextFile = null;
+        public BND4 ItemTextFile
+        {
+            get
+            {
+                itemTextFile ??= BND4.Read(Path.Combine("PreModdedGameFiles", "DS3", "ComboRandomizer", "msg", "engus", "item_dlc2.msgbnd.dcx"));
+                return itemTextFile;
+            }
+        }
 
         public IEnumerable<int> GetEnemyItemLotIds(MapName mapName)
         {

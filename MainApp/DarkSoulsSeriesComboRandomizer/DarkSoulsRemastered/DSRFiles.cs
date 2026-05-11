@@ -37,9 +37,25 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             }
         }
 
-        private PARAM NpcParam => PARAMUtils.LoadParam(RegulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
+        private PARAM? npcParam = null;
+        private PARAM NpcParam
+        {
+            get
+            {
+                npcParam ??= PARAMUtils.LoadParam(RegulationFile, "NpcParam", @"ConfigFiles\PARAM\DS1R\Defs\NpcParam.xml");
+                return npcParam;
+            }
+        }
 
-        public BND3 ItemTextFile => BND3.Read(Path.Combine("PreModdedGameFiles", "DSR", "msg", "ENGLISH", "item.msgbnd.dcx"));
+        private BND3? itemTextFile = null;
+        public BND3 ItemTextFile
+        {
+            get
+            {
+                itemTextFile ??= BND3.Read(Path.Combine("PreModdedGameFiles", "DSR", "msg", "ENGLISH", "item.msgbnd.dcx"));
+                return itemTextFile;
+            }
+        }
 
         public IEnumerable<int> GetEnemyItemLotIds(MapName mapName)
         {
