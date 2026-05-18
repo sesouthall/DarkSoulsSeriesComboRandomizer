@@ -76,7 +76,10 @@ enum QueryId
     ShouldHaveOtherGameWarps = 0x80,
     GetDS1BonfireId = 0x81,
     GetDS2BonfireId = 0x82,
-    GetDS3BonfireId = 0x83
+    GetDS3BonfireId = 0x83,
+    ShouldHaveDS1Warp = 0x84,
+    ShouldHaveDS2Warp = 0x85,
+    ShouldHaveDS3Warp = 0x86
 };
 
 enum CommandId
@@ -106,7 +109,7 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
         }
         else if (!parsedMappings->ContainsDS1BonfireId((*warpInfo)->LastBonfire))
         {
-            printf_s("%d isn't in warp list", (*warpInfo)->LastBonfire);
+            printf_s("%d isn't in warp list\n", (*warpInfo)->LastBonfire);
         }
         if (warpInfo != NULL && *warpInfo != NULL && (*warpInfo)->LastBonfire != NULL && parsedMappings->ContainsDS1BonfireId((*warpInfo)->LastBonfire))
         {
@@ -143,6 +146,21 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
             printf_s("GetDS3BonfireId returning %d\n", mapping->DS3BonfireId);
             *param_2 = mapping->DS3BonfireId;
             *(int64_t*)((int64_t)param_2 + 0x8) = 1;
+            break;
+        case QueryId::ShouldHaveDS1Warp:
+            printf_s("ShouldHaveOtherGameWarps returning %d\n", currentBonfireIsInMappings && mapping->DS1BonfireId != -1);
+            *param_2 = currentBonfireIsInMappings && mapping->DS1BonfireId != -1;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 2;
+            break;
+        case QueryId::ShouldHaveDS2Warp:
+            printf_s("ShouldHaveOtherGameWarps returning %d\n", currentBonfireIsInMappings && mapping->DS2BonfireId != -1);
+            *param_2 = currentBonfireIsInMappings && mapping->DS2BonfireId != -1;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 2;
+            break;
+        case QueryId::ShouldHaveDS3Warp:
+            printf_s("ShouldHaveOtherGameWarps returning %d\n", currentBonfireIsInMappings && mapping->DS3BonfireId != -1);
+            *param_2 = currentBonfireIsInMappings && mapping->DS3BonfireId != -1;
+            *(int64_t*)((int64_t)param_2 + 0x8) = 2;
             break;
         }
     }
@@ -184,15 +202,15 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
 #endif // DS3
         else if (warpInfo == NULL)
         {
-            printf_s("Could not find pointer to warp info");
+            printf_s("Could not find pointer to warp info\n");
         }
         else if (*warpInfo == NULL)
         {
-            printf_s("Warp info object is not initialized");
+            printf_s("Warp info object is not initialized\n");
         }
         else
         {
-            printf_s("Last bonfire (%d) is not found in bonfire mappings", (*warpInfo)->LastBonfire);
+            printf_s("Last bonfire (%d) is not found in bonfire mappings\n", (*warpInfo)->LastBonfire);
         }
 
         if (mapping == NULL)
@@ -220,10 +238,10 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
 
         DWORD length, written;
         length = (message.length() + 1) * sizeof(TCHAR);
-        printf_s("Pipe handle is %p", hPipe);
+        printf_s("Pipe handle is %p\n", hPipe);
         WriteFile(hPipe, message.c_str(), length, &written, NULL);
         FlushFileBuffers(hPipe);
-        printf_s("Wrote %d/%d characters from '%s'", written, length, message.c_str());
+        printf_s("Wrote %d/%d characters from '%s'\n", written, length, message.c_str());
     }
     else
     {
@@ -244,13 +262,13 @@ bool Begin(uint64_t qModuleHandle)
     hinst_dll = LoadLibraryA(dllpath);
 
     if (!hinst_dll) {
-        MessageBoxA(NULL, "Failed to load original DLL", "Error", MB_ICONERROR);
+        MessageBoxA(NULL, "Failed to load original DLL\n", "Error", MB_ICONERROR);
         return false;
     };
 
     original_dinput8_create = (decltype(&DirectInput8Create))GetProcAddress(hinst_dll, "DirectInput8Create");
     if (!original_dinput8_create) {
-        MessageBoxA(NULL, "Failed to load original DLL", "Error", MB_ICONERROR);
+        MessageBoxA(NULL, "Failed to load original DLL\n", "Error", MB_ICONERROR);
         return false;
     }
 

@@ -31,6 +31,21 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     throw new InvalidDataException($"Line '{line}' is expected to contain three bonfire names, but does not");
                 }
+                var ds1Bonfires = MapData.DS1MapDefinitions.SelectMany<FileBackedMapDefinition, MapDefinition>(d => [d, .. d.SubMaps]).SelectMany(definition => definition.Bonfires);
+                var ds2Bonfires = MapData.DS2MapDefinitions.SelectMany<FileBackedMapDefinition, MapDefinition>(d => [d, .. d.SubMaps]).SelectMany(definition => definition.Bonfires);
+                var ds3Bonfires = MapData.DS3MapDefinitions.SelectMany<FileBackedMapDefinition, MapDefinition>(d => [d, .. d.SubMaps]).SelectMany(definition => definition.Bonfires);
+                if (!ds1Bonfires.Contains(bonfireNames[0]) && bonfireNames[0] != "NONE")
+                {
+                    throw new InvalidDataException($"Bonfire {bonfireNames[0]} is not recognized as a Dark Souls 1 bonfire");
+                }
+                if (!ds2Bonfires.Contains(bonfireNames[1]) && bonfireNames[1] != "NONE")
+                {
+                    throw new InvalidDataException($"Bonfire {bonfireNames[1]} is not recognized as a Dark Souls 2 bonfire");
+                }
+                if (!ds3Bonfires.Contains(bonfireNames[2]) && bonfireNames[2] != "NONE")
+                {
+                    throw new InvalidDataException($"Bonfire {bonfireNames[2]} is not recognized as a Dark Souls 3 bonfire");
+                }
                 result.Add(new BonfireTriple(bonfireNames[0], bonfireNames[1], bonfireNames[2]));
             }
             return result;

@@ -294,9 +294,9 @@ BonfireTable* ParseBonfireTable(const char* bonfireTableFile)
 		printf_s(", ");
 		printf_s(ds3BonfireName.c_str());
 		printf_s("\n");
-		if (DSRBonfireIds.find(ds1BonfireName) == DSRBonfireIds.end() ||
-			DS2BonfireIds.find(ds2BonfireName) == DS2BonfireIds.end() ||
-			DS3BonfireIds.find(ds3BonfireName) == DS3BonfireIds.end())
+		if ((DSRBonfireIds.find(ds1BonfireName) == DSRBonfireIds.end() && ds1BonfireName != "NONE") ||
+			(DS2BonfireIds.find(ds2BonfireName) == DS2BonfireIds.end() && ds2BonfireName != "NONE") ||
+			(DS3BonfireIds.find(ds3BonfireName) == DS3BonfireIds.end() && ds3BonfireName != "NONE"))
 		{
 			printf_s("Could not parse line: ");
 			printf_s(line.c_str());
@@ -309,9 +309,9 @@ BonfireTable* ParseBonfireTable(const char* bonfireTableFile)
 		printf_s(line.c_str());
 		printf_s("\n");
 
-		int ds1BonfireId = DSRBonfireIds[ds1BonfireName];
-		int ds2BonfireId = DS2BonfireIds[ds2BonfireName];
-		int ds3BonfireId = DS3BonfireIds[ds3BonfireName];
+		int ds1BonfireId = ds1BonfireName == "NONE" ? -1 : DSRBonfireIds[ds1BonfireName];
+		int ds2BonfireId = ds2BonfireName == "NONE" ? -1 : DS2BonfireIds[ds2BonfireName];
+		int ds3BonfireId = ds3BonfireName == "NONE" ? -1 : DS3BonfireIds[ds3BonfireName];
 		BonfireTriple *parsedLine = new BonfireTriple(rowIndex, ds1BonfireId, ds2BonfireId, ds3BonfireId, ds1BonfireName, ds2BonfireName, ds3BonfireName);
 		
 		DS1ToDS3Associations[ds1BonfireId] = ds3BonfireId;

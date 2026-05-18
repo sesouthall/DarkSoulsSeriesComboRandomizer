@@ -100,8 +100,8 @@ namespace DarkSoulsItemMigrator
                             warpToDS3Command.EntryCommands.Add(new ESD.CommandCall(1, 130));
                             stateGroup.Add(warpToDS3CommandStateId, warpToDS3Command);
 
-                            var warpToDS2MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS2MenuIndex, 0, 0, 0, 161], [130, 130, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
-                            var warpToDS3MenuOption = new ESD.CommandCall(5, 19, [130, 128, 0, 0, 0, 132, 161], [130, warpToDS3MenuIndex, 0, 0, 0, 161], [130, 131, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
+                            var warpToDS2MenuOption = new ESD.CommandCall(5, 19, [130, 133, 0, 0, 0, 132, 161], [130, warpToDS2MenuIndex, 0, 0, 0, 161], [130, 130, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
+                            var warpToDS3MenuOption = new ESD.CommandCall(5, 19, [130, 134, 0, 0, 0, 132, 161], [130, warpToDS3MenuIndex, 0, 0, 0, 161], [130, 131, 0, 0, 0, 132, 161], [130, 255, 255, 255, 255, 161]);
                             var warpToDS2Condition = new ESD.Condition(warpToDS2CommandStateId, [87, 132, 130, warpToDS2MenuIndex, 0, 0, 0, 149, 161]);
                             var warpToDS3Condition = new ESD.Condition(warpToDS3CommandStateId, [87, 132, 130, warpToDS3MenuIndex, 0, 0, 0, 149, 161]);
                             addDialogToBonfireState.EntryCommands.Add(warpToDS2MenuOption);

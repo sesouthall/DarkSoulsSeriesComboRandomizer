@@ -56,52 +56,52 @@ HANDLE hPipe;
 
 static undefined8 DS1WarpEvent(undefined8 param_1, undefined8 param_2)
 {
-    printf_s("Writing to pipe for DS1 warp");
+    printf_s("Writing to pipe for DS1 warp\n");
     int currentBonfireId = gameManagerImp->EventManager->last_rested_bonfire;
     std::string message = std::format("{}\n", parsedMappings->GetByDS2BonfireId(currentBonfireId)->DS1BonfireId);
     DWORD length = (message.length() + 1) * sizeof(TCHAR);
     DWORD written;
     if (hPipe == INVALID_HANDLE_VALUE)
     {
-        printf_s("hPipe has gone bad");
+        printf_s("hPipe has gone bad\n");
         return param_2;
     }
-    printf_s("hPipe is %llx", hPipe);
+    printf_s("hPipe is %llx\n", hPipe);
     if (WriteFile(hPipe, message.c_str(), length, &written, NULL))
     {
         FlushFileBuffers(hPipe);
-        printf_s("Wrote %d/%d characters of %s", written, length, message.c_str());
+        printf_s("Wrote %d/%d characters of %s\n", written, length, message.c_str());
     }
     else
     {
         int error = GetLastError();
-        printf_s("Failed to write to pipe with error: %x", error);
+        printf_s("Failed to write to pipe with error: %x\n", error);
     }
     return param_2;
 }
 
 static undefined8 DS3WarpEvent(undefined8 param_1, undefined8 param_2)
 {
-    printf_s("Writing to pipe for DS3 warp");
+    printf_s("Writing to pipe for DS3 warp\n");
     int currentBonfireId = gameManagerImp->EventManager->last_rested_bonfire;
     std::string message = std::format("{}\n", parsedMappings->GetByDS2BonfireId(currentBonfireId)->DS3BonfireId);
     DWORD length = (message.length() + 1) * sizeof(TCHAR);
     DWORD written;
     if (hPipe == INVALID_HANDLE_VALUE)
     {
-        printf_s("hPipe has gone bad");
+        printf_s("hPipe has gone bad\n");
         return param_2;
     }
-    printf_s("hPipe is %llx", hPipe);
+    printf_s("hPipe is %llx\n", hPipe);
     if (WriteFile(hPipe, message.c_str(), length, &written, NULL))
     {
         FlushFileBuffers(hPipe);
-        printf_s("Wrote %d/%d characters of %s", written, length, message.c_str());
+        printf_s("Wrote %d/%d characters of %s\n", written, length, message.c_str());
     }
     else
     {
         int error = GetLastError();
-        printf_s("Failed to write to pipe with error: %x", error);
+        printf_s("Failed to write to pipe with error: %x\n", error);
     }
     return param_2;
 }
@@ -116,20 +116,26 @@ static undefined8 AddSpecificMenuOption(undefined8 menuOject, LocalizedString me
 
 static undefined8 AddNewMenuOptions(undefined8 menuObject, FeOperatorTestBonfirePropertyOfProperty* param_1, undefined4 param_3)
 {
-    printf_s("Considering bonfire %d", param_3);
+    printf_s("Considering bonfire %d\n", param_3);
     if (parsedMappings->ContainsDS2BonfireId(param_3))
     {
         LocalizedString ds1MenuText, ds3MenuText;
         ds1MenuText.LocTable = 0xb;
         ds1MenuText.StringId = parsedMappings->GetByDS2BonfireId(param_3)->DS1BonfireId;
-        menuObject = AddSpecificMenuOption(menuObject, ds1MenuText, DS1WarpEvent, param_1);
+        if (ds1MenuText.StringId != -1)
+        {
+            menuObject = AddSpecificMenuOption(menuObject, ds1MenuText, DS1WarpEvent, param_1);
+        }
         ds3MenuText.LocTable = 0xb;
         ds3MenuText.StringId = parsedMappings->GetByDS2BonfireId(param_3)->DS3BonfireId;
-        menuObject = AddSpecificMenuOption(menuObject, ds3MenuText, DS3WarpEvent, param_1);
+        if (ds3MenuText.StringId != -1)
+        {
+            menuObject = AddSpecificMenuOption(menuObject, ds3MenuText, DS3WarpEvent, param_1);
+        }
     }
     else
     {
-        printf_s("Not adding extra menu options to %d", param_3);
+        printf_s("Not adding extra menu options to %d\n", param_3);
     }
     return menuObject;
 }
@@ -142,13 +148,13 @@ bool Begin(uint64_t qModuleHandle)
     hinst_dll = LoadLibraryA(dllpath);
 
     if (!hinst_dll) {
-        MessageBoxA(NULL, "Failed to load original DLL", "Error", MB_ICONERROR);
+        MessageBoxA(NULL, "Failed to load original DLL\n", "Error", MB_ICONERROR);
         return false;
     };
 
     original_dinput8_create = (decltype(&DirectInput8Create))GetProcAddress(hinst_dll, "DirectInput8Create");
     if (!original_dinput8_create) {
-        MessageBoxA(NULL, "Failed to load original DLL", "Error", MB_ICONERROR);
+        MessageBoxA(NULL, "Failed to load original DLL\n", "Error", MB_ICONERROR);
         return false;
     }
 
@@ -184,10 +190,10 @@ bool Begin(uint64_t qModuleHandle)
     if (hPipe == INVALID_HANDLE_VALUE)
     {
         int error = GetLastError();
-        printf_s("Failed to create pipe with error %d", error);
+        printf_s("Failed to create pipe with error %d\n", error);
     }
 
-    printf_s("hPipe is %llx", hPipe);
+    printf_s("hPipe is %llx\n", hPipe);
 
     Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
     pHookManager->Initialize();

@@ -18,21 +18,39 @@
         {
             foreach (var bonfireTriple in bonfireMapping)
             {
-                var dsrMap = ds1Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
-                var ds2Map = ds2Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
-                var ds3Map = ds3Maps.Values.Single(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
+                var dsrMap = ds1Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
+                var ds2Map = ds2Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
+                var ds3Map = ds3Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
 
                 if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)") // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
                 {
-                    coiledSword.AddUnlockedConnection((ds3Map, dsrMap));
-                    coiledSword.AddUnlockedConnection((ds3Map, ds2Map));
-                    dsrMap.ConnectTo(ds2Map);
+                    if (dsrMap != null && ds3Map != null)
+                    {
+                        coiledSword.AddUnlockedConnection((ds3Map, dsrMap));
+                    }
+                    if (ds2Map != null && ds3Map != null)
+                    {
+                        coiledSword.AddUnlockedConnection((ds3Map, ds2Map));
+                    }
+                    if (dsrMap != null && ds2Map != null)
+                    {
+                        dsrMap.ConnectTo(ds2Map);
+                    }
                 }
                 else
                 {
-                    dsrMap.ConnectTo(ds2Map);
-                    dsrMap.ConnectTo(ds3Map);
-                    ds2Map.ConnectTo(ds3Map);
+                    if (dsrMap != null && ds2Map != null)
+                    {
+                        dsrMap.ConnectTo(ds2Map);
+                    }
+                    if (dsrMap != null && ds3Map != null)
+                    {
+                        dsrMap.ConnectTo(ds3Map);
+                    }
+                    if (ds2Map != null && ds3Map != null)
+                    {
+                        ds2Map.ConnectTo(ds3Map);
+                    }
                 }
             }
         }
