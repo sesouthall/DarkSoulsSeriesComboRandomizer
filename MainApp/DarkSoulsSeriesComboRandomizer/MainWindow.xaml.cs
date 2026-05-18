@@ -57,7 +57,9 @@ namespace DarkSoulsSeriesComboRandomizer
 
         // ── Path persistence ──────────────────────────────────────────────────────
 
-        private record PathSettings(string DS1Path, string DS2Path, string DS3Path);
+        private record PathSettings(
+            string DS1Path, string DS2Path, string DS3Path,
+            bool DS1Enabled = true, bool DS2Enabled = true, bool DS3Enabled = true);
 
         private void LoadSavedPaths()
         {
@@ -85,6 +87,10 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     DS3PathBox.Text = settings.DS3Path;
                 }
+                DS1EnabledCheckBox.IsChecked = settings.DS1Enabled;
+                DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
+                DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
+                ApplyGameEnabledState();
             }
             catch
             {
@@ -94,10 +100,18 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void SavePaths()
         {
+            if (DS1PathBox == null || DS2PathBox == null || DS3PathBox == null)
+            {
+                return;
+            }
             try
             {
                 Directory.CreateDirectory(AppDataFolder);
-                var settings = new PathSettings(DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text);
+                var settings = new PathSettings(
+                    DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text,
+                    DS1EnabledCheckBox.IsChecked == true,
+                    DS2EnabledCheckBox.IsChecked == true,
+                    DS3EnabledCheckBox.IsChecked == true);
                 var json = JsonSerializer.Serialize(settings);
                 File.WriteAllText(SettingsFilePath, json);
             }
@@ -133,9 +147,29 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private bool GamePathsAreValid()
         {
-            return (DS1PathBox != null && FileExistsAndMatchesName(DS1PathBox.Text, DS1ExeName))
-                && (DS2PathBox != null && FileExistsAndMatchesName(DS2PathBox.Text, DS2ExeName))
-                && (DS3PathBox != null && FileExistsAndMatchesName(DS3PathBox.Text, DS3ExeName));
+            bool ds1Enabled = DS1EnabledCheckBox?.IsChecked == true;
+            bool ds2Enabled = DS2EnabledCheckBox?.IsChecked == true;
+            bool ds3Enabled = DS3EnabledCheckBox?.IsChecked == true;
+
+            // At least one game must be enabled
+            if (!ds1Enabled && !ds2Enabled && !ds3Enabled)
+            {
+                return false;
+            }
+
+            if (ds1Enabled && !(DS1PathBox != null && FileExistsAndMatchesName(DS1PathBox.Text, DS1ExeName)))
+            {
+                return false;
+            }
+            if (ds2Enabled && !(DS2PathBox != null && FileExistsAndMatchesName(DS2PathBox.Text, DS2ExeName)))
+            {
+                return false;
+            }
+            if (ds3Enabled && !(DS3PathBox != null && FileExistsAndMatchesName(DS3PathBox.Text, DS3ExeName)))
+            {
+                return false;
+            }
+            return true;
         }
 
         private static bool FileExistsAndMatchesName(string path, string expectedName)
@@ -153,12 +187,28 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void UpdatePlayButton()
         {
-            PlayButton.IsEnabled = GamePathsAreValid();
-
-            if (!PlayButton.IsEnabled)
+            if (PlayButton == null)
             {
-                StatusText.Text = GamePathsAreValid() ? "" :
-                    "Please provide valid paths to all three game executables.";
+                return;
+            }
+
+            bool ds1Enabled = DS1EnabledCheckBox?.IsChecked == true;
+            bool ds2Enabled = DS2EnabledCheckBox?.IsChecked == true;
+            bool ds3Enabled = DS3EnabledCheckBox?.IsChecked == true;
+
+            bool valid = GamePathsAreValid();
+            PlayButton.IsEnabled = valid;
+
+            if (!valid)
+            {
+                if (!ds1Enabled && !ds2Enabled && !ds3Enabled)
+                {
+                    StatusText.Text = "At least one game must be enabled.";
+                }
+                else
+                {
+                    StatusText.Text = "Please provide valid paths to all enabled game executables.";
+                }
             }
             else
             {
@@ -205,6 +255,29 @@ namespace DarkSoulsSeriesComboRandomizer
                 UpdatePlayButton();
                 SavePaths();
             }
+        }
+
+        // ── Game enabled checkbox handlers ────────────────────────────────────────
+
+        private void GameEnabled_Changed(object sender, RoutedEventArgs e)
+        {
+            ApplyGameEnabledState();
+            UpdatePlayButton();
+            SavePaths();
+        }
+
+        private void ApplyGameEnabledState()
+        {
+            bool ds1Enabled = DS1EnabledCheckBox?.IsChecked == true;
+            bool ds2Enabled = DS2EnabledCheckBox?.IsChecked == true;
+            bool ds3Enabled = DS3EnabledCheckBox?.IsChecked == true;
+
+            if (DS1PathBox != null) DS1PathBox.IsEnabled = ds1Enabled;
+            if (DS1BrowseButton != null) DS1BrowseButton.IsEnabled = ds1Enabled;
+            if (DS2PathBox != null) DS2PathBox.IsEnabled = ds2Enabled;
+            if (DS2BrowseButton != null) DS2BrowseButton.IsEnabled = ds2Enabled;
+            if (DS3PathBox != null) DS3PathBox.IsEnabled = ds3Enabled;
+            if (DS3BrowseButton != null) DS3BrowseButton.IsEnabled = ds3Enabled;
         }
 
         // ── Text-changed handlers ─────────────────────────────────────────────────
@@ -322,18 +395,21 @@ namespace DarkSoulsSeriesComboRandomizer
 
             try
             {
-                var options = new RandomizerOptions(seed, saveName);
-
                 var ds1Dir = Path.GetDirectoryName(DS1PathBox.Text)!;
                 var ds2Dir = Path.GetDirectoryName(DS2PathBox.Text)!;
                 var ds3Dir = Path.GetDirectoryName(DS3PathBox.Text)!;
+
+                var options = new RandomizerOptions(seed, saveName, 
+                    DS1EnabledCheckBox.IsChecked ?? false ? ds1Dir : null,
+                    DS2EnabledCheckBox.IsChecked ?? false ? ds2Dir : null,
+                    DS3EnabledCheckBox.IsChecked ?? false ? ds3Dir : null);
 
                 _errorDs1Dir = ds1Dir;
                 _errorDs2Dir = ds2Dir;
                 _errorDs3Dir = ds3Dir;
                 var crossGameMappings = CrossGameMappings.New();
 
-                _installer = ModInstaller.New(ds1Dir, ds2Dir, ds3Dir, options);
+                _installer = ModInstaller.New(options);
 
                 await Task.Run(() =>
                 {
@@ -471,22 +547,22 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void SetSetupControlsEnabled(bool enabled)
         {
-            DS1PathBox.IsEnabled = enabled;
-            DS2PathBox.IsEnabled = enabled;
-            DS3PathBox.IsEnabled = enabled;
+            DS1EnabledCheckBox.IsEnabled = enabled;
+            DS2EnabledCheckBox.IsEnabled = enabled;
+            DS3EnabledCheckBox.IsEnabled = enabled;
+
+            // Path boxes and browse buttons respect the checkbox state when re-enabling
+            DS1PathBox.IsEnabled = enabled && DS1EnabledCheckBox.IsChecked == true;
+            DS1BrowseButton.IsEnabled = enabled && DS1EnabledCheckBox.IsChecked == true;
+            DS2PathBox.IsEnabled = enabled && DS2EnabledCheckBox.IsChecked == true;
+            DS2BrowseButton.IsEnabled = enabled && DS2EnabledCheckBox.IsChecked == true;
+            DS3PathBox.IsEnabled = enabled && DS3EnabledCheckBox.IsChecked == true;
+            DS3BrowseButton.IsEnabled = enabled && DS3EnabledCheckBox.IsChecked == true;
+
             SeedBox.IsEnabled = enabled;
             SaveNameBox.IsEnabled = enabled;
             LoadSaveCombo.IsEnabled = enabled;
             PlayButton.IsEnabled = enabled && GamePathsAreValid();
-
-            // Browse buttons – find them by walking the visual tree via Tag or name
-            foreach (var btn in FindVisualChildren<Button>(SetupPanel))
-            {
-                if (btn != PlayButton)
-                {
-                    btn.IsEnabled = enabled;
-                }
-            }
         }
 
         private static IEnumerable<T> FindVisualChildren<T>(
@@ -517,10 +593,22 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             ErrorMessageText.Text = message;
 
-            // Show / hide folder buttons based on what info we have
-            OpenDS1GameFolderButton.IsEnabled = _errorDs1Dir != null && Directory.Exists(_errorDs1Dir);
-            OpenDS2GameFolderButton.IsEnabled = _errorDs2Dir != null && Directory.Exists(_errorDs2Dir);
-            OpenDS3GameFolderButton.IsEnabled = _errorDs3Dir != null && Directory.Exists(_errorDs3Dir);
+            // Show / hide folder buttons based on what info we have AND whether the game was enabled
+            bool ds1Enabled = DS1EnabledCheckBox?.IsChecked == true;
+            bool ds2Enabled = DS2EnabledCheckBox?.IsChecked == true;
+            bool ds3Enabled = DS3EnabledCheckBox?.IsChecked == true;
+
+            OpenDS1GameFolderButton.Visibility = ds1Enabled ? Visibility.Visible : Visibility.Collapsed;
+            OpenDS2GameFolderButton.Visibility = ds2Enabled ? Visibility.Visible : Visibility.Collapsed;
+            OpenDS3GameFolderButton.Visibility = ds3Enabled ? Visibility.Visible : Visibility.Collapsed;
+
+            OpenDS1GameFolderButton.IsEnabled = ds1Enabled && _errorDs1Dir != null && Directory.Exists(_errorDs1Dir);
+            OpenDS2GameFolderButton.IsEnabled = ds2Enabled && _errorDs2Dir != null && Directory.Exists(_errorDs2Dir);
+            OpenDS3GameFolderButton.IsEnabled = ds3Enabled && _errorDs3Dir != null && Directory.Exists(_errorDs3Dir);
+
+            OpenDS1SaveFolderButton.Visibility = ds1Enabled ? Visibility.Visible : Visibility.Collapsed;
+            OpenDS2SaveFolderButton.Visibility = ds2Enabled ? Visibility.Visible : Visibility.Collapsed;
+            OpenDS3SaveFolderButton.Visibility = ds3Enabled ? Visibility.Visible : Visibility.Collapsed;
 
             var runSaveFolder = _errorRunSaveName != null
                 ? Path.Combine(AppDataFolder, _errorRunSaveName)

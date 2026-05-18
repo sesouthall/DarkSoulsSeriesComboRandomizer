@@ -14,15 +14,18 @@
             ItemLocations = itemLocations;
         }
 
-        internal static void LoadCrossGameWarps(List<BonfireTriple> bonfireMapping, IReadOnlyDictionary<MapName, Map> ds1Maps, IReadOnlyDictionary<MapName, Map> ds2Maps, IReadOnlyDictionary<MapName, Map> ds3Maps, Key coiledSword)
+        internal static void LoadCrossGameWarps(List<BonfireTriple> bonfireMapping, IReadOnlyDictionary<MapName, Map> maps, Key? coiledSword)
         {
             foreach (var bonfireTriple in bonfireMapping)
             {
-                var dsrMap = ds1Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
-                var ds2Map = ds2Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
-                var ds3Map = ds3Maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
+                var dsrMap = maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS1Bonfire));
+                var ds2Map = maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS2Bonfire));
+                var ds3Map = maps.Values.SingleOrDefault(map => map.Bonfires.Contains(bonfireTriple.DS3Bonfire));
 
-                if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)") // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
+                // DS3's Firelink bonfire doesn't exist until you get the coiled sword, so it needs special handling.
+                // It's also possible that we're randomizing DS3, but not the coiled sword. In that case, assume it's
+                // available when needed.
+                if (bonfireTriple.DS3Bonfire == "Firelink Shrine (DS3)" && coiledSword != null)
                 {
                     if (dsrMap != null && ds3Map != null)
                     {
@@ -55,18 +58,24 @@
             }
         }
 
-        internal static void HandleDS3FirelinkRoofSkip(bool allow, IReadOnlyDictionary<MapName, Map> ds3Maps)
+        internal static void HandleDS3FirelinkRoofSkip(bool allow, IReadOnlyDictionary<MapName, Map> maps)
         {
+            if (!maps.ContainsKey(MapName.CemetaryFirelinkUntendedGraves) || !maps.ContainsKey(MapName.FirelinkRoof) || !maps.ContainsKey(MapName.FirelinkTower))
+            {
+                // These should all come together, but just in case...
+                return;
+            }
+
             if (allow)
             {
-                var firelink = ds3Maps[MapName.CemetaryFirelinkUntendedGraves];
-                var firelinkRoof = ds3Maps[MapName.FirelinkRoof];
+                var firelink = maps[MapName.CemetaryFirelinkUntendedGraves];
+                var firelinkRoof = maps[MapName.FirelinkRoof];
                 firelink.connectedMaps.Add(firelinkRoof);
             }
             else
             {
-                var firelinkTower = ds3Maps[MapName.FirelinkTower];
-                var firelinkRoof = ds3Maps[MapName.FirelinkRoof];
+                var firelinkTower = maps[MapName.FirelinkTower];
+                var firelinkRoof = maps[MapName.FirelinkRoof];
                 firelinkTower.connectedMaps.Add(firelinkRoof);
             }
         }

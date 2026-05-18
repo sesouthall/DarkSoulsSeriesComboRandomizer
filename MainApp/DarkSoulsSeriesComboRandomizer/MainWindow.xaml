@@ -246,6 +246,48 @@
             <Setter Property="Margin" Value="0,8,0,12"/>
         </Style>
 
+        <!-- Game Enable CheckBox Style -->
+        <Style x:Key="GameCheckBox" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="#D4B483"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="CheckBorder"
+                                    Width="14" Height="14"
+                                    Background="#2E2E2E"
+                                    BorderBrush="#5A4A2A"
+                                    BorderThickness="1"
+                                    CornerRadius="2"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="CheckMark"
+                                           Text="✓"
+                                           FontSize="10"
+                                           Foreground="#D4B483"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Margin="5,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#D4B483"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CheckBorder" Property="BorderBrush" Value="#8A7050"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Read-only display TextBox -->
         <Style x:Key="DisplayTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="#1A1A1A"/>
@@ -282,7 +324,13 @@
                 <TextBlock Text="GAME LOCATIONS" Style="{StaticResource SectionHeader}"/>
 
                 <!-- DS1 -->
-                <TextBlock Text="Dark Souls Remastered" Style="{StaticResource FieldLabel}"/>
+                <CheckBox x:Name="DS1EnabledCheckBox"
+                          Style="{StaticResource GameCheckBox}"
+                          Content="Dark Souls Remastered"
+                          IsChecked="True"
+                          Margin="0,0,0,4"
+                          Checked="GameEnabled_Changed"
+                          Unchecked="GameEnabled_Changed"/>
                 <Grid Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -295,7 +343,8 @@
                              Margin="0,0,6,0"
                              Text="C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS REMASTERED\DarkSoulsRemastered.exe"
                              TextChanged="GamePath_TextChanged"/>
-                    <Button Grid.Column="1"
+                    <Button x:Name="DS1BrowseButton"
+                            Grid.Column="1"
                             Style="{StaticResource BrowseButton}"
                             Height="30"
                             Content="Browse…"
@@ -303,7 +352,13 @@
                 </Grid>
 
                 <!-- DS2 -->
-                <TextBlock Text="Dark Souls II: Scholar of the First Sin" Style="{StaticResource FieldLabel}"/>
+                <CheckBox x:Name="DS2EnabledCheckBox"
+                          Style="{StaticResource GameCheckBox}"
+                          Content="Dark Souls II: Scholar of the First Sin"
+                          IsChecked="True"
+                          Margin="0,0,0,4"
+                          Checked="GameEnabled_Changed"
+                          Unchecked="GameEnabled_Changed"/>
                 <Grid Margin="0,0,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -316,7 +371,8 @@
                              Margin="0,0,6,0"
                              Text="C:\Program Files (x86)\Steam\steamapps\common\Dark Souls II Scholar of the First Sin\Game\DarkSoulsII.exe"
                              TextChanged="GamePath_TextChanged"/>
-                    <Button Grid.Column="1"
+                    <Button x:Name="DS2BrowseButton"
+                            Grid.Column="1"
                             Style="{StaticResource BrowseButton}"
                             Height="30"
                             Content="Browse…"
@@ -324,7 +380,13 @@
                 </Grid>
 
                 <!-- DS3 -->
-                <TextBlock Text="Dark Souls III" Style="{StaticResource FieldLabel}"/>
+                <CheckBox x:Name="DS3EnabledCheckBox"
+                          Style="{StaticResource GameCheckBox}"
+                          Content="Dark Souls III"
+                          IsChecked="True"
+                          Margin="0,0,0,4"
+                          Checked="GameEnabled_Changed"
+                          Unchecked="GameEnabled_Changed"/>
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -337,7 +399,8 @@
                              Margin="0,0,6,0"
                              Text="C:\Program Files (x86)\Steam\steamapps\common\DARK SOULS III\Game\DarkSoulsIII.exe"
                              TextChanged="GamePath_TextChanged"/>
-                    <Button Grid.Column="1"
+                    <Button x:Name="DS3BrowseButton"
+                            Grid.Column="1"
                             Style="{StaticResource BrowseButton}"
                             Height="30"
                             Content="Browse…"
@@ -539,15 +602,18 @@
                 <!-- Open Save Folders -->
                 <TextBlock Text="OPEN SAVE FOLDERS" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
                 <WrapPanel Margin="0,0,0,6">
-                    <Button Style="{StaticResource BrowseButton}"
+                    <Button x:Name="OpenDS1SaveFolderButton"
+                            Style="{StaticResource BrowseButton}"
                             Content="DS1 Save Folder"
                             Margin="0,0,8,8"
                             Click="OpenDS1SaveFolder_Click"/>
-                    <Button Style="{StaticResource BrowseButton}"
+                    <Button x:Name="OpenDS2SaveFolderButton"
+                            Style="{StaticResource BrowseButton}"
                             Content="DS2 Save Folder"
                             Margin="0,0,8,8"
                             Click="OpenDS2SaveFolder_Click"/>
-                    <Button Style="{StaticResource BrowseButton}"
+                    <Button x:Name="OpenDS3SaveFolderButton"
+                            Style="{StaticResource BrowseButton}"
                             Content="DS3 Save Folder"
                             Margin="0,0,8,8"
                             Click="OpenDS3SaveFolder_Click"/>

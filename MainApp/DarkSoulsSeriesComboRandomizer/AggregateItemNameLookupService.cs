@@ -17,4 +17,19 @@ namespace DarkSoulsSeriesComboRandomizer
             return false;
         }
     }
+
+    public class AggregateItemNameLookupServiceBuilder
+    {
+        private readonly List<IItemNameLookupService> services = [];
+
+        public void WithLookupService(IItemNameLookupService service)
+        {
+            services.Add(service);
+        }
+
+        public AggregateItemNameLookupService Build()
+        {
+            return new AggregateItemNameLookupService(services);
+        }
+    }
 }
