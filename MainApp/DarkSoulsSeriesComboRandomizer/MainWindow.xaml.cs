@@ -399,17 +399,28 @@ namespace DarkSoulsSeriesComboRandomizer
                 var ds2Dir = Path.GetDirectoryName(DS2PathBox.Text)!;
                 var ds3Dir = Path.GetDirectoryName(DS3PathBox.Text)!;
 
-                var options = new RandomizerOptions(seed, saveName, 
-                    DS1EnabledCheckBox.IsChecked ?? false ? ds1Dir : null,
-                    DS2EnabledCheckBox.IsChecked ?? false ? ds2Dir : null,
-                    DS3EnabledCheckBox.IsChecked ?? false ? ds3Dir : null);
+                var options = new RandomizerOptions(seed, saveName);
+
+                var gameConfigs = new List<GameInstallSettings>();
+                if (DS1EnabledCheckBox.IsChecked ?? false)
+                {
+                    gameConfigs.Add(new DarkSoulsRemastered.DSRInstallSettings(ds1Dir));
+                }
+                if (DS2EnabledCheckBox.IsChecked ?? false)
+                {
+                    gameConfigs.Add(new DarkSouls2SotFS.DS2SotFSInstallSettings(ds2Dir));
+                }
+                if (DS3EnabledCheckBox.IsChecked ?? false)
+                {
+                    gameConfigs.Add(new DarkSouls3.DS3InstallSettings(ds3Dir));
+                }
 
                 _errorDs1Dir = ds1Dir;
                 _errorDs2Dir = ds2Dir;
                 _errorDs3Dir = ds3Dir;
                 var crossGameMappings = CrossGameMappings.New();
 
-                _installer = ModInstaller.New(options);
+                _installer = ModInstaller.New(gameConfigs, options);
 
                 await Task.Run(() =>
                 {

@@ -28,7 +28,7 @@
         public static List<Key> ConstructDS2Keys(IReadOnlyDictionary<MapName, Map> maps) =>
             [.. DS2KeyDefinitions.Select(definition => NewKey(definition, maps))];
 
-        public static IReadOnlyList<Key> ConstructDS3Keys(IReadOnlyDictionary<MapName, Map> maps) =>
+        public static List<Key> ConstructDS3Keys(IReadOnlyDictionary<MapName, Map> maps) =>
             [.. DS3KeyDefinitions.Select(definition => NewKey(definition, maps))];
 
         public void AddUnlockedConnection((Map, Map) newConnection)
