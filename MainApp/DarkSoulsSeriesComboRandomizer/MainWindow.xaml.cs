@@ -9,6 +9,56 @@ namespace DarkSoulsSeriesComboRandomizer
 {
     public partial class MainWindow : Window
     {
+        // ── Bonfire connections state ─────────────────────────────────────────────
+
+        private static readonly List<BonfireTriple> DefaultBonfireConnections =
+        [
+            new("Undead Asylum Courtyard",  "Fire Keepers' Dwelling", "Cemetery of Ash"),
+            new("Firelink Shrine (DS1)",    "The Far Fire",           "Firelink Shrine (DS3)"),
+            new("Darkroot Garden",          "Undead Refuge",          "Road of Sacrifices"),
+            new("Anor Londo (DS1)",         "King's Gate",            "Central Irithyll"),
+            new("Stone Dragon",             "Dragon Aerie",           "Archdragon Peak"),
+            new("Painted World of Ariamis", "Outer Wall",             "Snowfield"),
+            new("Oolacile Sanctuary",       "Sanctum Walk",           "The Dreg Heap"),
+            new("Prison Tower (DS1)",       "Throne Floor",           "Grand Archives"),
+        ];
+
+        // Source of truth for bonfire connections. Always contains all three game
+        // fields; "NONE" means no bonfire selected for that game in that row.
+        // The panel ComboBoxes are just a view over this list.
+        private readonly List<BonfireTriple> _bonfireTriples = [.. DefaultBonfireConnections];
+
+        private static readonly IReadOnlyList<string> AllDS1Bonfires = CollectBonfires(MapData.DS1MapDefinitions);
+        private static readonly IReadOnlyList<string> AllDS2Bonfires = CollectBonfires(MapData.DS2MapDefinitions);
+        private static readonly IReadOnlyList<string> AllDS3Bonfires = CollectBonfires(MapData.DS3MapDefinitions);
+
+        private static List<string> CollectBonfires(List<FileBackedMapDefinition> maps)
+        {
+            var result = new List<string>();
+            foreach (var map in maps)
+            {
+                result.AddRange(map.Bonfires);
+                foreach (var sub in map.SubMaps)
+                    result.AddRange(sub.Bonfires);
+            }
+            return result;
+        }
+
+        private static IReadOnlyList<string> BonfiresForGame(SoulsGame g) => g switch
+        {
+            SoulsGame.DSR => AllDS1Bonfires,
+            SoulsGame.DS2S => AllDS2Bonfires,
+            SoulsGame.DS3 => AllDS3Bonfires,
+            _ => []
+        };
+
+        private static string GameLabel(SoulsGame g) => g switch
+        {
+            SoulsGame.DSR => "Dark Souls Remastered",
+            SoulsGame.DS2S => "Dark Souls II",
+            SoulsGame.DS3 => "Dark Souls III",
+            _ => ""
+        };
         // ── Constants ────────────────────────────────────────────────────────────
 
         private const string DS1ExeName = "DarkSoulsRemastered.exe";
@@ -261,9 +311,26 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void GameEnabled_Changed(object sender, RoutedEventArgs e)
         {
+            // When a game is unchecked, clear its column in every triple so that
+            // the bonfire is no longer "taken" and re-enabling starts fresh (NONE).
+            if (sender == DS1EnabledCheckBox && DS1EnabledCheckBox.IsChecked == false)
+                ClearBonfireColumn(SoulsGame.DSR);
+            else if (sender == DS2EnabledCheckBox && DS2EnabledCheckBox.IsChecked == false)
+                ClearBonfireColumn(SoulsGame.DS2S);
+            else if (sender == DS3EnabledCheckBox && DS3EnabledCheckBox.IsChecked == false)
+                ClearBonfireColumn(SoulsGame.DS3);
+
             ApplyGameEnabledState();
             UpdatePlayButton();
             SavePaths();
+        }
+
+        private void ClearBonfireColumn(SoulsGame game)
+        {
+            for (int i = 0; i < _bonfireTriples.Count; i++)
+            {
+                _bonfireTriples[i] = _bonfireTriples[i].WithBonfireField(game, "NONE");
+            }
         }
 
         private void ApplyGameEnabledState()
@@ -424,7 +491,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 await Task.Run(() =>
                 {
-                    _installer.CreateRandomizedRegulationFilesIfNeeded(crossGameMappings);
+                    _installer.CreateRandomizedRegulationFilesIfNeeded(crossGameMappings, _bonfireTriples);
                 });
 
                 Dispatcher.Invoke(() => StatusText.Text = "Installing mod files…");
@@ -689,5 +756,178 @@ namespace DarkSoulsSeriesComboRandomizer
             => OpenFolder(_errorRunSaveName != null
                 ? Path.Combine(AppDataFolder, _errorRunSaveName)
                 : null);
+
+        // ── Bonfire connections navigation ────────────────────────────────────────
+
+        private void BonfireConnections_Click(object sender, RoutedEventArgs e)
+        {
+            RebuildBonfirePanel();
+            SetupPanel.Visibility = Visibility.Collapsed;
+            BonfireConnectionsPanel.Visibility = Visibility.Visible;
+        }
+
+        private void BackToSettings_Click(object sender, RoutedEventArgs e)
+        {
+            BonfireConnectionsPanel.Visibility = Visibility.Collapsed;
+            SetupPanel.Visibility = Visibility.Visible;
+        }
+
+        // ── Bonfire panel construction ────────────────────────────────────────────
+
+        // Returns the games that are currently enabled, in fixed DS1→DS2→DS3 order.
+        private List<SoulsGame> ActiveGames()
+        {
+            var games = new List<SoulsGame>();
+            if (DS1EnabledCheckBox.IsChecked == true) games.Add(SoulsGame.DSR);
+            if (DS2EnabledCheckBox.IsChecked == true) games.Add(SoulsGame.DS2S);
+            if (DS3EnabledCheckBox.IsChecked == true) games.Add(SoulsGame.DS3);
+            return games;
+        }
+
+        private void RebuildBonfirePanel()
+        {
+            var activeGames = ActiveGames();
+
+            // Rebuild column headers
+            BonfireColumnHeaders.ColumnDefinitions.Clear();
+            BonfireColumnHeaders.Children.Clear();
+            for (int i = 0; i < activeGames.Count; i++)
+            {
+                BonfireColumnHeaders.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                if (i < activeGames.Count - 1)
+                    BonfireColumnHeaders.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+
+                var header = new TextBlock
+                {
+                    Text = GameLabel(activeGames[i]).ToUpperInvariant(),
+                    Style = (Style)FindResource("SectionHeader"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    Margin = new Thickness(0),
+                };
+                Grid.SetColumn(header, i * 2);
+                BonfireColumnHeaders.Children.Add(header);
+            }
+
+            // Rebuild rows from _bonfireTriples
+            BonfireRowsPanel.Children.Clear();
+            for (int rowIndex = 0; rowIndex < _bonfireTriples.Count; rowIndex++)
+                BonfireRowsPanel.Children.Add(BuildRowGrid(rowIndex, activeGames));
+
+            RefreshAllDropdowns(activeGames);
+        }
+
+        private Grid BuildRowGrid(int rowIndex, List<SoulsGame> activeGames)
+        {
+            var rowGrid = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+
+            for (int i = 0; i < activeGames.Count; i++)
+            {
+                rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                if (i < activeGames.Count - 1)
+                    rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(8) });
+            }
+
+            for (int colIndex = 0; colIndex < activeGames.Count; colIndex++)
+            {
+                var game = activeGames[colIndex];
+                var combo = new ComboBox
+                {
+                    Style = (Style)FindResource("DarkComboBox"),
+                    Height = 30,
+                    // Tag encodes which triple row and game this combo edits
+                    Tag = (rowIndex, game),
+                };
+
+                combo.Items.Add("NONE");
+                foreach (var b in BonfiresForGame(game))
+                    combo.Items.Add(b);
+
+                var current = _bonfireTriples[rowIndex].GetBonfireForGame(game);
+                combo.SelectedItem = combo.Items.Contains(current) ? current : "NONE";
+
+                combo.SelectionChanged += BonfireCombo_SelectionChanged;
+                Grid.SetColumn(combo, colIndex * 2);
+                rowGrid.Children.Add(combo);
+            }
+
+            return rowGrid;
+        }
+
+        // Repopulate every ComboBox's items, excluding bonfires already selected
+        // in another row of the same column, then restore the current selection.
+        private void RefreshAllDropdowns(List<SoulsGame> activeGames)
+        {
+            for (int colIndex = 0; colIndex < activeGames.Count; colIndex++)
+            {
+                var game = activeGames[colIndex];
+                var allBonfires = BonfiresForGame(game);
+
+                for (int rowIndex = 0; rowIndex < BonfireRowsPanel.Children.Count; rowIndex++)
+                {
+                    var rowGrid = (Grid)BonfireRowsPanel.Children[rowIndex];
+                    // The combo for this column is at grid column colIndex*2
+                    var combo = (ComboBox)rowGrid.Children[colIndex];
+
+                    var current = _bonfireTriples[rowIndex].GetBonfireForGame(game);
+
+                    // Bonfires taken by other rows in this column
+                    var taken = new HashSet<string>();
+                    for (int r = 0; r < _bonfireTriples.Count; r++)
+                    {
+                        if (r == rowIndex) continue;
+                        var val = _bonfireTriples[r].GetBonfireForGame(game);
+                        if (val != "NONE") taken.Add(val);
+                    }
+
+                    combo.SelectionChanged -= BonfireCombo_SelectionChanged;
+                    combo.Items.Clear();
+                    combo.Items.Add("NONE");
+                    foreach (var b in allBonfires)
+                        if (!taken.Contains(b))
+                            combo.Items.Add(b);
+
+                    combo.SelectedItem = combo.Items.Contains(current) ? current : "NONE";
+                    combo.SelectionChanged += BonfireCombo_SelectionChanged;
+                }
+            }
+        }
+
+        private void BonfireCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is not ComboBox combo || combo.Tag is not (int rowIndex, SoulsGame game))
+                return;
+
+            var selected = combo.SelectedItem as string ?? "NONE";
+            _bonfireTriples[rowIndex] = _bonfireTriples[rowIndex].WithBonfireField(game, selected);
+
+            RefreshAllDropdowns(ActiveGames());
+        }
+
+        // ── Add / Remove rows ─────────────────────────────────────────────────────
+
+        private void AddBonfireRow_Click(object sender, RoutedEventArgs e)
+        {
+            var activeGames = ActiveGames();
+            _bonfireTriples.Add(new BonfireTriple("NONE", "NONE", "NONE"));
+            BonfireRowsPanel.Children.Add(BuildRowGrid(_bonfireTriples.Count - 1, activeGames));
+            RefreshAllDropdowns(activeGames);
+        }
+
+        private void RemoveBonfireRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (_bonfireTriples.Count == 0) return;
+            _bonfireTriples.RemoveAt(_bonfireTriples.Count - 1);
+            BonfireRowsPanel.Children.RemoveAt(BonfireRowsPanel.Children.Count - 1);
+            RefreshAllDropdowns(ActiveGames());
+        }
+
+        // ── Restore defaults ──────────────────────────────────────────────────────
+
+        private void RestoreBonfireDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            _bonfireTriples.Clear();
+            _bonfireTriples.AddRange(DefaultBonfireConnections);
+            RebuildBonfirePanel();
+        }
     }
 }

@@ -28,7 +28,7 @@ namespace DarkSoulsSeriesComboRandomizer
             return new ModInstaller(gameConfigs, options, filesToModify);
         }
 
-        public void CreateRandomizedRegulationFilesIfNeeded(CrossGameMappings crossGameMappings)
+        public void CreateRandomizedRegulationFilesIfNeeded(CrossGameMappings crossGameMappings, List<BonfireTriple> bonfireMappings)
         {
             if (Directory.Exists(SaveFolderPath))
             {
@@ -50,8 +50,6 @@ namespace DarkSoulsSeriesComboRandomizer
 
             var itemLookupService = new AggregateItemNameLookupService([.. gameConfigs.Select(config => config.CreateLookupService())]);
 
-            CreateBonfireMappings();
-            var bonfireMappings = BonfireTriple.ParseBonfireMappings(BonfireMappingsFile);
             Key? coiledSword = allKeys.SingleOrDefault(key => key.Item == Key.CoiledSword);
             Map.LoadCrossGameWarps(bonfireMappings, allMaps, coiledSword);
 
@@ -64,20 +62,12 @@ namespace DarkSoulsSeriesComboRandomizer
                 gameConfig.SaveItemLotChanges(SaveFolderPath);
             }
 
+            BonfireTriple.SerializeBonfireMappings(bonfireMappings, BonfireMappingsFile);
+
             var hintsLines = allMaps.Values.SelectMany(map => map.GetHintsLines(itemLookupService));
             File.WriteAllLines(Path.Combine(SaveFolderPath, "Hints"), hintsLines);
 
             File.WriteAllText(Path.Combine(SaveFolderPath, "seed.txt"), options.Seed.ToString());
-        }
-
-        private void CreateBonfireMappings()
-        {
-            var runSpecificBonfireMappingFile = BonfireMappingsFile.Replace(appDataFolderPath, SaveFolderPath);
-            if (!File.Exists(runSpecificBonfireMappingFile))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(runSpecificBonfireMappingFile)!);
-                File.Copy(Path.Combine("ConfigFiles", "BonfireMappings.txt"), runSpecificBonfireMappingFile);
-            }
         }
 
         public List<string> InstallChanges()

@@ -2,17 +2,32 @@
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public record BonfireTriple
+    public record BonfireTriple(string DS1Bonfire, string DS2Bonfire, string DS3Bonfire)
     {
-        public readonly string DS1Bonfire;
-        public readonly string DS2Bonfire;
-        public readonly string DS3Bonfire;
-
-        public BonfireTriple(string ds1Bonfire, string ds2Bonfire,  string ds3Bonfire)
+        public string GetBonfireForGame(SoulsGame game) => game switch
         {
-            DS1Bonfire = ds1Bonfire;
-            DS2Bonfire = ds2Bonfire;
-            DS3Bonfire = ds3Bonfire;
+            SoulsGame.DSR => DS1Bonfire,
+            SoulsGame.DS2S => DS2Bonfire,
+            SoulsGame.DS3 => DS3Bonfire,
+            _ => "NONE",
+        };
+
+        public BonfireTriple WithBonfireField(SoulsGame g, string value) => g switch
+        {
+            SoulsGame.DSR => this with { DS1Bonfire = value },
+            SoulsGame.DS2S => this with { DS2Bonfire = value },
+            SoulsGame.DS3 => this with { DS3Bonfire = value },
+            _ => this
+        };
+
+        public static void SerializeBonfireMappings(List<BonfireTriple> connectedBonfires, string mappingFile)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(mappingFile)!);
+            File.WriteAllLines(mappingFile, ["# Use this file to list the bonfires to connect. Supported bonfire names can be found in either of the dll mods in BonfireTableParser.cpp."]);
+            foreach (var triple in connectedBonfires)
+            {
+                File.AppendAllLines(mappingFile, [$"{triple.DS1Bonfire},{triple.DS2Bonfire},{triple.DS3Bonfire}"]);
+            }
         }
 
         public static List<BonfireTriple> ParseBonfireMappings(string mappingFile)
