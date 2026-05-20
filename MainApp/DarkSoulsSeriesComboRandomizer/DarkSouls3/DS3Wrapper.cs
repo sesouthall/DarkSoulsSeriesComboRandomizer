@@ -1,14 +1,16 @@
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 {
-    public class DS3Wrapper : WindowsGameWrapper, IDisposable
+    public class DS3Wrapper : SoulsGameWrapper, IDisposable
     {
-        private DS3Hook hook;
-        private Thread itemWatchThread;
+        private readonly DS3Hook hook;
+        private readonly Thread itemWatchThread;
 
         private bool shutdown = false;
         private bool disposedValue;
 
         public override event ItemReactor? OnModItemPickUp;
+
+        public override SoulsGame Game => SoulsGame.DS3;
 
         /// <summary>
         /// DS3 is launched through ModEngine3 instead of calling the exe directly.
@@ -35,10 +37,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             itemWatchThread.Start();
         }
 
-        public void Warp(int bonfireId)
-        {
-            hook.Warp(bonfireId);
-        }
+        public override void Warp(int bonfireId) => hook.Warp(bonfireId);
+
+        public override void GiveItem(SoulsItemType itemType, int itemId, int quantity) => hook.GiveItem((int)itemType + itemId, quantity);
+
+        public override bool ContainsBonfireId(int bonfireId) => bonfireId >= 3002950 && bonfireId <= 5112951;
 
         private void WatchItems()
         {
@@ -53,11 +56,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 }
                 Thread.Sleep(1000);
             }
-        }
-
-        public void GiveItem(SoulsItemType itemType, int itemId, int quantity)
-        {
-            hook.GiveItem((int)itemType + itemId, quantity);
         }
 
         protected override void Dispose(bool disposing)

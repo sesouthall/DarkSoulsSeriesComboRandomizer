@@ -1,14 +1,16 @@
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
-    public class DS2SotFSWrapper : WindowsGameWrapper, IDisposable
+    public class DS2SotFSWrapper : SoulsGameWrapper, IDisposable
     {
-        private DS2SotFSHook hook;
-        private Thread itemWatchThread;
+        private readonly DS2SotFSHook hook;
+        private readonly Thread itemWatchThread;
 
         private bool shutdown = false;
         private bool disposedValue;
 
         public override event ItemReactor? OnModItemPickUp;
+
+        public override SoulsGame Game => SoulsGame.DS2S;
 
         public DS2SotFSWrapper(string exePath) : base(exePath)
         {
@@ -30,10 +32,11 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             itemWatchThread.Start();
         }
 
-        public void Warp(int bonfireId)
-        {
-            hook.Warp((ushort)bonfireId);
-        }
+        public override void Warp(int bonfireId) => hook.Warp((ushort)bonfireId);
+
+        public override void GiveItem(SoulsItemType itemType, int itemId, int quantity) => hook.GiveItem(itemId, (short)quantity, 0, 0);
+
+        public override bool ContainsBonfireId(int bonfireId) => bonfireId >= 2650 && bonfireId <= 37685;
 
         private void WatchItems()
         {
@@ -48,11 +51,6 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 }
                 Thread.Sleep(1000);
             }
-        }
-
-        public void GiveItem(int itemId, short quantity)
-        {
-            hook.GiveItem(itemId, quantity, 0, 0);
         }
 
         protected override void Dispose(bool disposing)

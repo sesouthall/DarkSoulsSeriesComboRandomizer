@@ -1,4 +1,7 @@
-﻿using Microsoft.Win32;
+﻿using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
+using DarkSoulsSeriesComboRandomizer.DarkSouls3;
+using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
+using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
@@ -469,17 +472,21 @@ namespace DarkSoulsSeriesComboRandomizer
                 var options = new RandomizerOptions(seed, saveName);
 
                 var gameConfigs = new List<GameInstallSettings>();
+                var games = new List<SoulsGameWrapper>();
                 if (DS1EnabledCheckBox.IsChecked ?? false)
                 {
-                    gameConfigs.Add(new DarkSoulsRemastered.DSRInstallSettings(ds1Dir));
+                    gameConfigs.Add(new DSRInstallSettings(ds1Dir));
+                    games.Add(new DSRWrapper(DS1PathBox.Text));
                 }
                 if (DS2EnabledCheckBox.IsChecked ?? false)
                 {
-                    gameConfigs.Add(new DarkSouls2SotFS.DS2SotFSInstallSettings(ds2Dir));
+                    gameConfigs.Add(new DS2SotFSInstallSettings(ds2Dir));
+                    games.Add(new DS2SotFSWrapper(DS2PathBox.Text));
                 }
                 if (DS3EnabledCheckBox.IsChecked ?? false)
                 {
-                    gameConfigs.Add(new DarkSouls3.DS3InstallSettings(ds3Dir));
+                    gameConfigs.Add(new DS3InstallSettings(ds3Dir));
+                    games.Add(new DS3Wrapper(DS3PathBox.Text));
                 }
 
                 _errorDs1Dir = ds1Dir;
@@ -532,9 +539,7 @@ namespace DarkSoulsSeriesComboRandomizer
 "Once all three games have loaded characters, DS1 will be resumed for new saves, or the last game you were in for existing saves.", "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 _server = new GameCoordinationServer(
-                    DS1PathBox.Text,
-                    DS2PathBox.Text,
-                    DS3PathBox.Text,
+                    games,
                     crossGameMappings);
 
                 var lastGame = _installer.GetLastGame();
@@ -582,7 +587,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
             try
             {
-                _installer?.SaveLastGame(_server?.ActiveGame ?? SoulsGame.DSR);
+                _installer?.SaveLastGame(_server?.ActiveGame.Game ?? SoulsGame.DSR);
 
                 StopStatusText.Text = "Stopping coordination server…";
 

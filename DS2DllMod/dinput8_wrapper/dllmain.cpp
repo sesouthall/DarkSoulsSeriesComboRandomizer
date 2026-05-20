@@ -179,7 +179,7 @@ bool Begin(uint64_t qModuleHandle)
     parsedMappings = ParseBonfireTable(mappingFile);
 
     hPipe = CreateFile(
-        TEXT("\\\\.\\pipe\\DarkSoulsSeriesComboRandomizerDS2"),
+        TEXT("\\\\.\\pipe\\DarkSoulsSeriesComboRandomizerDS2S"),
         GENERIC_WRITE,
         0,
         NULL,

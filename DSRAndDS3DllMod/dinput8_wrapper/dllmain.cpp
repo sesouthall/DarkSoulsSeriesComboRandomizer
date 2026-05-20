@@ -300,7 +300,7 @@ bool Begin(uint64_t qModuleHandle)
     parsedMappings = ParseBonfireTable(mappingFile);
 
 #ifdef DSR
-    LPCWSTR pipeName = TEXT("\\\\.\\pipe\\DarkSoulsSeriesComboRandomizerDS1");
+    LPCWSTR pipeName = TEXT("\\\\.\\pipe\\DarkSoulsSeriesComboRandomizerDSR");
 #endif // DSR
 #ifdef DS3
     LPCWSTR pipeName = TEXT("\\\\.\\pipe\\DarkSoulsSeriesComboRandomizerDS3");

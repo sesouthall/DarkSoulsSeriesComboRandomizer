@@ -1,170 +1,93 @@
-using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
-using DarkSoulsSeriesComboRandomizer.DarkSouls3;
-using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
 using System.IO;
 using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class GameCoordinationServer(string dsrExePath, string ds2ExePath, string ds3ExePath, CrossGameMappings crossGameMappings) : IDisposable
+    public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings) : IDisposable
     {
-        private readonly DSRWrapper dsrWrapper = new(dsrExePath);
-        private readonly DS2SotFSWrapper ds2Wrapper = new(ds2ExePath);
-        private readonly DS3Wrapper ds3Wrapper = new(ds3ExePath);
         private bool disposedValue;
 
-        public SoulsGame ActiveGame { get; private set; }
+        public SoulsGameWrapper ActiveGame { get; private set; } = gameWrappers[0];
 
         public void Start(SoulsGame firstGame)
         {
             StartPipeServers();
 
-            dsrWrapper.Start();
-            dsrWrapper.Pause();
-            ds2Wrapper.Start();
-            ds2Wrapper.Pause();
-            ds3Wrapper.Start();
-            ds3Wrapper.Pause();
-
-            dsrWrapper.OnModItemPickUp += SendItemToCorrectGame;
-            ds2Wrapper.OnModItemPickUp += SendItemToCorrectGame;
-            ds3Wrapper.OnModItemPickUp += SendItemToCorrectGame;
-
-            switch (firstGame)
+            foreach (var game in gameWrappers)
             {
-                case SoulsGame.DSR:
-                    dsrWrapper.Resume();
-                    break;
-                case SoulsGame.DS2S:
-                    ds2Wrapper.Resume();
-                    break;
-                case SoulsGame.DS3:
-                    ds3Wrapper.Resume();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(firstGame), $"{firstGame} is not a known SoulsGame");
+                game.Start();
+                game.Pause();
             }
-            ActiveGame = firstGame;
+
+            foreach (var game in gameWrappers)
+            {
+                // This has to be after each game has been started so we don't try to send items to a game that doesn't exist yet
+                game.OnModItemPickUp += SendItemToCorrectGame;
+            }
+
+            var firstGameWrapper = gameWrappers.FirstOrDefault(game => game.Game == firstGame) ??
+                throw new ArgumentOutOfRangeException(nameof(firstGame), $"{firstGame} is not a known SoulsGame");
+            firstGameWrapper.Resume();
+            ActiveGame = firstGameWrapper;
         }
 
         public async Task Stop()
         {
-            dsrWrapper.OnModItemPickUp -= SendItemToCorrectGame;
-            ds2Wrapper.OnModItemPickUp -= SendItemToCorrectGame;
-            ds3Wrapper.OnModItemPickUp -= SendItemToCorrectGame;
+            foreach (var gameWrapper in gameWrappers)
+            {
+                gameWrapper.OnModItemPickUp -= SendItemToCorrectGame;
+            }
 
-            await dsrWrapper.WaitForShutdown();
-            await ds2Wrapper.WaitForShutdown();
-            await ds3Wrapper.WaitForShutdown();
+            foreach(var gameWrapper in gameWrappers)
+            {
+                await gameWrapper.WaitForShutdown();
+            }
         }
 
         private void StartPipeServers()
         {
-            Task.Factory.StartNew(() =>
+            foreach(var gameWrapper in gameWrappers)
             {
-                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS1", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
-                server.WaitForConnection();
-                StreamReader reader = new StreamReader(server);
-                while (true)
+                Task.Factory.StartNew(() =>
                 {
-                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
-                    if (int.TryParse(line, out var destinationBonfire))
+                    var server = new NamedPipeServerStream(
+                        $"DarkSoulsSeriesComboRandomizer{gameWrapper.Game}",
+                        PipeDirection.InOut,
+                        NamedPipeServerStream.MaxAllowedServerInstances,
+                        PipeTransmissionMode.Message);
+                    server.WaitForConnection();
+                    StreamReader reader = new(server);
+                    while (true)
                     {
-                        SwitchGame(SoulsGame.DSR, destinationBonfire);
+                        var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
+                        if (int.TryParse(line, out var destinationBonfire))
+                        {
+                            SwitchGame(destinationBonfire);
+                        }
                     }
-                }
-            });
-
-            Task.Factory.StartNew(() =>
-            {
-                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS2", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
-                server.WaitForConnection();
-                StreamReader reader = new StreamReader(server);
-                while (true)
-                {
-                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
-                    if (int.TryParse(line, out var destinationBonfire))
-                    {
-                        SwitchGame(SoulsGame.DS2S, destinationBonfire);
-                    }
-                }
-            });
-
-            Task.Factory.StartNew(() =>
-            {
-                var server = new NamedPipeServerStream("DarkSoulsSeriesComboRandomizerDS3", PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances, PipeTransmissionMode.Message);
-                server.WaitForConnection();
-                StreamReader reader = new StreamReader(server);
-                while (true)
-                {
-                    var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
-                    if (int.TryParse(line, out var destinationBonfire))
-                    {
-                        Thread.Sleep(500);
-                        SwitchGame(SoulsGame.DS3, destinationBonfire);
-                    }
-                }
-            });
+                });
+            }
         }
 
-        private void SwitchGame(SoulsGame currentGame, int destinationBonfire)
+        private void SwitchGame(int destinationBonfire)
         {
-            switch (currentGame)
-            {
-                case SoulsGame.DSR:
-                    dsrWrapper.Pause();
-                    break;
-                case SoulsGame.DS2S:
-                    ds2Wrapper.Pause();
-                    break;
-                case SoulsGame.DS3:
-                    ds3Wrapper.Pause();
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(currentGame), $"{currentGame} is not a known SoulsGame");
-            }
+            ActiveGame.Pause();
 
             Thread.Sleep(500);
 
-            if (destinationBonfire >= 1002960 && destinationBonfire <= 1812961)
-            {
-                ActiveGame = SoulsGame.DSR;
-                dsrWrapper.Resume();
-                dsrWrapper.Warp(destinationBonfire);
-            }
-            else if (destinationBonfire >= 2650 && destinationBonfire <= 37685)
-            {
-                ActiveGame = SoulsGame.DS2S;
-                ds2Wrapper.Resume();
-                ds2Wrapper.Warp(destinationBonfire);
-            }
-            else if (destinationBonfire >= 3002950 && destinationBonfire <= 5112951)
-            {
-                ActiveGame = SoulsGame.DS3;
-                ds3Wrapper.Resume();
-                ds3Wrapper.Warp(destinationBonfire);
-            }
+            ActiveGame = gameWrappers.FirstOrDefault(game => game.ContainsBonfireId(destinationBonfire)) ??
+                throw new ArgumentOutOfRangeException(nameof(destinationBonfire), $"{destinationBonfire} is not recognized as a bonfire id in any running game");
+            ActiveGame.Resume();
+            ActiveGame.Warp(destinationBonfire);
         }
 
         private void SendItemToCorrectGame(SoulsGame sourceGame, int itemId, int quantity)
         {
             var originalItem = crossGameMappings.GetSourceItem(itemId, sourceGame);
 
-            switch (originalItem.Game)
-            {
-                case SoulsGame.DSR:
-                    dsrWrapper.GiveItem(originalItem.Type, originalItem.Id, quantity);
-                    break;
-                case SoulsGame.DS2S:
-                    ds2Wrapper.GiveItem(originalItem.Id, (short)quantity);
-                    break;
-                case SoulsGame.DS3:
-                    ds3Wrapper.GiveItem(originalItem.Type, originalItem.Id, quantity);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-            ;
+            var originalGame = gameWrappers.FirstOrDefault(game => game.Game == originalItem.Game) ??
+                throw new ArgumentOutOfRangeException(nameof(itemId), $"Item with id {itemId} from {sourceGame} should map to {originalItem.Id} in {originalItem.Game}, but that game isn't being randomized.");
+            originalGame.GiveItem(originalItem.Type, originalItem.Id, quantity);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -173,9 +96,10 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 if (disposing)
                 {
-                    dsrWrapper.Dispose();
-                    ds2Wrapper.Dispose();
-                    ds3Wrapper.Dispose();
+                    foreach (var game in gameWrappers)
+                    {
+                        game.Dispose();
+                    }
                 }
 
                 disposedValue = true;
