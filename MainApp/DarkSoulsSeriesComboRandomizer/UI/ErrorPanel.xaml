@@ -1,0 +1,77 @@
+﻿<UserControl x:Class="DarkSoulsSeriesComboRandomizer.ErrorPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#1A1A1A">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,22,28,22">
+
+            <TextBlock Text="DARK SOULS SERIES COMBO RANDOMIZER"
+                       FontFamily="Segoe UI Black" FontSize="15"
+                       Foreground="#D4B483" HorizontalAlignment="Center"
+                       Margin="0,0,0,6"/>
+            <Rectangle Height="1" Fill="#5A4A2A" Margin="0,0,0,20"/>
+
+            <TextBlock Text="AN ERROR HAS OCCURRED"
+                       FontFamily="Segoe UI Semibold" FontSize="13"
+                       Foreground="#C0392B" HorizontalAlignment="Center"
+                       Margin="0,0,0,4"/>
+            <TextBlock x:Name="ErrorMessageText" Text=""
+                       Foreground="#E8A0A0" FontFamily="Consolas" FontSize="11"
+                       HorizontalAlignment="Center" TextWrapping="Wrap"
+                       Margin="0,0,0,20"/>
+
+            <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>
+
+            <TextBlock Text="OPEN GAME FOLDERS" Style="{StaticResource SectionHeader}"/>
+            <WrapPanel Margin="0,0,0,6">
+                <Button x:Name="OpenDS1GameFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS1 Game Folder" Margin="0,0,8,8"
+                        Click="OpenDS1GameFolder_Click"/>
+                <Button x:Name="OpenDS2GameFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS2 Game Folder" Margin="0,0,8,8"
+                        Click="OpenDS2GameFolder_Click"/>
+                <Button x:Name="OpenDS3GameFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS3 Game Folder" Margin="0,0,8,8"
+                        Click="OpenDS3GameFolder_Click"/>
+            </WrapPanel>
+
+            <TextBlock Text="OPEN SAVE FOLDERS" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
+            <WrapPanel Margin="0,0,0,6">
+                <Button x:Name="OpenDS1SaveFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS1 Save Folder" Margin="0,0,8,8"
+                        Click="OpenDS1SaveFolder_Click"/>
+                <Button x:Name="OpenDS2SaveFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS2 Save Folder" Margin="0,0,8,8"
+                        Click="OpenDS2SaveFolder_Click"/>
+                <Button x:Name="OpenDS3SaveFolderButton"
+                        Style="{StaticResource BrowseButton}"
+                        Content="DS3 Save Folder" Margin="0,0,8,8"
+                        Click="OpenDS3SaveFolder_Click"/>
+            </WrapPanel>
+
+            <TextBlock Text="OPEN RANDOMIZER FOLDERS" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
+            <WrapPanel Margin="0,0,0,6">
+                <Button Style="{StaticResource BrowseButton}"
+                        Content="Vanilla Backups Folder" Margin="0,0,8,8"
+                        Click="OpenVanillaBackups_Click"/>
+                <Button x:Name="OpenRunSaveFolder"
+                        Style="{StaticResource BrowseButton}"
+                        Content="Current Run Save Folder" Margin="0,0,8,8"
+                        Click="OpenRunSaveFolder_Click"/>
+            </WrapPanel>
+
+            <Rectangle Height="1" Fill="#3A2E14" Margin="0,8,0,16"/>
+
+            <Button Style="{StaticResource ActionButton}"
+                    Content="◀  RETURN TO SETUP"
+                    HorizontalAlignment="Center" MinWidth="180"
+                    Click="ReturnToSetup_Click"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

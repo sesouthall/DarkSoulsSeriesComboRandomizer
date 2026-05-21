@@ -1,0 +1,48 @@
+﻿<UserControl x:Class="DarkSoulsSeriesComboRandomizer.RunningPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#1A1A1A">
+    <Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="340">
+
+            <TextBlock Text="DARK SOULS SERIES COMBO RANDOMIZER"
+                       FontFamily="Segoe UI Black" FontSize="15"
+                       Foreground="#D4B483" HorizontalAlignment="Center"
+                       Margin="0,0,0,6"/>
+            <Rectangle Height="1" Fill="#5A4A2A" Margin="0,0,0,32"/>
+
+            <TextBlock Text="SESSION ACTIVE"
+                       FontFamily="Segoe UI Semibold" FontSize="11"
+                       Foreground="#8A7050" HorizontalAlignment="Center"
+                       Margin="0,0,0,28"/>
+
+            <TextBlock Text="SEED" Style="{StaticResource FieldLabel}"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+            <TextBox x:Name="RunSeedDisplay" Style="{StaticResource DisplayTextBox}"
+                     HorizontalAlignment="Center" MinWidth="260"
+                     Margin="0,0,0,20" TextAlignment="Center"/>
+
+            <TextBlock Text="SAVE NAME" Style="{StaticResource FieldLabel}"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+            <TextBox x:Name="RunSaveDisplay" Style="{StaticResource DisplayTextBox}"
+                     HorizontalAlignment="Center" MinWidth="260"
+                     Margin="0,0,0,36" TextAlignment="Center"/>
+
+            <TextBlock Text="HINT FILE" Style="{StaticResource FieldLabel}"
+                       HorizontalAlignment="Center" Margin="0,0,0,4"/>
+            <TextBox x:Name="RunHintDisplay" Style="{StaticResource DisplayTextBox}"
+                     HorizontalAlignment="Center" MinWidth="260"
+                     Margin="0,0,0,36" TextAlignment="Center"/>
+
+            <Button x:Name="StopButton"
+                    Style="{StaticResource StopButton}"
+                    Content="■  END SESSION"
+                    HorizontalAlignment="Center" MinWidth="180"
+                    Click="Stop_Click"/>
+
+            <TextBlock x:Name="StopStatusText" Text=""
+                       Foreground="#8A7050" FontFamily="Segoe UI" FontSize="11"
+                       HorizontalAlignment="Center" Margin="0,14,0,0" TextWrapping="Wrap"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

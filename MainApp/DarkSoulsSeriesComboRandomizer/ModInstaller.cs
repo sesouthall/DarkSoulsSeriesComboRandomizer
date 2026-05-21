@@ -5,7 +5,7 @@ namespace DarkSoulsSeriesComboRandomizer
 {
     public record RandomizerOptions(int Seed, string SaveName, bool AllowFirelinkRoofSkip = false);
 
-    internal class ModInstaller(List<GameInstallSettings> gameConfigs, RandomizerOptions options, List<IModdedFile> filesToModify)
+    public class ModInstaller(List<GameInstallSettings> gameConfigs, RandomizerOptions options, List<IModdedFile> filesToModify)
     {
         private static readonly string appDataFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DarkSoulsSeriesComboRandomizer");
         public string SaveFolderPath => Path.Combine(appDataFolderPath, options.SaveName);
@@ -62,7 +62,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 gameConfig.SaveItemLotChanges(SaveFolderPath);
             }
 
-            BonfireTriple.SerializeBonfireMappings(bonfireMappings, BonfireMappingsFile);
+            BonfireTriple.SerializeBonfireMappings(bonfireMappings, Path.Combine(SaveFolderPath, "BonfireMappings.txt"));
 
             var hintsLines = allMaps.Values.SelectMany(map => map.GetHintsLines(itemLookupService));
             File.WriteAllLines(Path.Combine(SaveFolderPath, "Hints"), hintsLines);

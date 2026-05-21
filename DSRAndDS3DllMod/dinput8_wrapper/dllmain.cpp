@@ -94,7 +94,7 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
     int queryId = (*(GetQueryIdFunction**)(*(int64_t*)param_3 + 0x8))(param_3);
     //std::this_thread::sleep_for(30s);
 
-    if (queryId >= QueryId::ShouldHaveOtherGameWarps && queryId <= QueryId::GetDS3BonfireId)
+    if (queryId >= QueryId::ShouldHaveOtherGameWarps && queryId <= QueryId::ShouldHaveDS3Warp)
     {
         bool currentBonfireIsInMappings = false;
         BonfireTriple* mapping = BonfireTriple::nullMapping;
@@ -185,6 +185,7 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
 #endif // DS3
     int commandId = (*(GetCommandIdFunction**)(*(int64_t*)param_2 + getCommandIdFunctionOffset))(param_2);
 
+    printf_s("Command id is %d", commandId);
     if (commandId >= CommandId::WarpToDS1 && commandId <= CommandId::WarpToDS3)
     {
         BonfireTriple* mapping = BonfireTriple::nullMapping;

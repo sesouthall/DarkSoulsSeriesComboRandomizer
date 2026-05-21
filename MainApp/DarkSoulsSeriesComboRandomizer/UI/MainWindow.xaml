@@ -1,0 +1,15 @@
+﻿<Window x:Class="DarkSoulsSeriesComboRandomizer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dark Souls Series Combo Randomizer"
+        Height="650" Width="700"
+        ResizeMode="CanMinimize"
+        WindowStartupLocation="CenterScreen"
+        Background="#1A1A1A"
+        Foreground="#D4B483">
+
+    <!-- Panels are created in code-behind and added to this Grid.
+         Only one is Visible at a time; the rest are Collapsed. -->
+    <Grid x:Name="RootGrid"/>
+
+</Window>
