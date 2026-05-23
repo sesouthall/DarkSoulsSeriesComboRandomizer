@@ -8,8 +8,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         protected override string GameRoot => gameRoot;
         protected override ISoulsGameFiles GameFiles => gameFiles;
-        protected override string SaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "NBGI", "DARK SOULS REMASTERED");
+        protected override string VanillaSaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "NBGI", "DARK SOULS REMASTERED");
         protected override string SaveFileName => "DRAKS0005.sl2";
+
+        public override SoulsGame Game => SoulsGame.DSR;
 
         protected override bool ShouldBackUpFile(string moddedFile) =>
             !moddedFile.Contains("dinput8.dll") && !moddedFile.Contains("steam_appid.txt");

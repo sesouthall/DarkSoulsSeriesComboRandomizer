@@ -46,5 +46,10 @@ Please try re-downloading and unzipping the mod.";
                 File.Move(backupFile, vanillaFile);
             }
         }
+
+        public override string ToString()
+        {
+            return $"{vanillaFile} (BackedUp)";
+        }
     }
 }

@@ -9,9 +9,10 @@ namespace DarkSoulsSeriesComboRandomizer
         protected static readonly string backupFolderPath = Path.Combine(appDataFolderPath, "BackupVanillaFiles");
 
         protected abstract string GameRoot { get; }
-        protected abstract string SaveFolder { get; }
+        protected abstract string VanillaSaveFolder { get; }
         protected abstract string SaveFileName { get; }
         protected abstract ISoulsGameFiles GameFiles { get; }
+        public abstract SoulsGame Game { get; }
 
         // Override to back up specific files rather than treat them as pure additions
         protected virtual bool ShouldBackUpFile(string moddedFile) => false;
@@ -19,7 +20,7 @@ namespace DarkSoulsSeriesComboRandomizer
         // Override if the regulation file should be backed up (DSR) vs. just added (DS2, DS3)
         protected abstract IModdedFile GetRegulationFileModification(string saveFolder);
 
-        public static bool PreviousBackupsExist() => Directory.GetFiles(backupFolderPath, "*", SearchOption.AllDirectories).Length > 0;
+        public static bool PreviousBackupsExist() => Directory.Exists(backupFolderPath) && Directory.GetFiles(backupFolderPath, "*", SearchOption.AllDirectories).Length > 0;
 
         public IEnumerable<IModdedFile> GetFilesToModify(string saveFolder)
         {
@@ -38,7 +39,7 @@ namespace DarkSoulsSeriesComboRandomizer
             }
 
             yield return GetRegulationFileModification(saveFolder);
-            yield return new SaveFile(SaveFolder, backupFolderPath, saveFolder, SaveFileName);
+            yield return new SaveFile(VanillaSaveFolder, backupFolderPath, saveFolder, SaveFileName);
         }
 
         public void SaveItemLotChanges(string saveFolder) => GameFiles.SaveItemLotChanges(saveFolder);

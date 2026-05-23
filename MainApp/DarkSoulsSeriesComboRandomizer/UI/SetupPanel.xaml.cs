@@ -1,5 +1,6 @@
 ﻿using DarkSoulsSeriesComboRandomizer.UI;
 using Microsoft.Win32;
+using Serilog;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -10,6 +11,8 @@ namespace DarkSoulsSeriesComboRandomizer
     public partial class SetupPanel : UserControl
     {
         private readonly AppViewModel _vm;
+
+        private bool loadedSettings = false;
 
         // Raised when the user clicks Play. MainWindow handles the async work.
         public event EventHandler? PlayRequested;
@@ -47,11 +50,20 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             try
             {
-                if (!File.Exists(AppViewModel.SettingsFilePath)) return;
+                if (!File.Exists(AppViewModel.SettingsFilePath))
+                {
+                    Log.Information("Could not find saved settings");
+                    return;
+                }
                 var json = File.ReadAllText(AppViewModel.SettingsFilePath);
                 var settings = JsonSerializer.Deserialize<PathSettings>(json);
-                if (settings == null) return;
+                if (settings == null)
+                {
+                    Log.Information("Could not parse saved settings");
+                    return;
+                }
 
+                Log.Information("Applying saved settings");
                 if (!string.IsNullOrWhiteSpace(settings.DS1Path)) DS1PathBox.Text = settings.DS1Path;
                 if (!string.IsNullOrWhiteSpace(settings.DS2Path)) DS2PathBox.Text = settings.DS2Path;
                 if (!string.IsNullOrWhiteSpace(settings.DS3Path)) DS3PathBox.Text = settings.DS3Path;
@@ -60,12 +72,14 @@ namespace DarkSoulsSeriesComboRandomizer
                 DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
                 DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
                 ApplyGameEnabledState();
+                loadedSettings = true;
             }
             catch { /* Non-fatal; silently ignore corrupt/missing settings */ }
         }
 
         public void SaveSettings()
         {
+            if (!loadedSettings) return;
             if (DS1PathBox == null || DS2PathBox == null || DS3PathBox == null) return;
             try
             {

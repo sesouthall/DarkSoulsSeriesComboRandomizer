@@ -89,9 +89,18 @@ Please determine which one you wish to keep and delete the others.";
 
         private static List<string> DiscoverSaveSubFolders(string topLevelFolder, string saveFileName)
         {
+            if (!Directory.Exists(topLevelFolder))
+            {
+                return [];
+            }
             var possibleSaveFiles = Directory.GetFiles(topLevelFolder, saveFileName, SearchOption.AllDirectories);
-            return [.. possibleSaveFiles.Select(path => Path.GetFileName(Path.GetDirectoryName(path)))];
+            return [.. possibleSaveFiles.Select(path => Path.GetFileName(Path.GetDirectoryName(path)!))];
 
+        }
+
+        public override string ToString()
+        {
+            return $"{fileName} (Save File)";
         }
     }
 }

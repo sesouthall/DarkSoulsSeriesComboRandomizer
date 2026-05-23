@@ -34,5 +34,10 @@ Please try re-downloading and unzipping the mod.";
                 File.Delete(vanillaFile);
             }
         }
+
+        public override string ToString()
+        {
+            return $"{vanillaFile} (Added)";
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.Utilities.Internal;
+using Serilog;
 using System.IO;
 
 namespace DarkSoulsSeriesComboRandomizer
@@ -30,7 +31,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void CreateRandomizedRegulationFilesIfNeeded(CrossGameMappings crossGameMappings, List<BonfireTriple> bonfireMappings)
         {
-            if (Directory.Exists(SaveFolderPath))
+            if (Directory.Exists(SaveFolderPath) && File.Exists(Path.Combine(SaveFolderPath, "seed.txt")))
             {
                 // This randomization has already been generated. No work needed.
                 return;
@@ -43,9 +44,11 @@ namespace DarkSoulsSeriesComboRandomizer
 
             foreach (var gameConfig in gameConfigs)
             {
+                Log.Information($"Parsing maps for {gameConfig.Game}");
                 var (maps, keys) = gameConfig.CreateMapsAndKeys(crossGameMappings);
                 allMaps.AddRange(maps);
                 allKeys.AddRange(keys);
+                Log.Information("Done");
             }
 
             var itemLookupService = new AggregateItemNameLookupService([.. gameConfigs.Select(config => config.CreateLookupService())]);
@@ -55,19 +58,25 @@ namespace DarkSoulsSeriesComboRandomizer
 
             Map.HandleDS3FirelinkRoofSkip(options.AllowFirelinkRoofSkip, allMaps);
 
+            Log.Information("Starting item randomization");
             ItemRandomizer.Randomize(allMaps[MapName.DS1StartingCell], allMaps, allKeys, new Random(options.Seed));
+            Log.Information("Done");
 
             foreach (var gameConfig in gameConfigs)
             {
+                Log.Information($"Saving item changes for {gameConfig.Game}");
                 gameConfig.SaveItemLotChanges(SaveFolderPath);
+                Log.Information("Done");
             }
 
+            Log.Information("Writing ComboRandomizer files");
             BonfireTriple.SerializeBonfireMappings(bonfireMappings, Path.Combine(SaveFolderPath, "BonfireMappings.txt"));
 
             var hintsLines = allMaps.Values.SelectMany(map => map.GetHintsLines(itemLookupService));
             File.WriteAllLines(Path.Combine(SaveFolderPath, "Hints"), hintsLines);
 
             File.WriteAllText(Path.Combine(SaveFolderPath, "seed.txt"), options.Seed.ToString());
+            Log.Information("Done");
         }
 
         public List<string> InstallChanges()
@@ -81,10 +90,16 @@ namespace DarkSoulsSeriesComboRandomizer
             var errors = new List<string>();
             foreach (var modFile in filesToModify)
             {
+                Log.Information($"Updating {modFile}");
                 if (!modFile.TryUpdate(out var errorMessage))
                 {
+                    Log.Error($"Failed to update {modFile}: {errorMessage}");
                     errors.Add(errorMessage);
                 }    
+            }
+            if (errors.Count == 0)
+            {
+                Log.Information("All files updated");
             }
             return errors;
         }

@@ -2,6 +2,7 @@
 using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered;
 using DarkSoulsSeriesComboRandomizer.UI;
+using Serilog;
 using System.IO;
 using System.Windows;
 
@@ -18,6 +19,10 @@ namespace DarkSoulsSeriesComboRandomizer
         public MainWindow()
         {
             InitializeComponent();
+
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.File(Path.Combine(AppViewModel.AppDataFolder, "log.txt"))
+                .CreateLogger();
 
             _vm = new AppViewModel();
 

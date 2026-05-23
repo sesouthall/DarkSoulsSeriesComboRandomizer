@@ -8,8 +8,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         protected override string GameRoot => gameRoot;
         protected override ISoulsGameFiles GameFiles => gameFiles;
-        protected override string SaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsIII");
+        protected override string VanillaSaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsIII");
         protected override string SaveFileName => "DS30000.sl2";
+
+        public override SoulsGame Game => SoulsGame.DS3;
 
         protected override bool ShouldBackUpFile(string moddedFile) =>
             moddedFile.Contains("DarkSoulsIII.exe");

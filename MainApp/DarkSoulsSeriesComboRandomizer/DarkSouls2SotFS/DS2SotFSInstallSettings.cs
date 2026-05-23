@@ -8,8 +8,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         protected override string GameRoot => gameRoot;
         protected override ISoulsGameFiles GameFiles => gameFiles;
-        protected override string SaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsII");
+        protected override string VanillaSaveFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DarkSoulsII");
         protected override string SaveFileName => "DS2SOFS0000.sl2";
+
+        public override SoulsGame Game => SoulsGame.DS2S;
 
         protected override IModdedFile GetRegulationFileModification(string saveFolder)
         {
