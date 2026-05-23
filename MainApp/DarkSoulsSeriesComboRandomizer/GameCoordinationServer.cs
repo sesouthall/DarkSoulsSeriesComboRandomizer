@@ -6,6 +6,7 @@ namespace DarkSoulsSeriesComboRandomizer
     public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings) : IDisposable
     {
         private bool disposedValue;
+        private readonly List<Task> warpTasks = [];
 
         public SoulsGameWrapper ActiveGame { get; private set; } = gameWrappers[0];
 
@@ -48,7 +49,7 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             foreach(var gameWrapper in gameWrappers)
             {
-                Task.Factory.StartNew(() =>
+                warpTasks.Add(Task.Factory.StartNew(() =>
                 {
                     var server = new NamedPipeServerStream(
                         $"DarkSoulsSeriesComboRandomizer{gameWrapper.Game}",
@@ -57,15 +58,16 @@ namespace DarkSoulsSeriesComboRandomizer
                         PipeTransmissionMode.Message);
                     server.WaitForConnection();
                     StreamReader reader = new(server);
-                    while (true)
+                    while (server.IsConnected)
                     {
                         var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
                         if (int.TryParse(line, out var destinationBonfire))
                         {
                             SwitchGame(destinationBonfire);
                         }
+                        Thread.Sleep(500);
                     }
-                });
+                }));
             }
         }
 
@@ -96,6 +98,12 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 if (disposing)
                 {
+                    foreach (var task in warpTasks)
+                    {
+                        task.Wait();
+                        task.Dispose();
+                    }
+                    warpTasks.Clear();
                     foreach (var game in gameWrappers)
                     {
                         game.Dispose();
