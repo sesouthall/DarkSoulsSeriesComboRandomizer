@@ -151,6 +151,8 @@ namespace DarkSoulsSeriesComboRandomizer
                     _vm.Installer.CreateRandomizedRegulationFilesIfNeeded(
                         crossGameMappings, _vm.BonfireTriples));
 
+                _setupPanel.SaveSettingsToSaveFolder(saveFolder);
+
                 Dispatcher.Invoke(() => _setupPanel.SetStatusText("Installing mod files..."));
 
                 List<string>? installErrors = null;

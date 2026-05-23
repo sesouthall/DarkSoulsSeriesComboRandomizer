@@ -64,17 +64,46 @@ namespace DarkSoulsSeriesComboRandomizer
                 }
 
                 Log.Information("Applying saved settings");
-                if (!string.IsNullOrWhiteSpace(settings.DS1Path)) DS1PathBox.Text = settings.DS1Path;
-                if (!string.IsNullOrWhiteSpace(settings.DS2Path)) DS2PathBox.Text = settings.DS2Path;
-                if (!string.IsNullOrWhiteSpace(settings.DS3Path)) DS3PathBox.Text = settings.DS3Path;
-
-                DS1EnabledCheckBox.IsChecked = settings.DS1Enabled;
-                DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
-                DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
-                ApplyGameEnabledState();
+                ApplyPathSettings(settings);
                 loadedSettings = true;
             }
             catch { /* Non-fatal; silently ignore corrupt/missing settings */ }
+        }
+
+        /// <summary>
+        /// Loads per-save settings (game paths and enabled state) from the given save folder,
+        /// falling back silently if the file is absent or unreadable.
+        /// </summary>
+        private void LoadSaveSettings(string saveFolder)
+        {
+            try
+            {
+                var path = Path.Combine(saveFolder, "settings.json");
+                if (!File.Exists(path)) return;
+
+                var json = File.ReadAllText(path);
+                var settings = JsonSerializer.Deserialize<PathSettings>(json);
+                if (settings == null) return;
+
+                Log.Information("Applying per-save settings from {SaveFolder}", saveFolder);
+                ApplyPathSettings(settings);
+                UpdatePlayButton();
+                loadedSettings = true;
+            }
+            catch { /* Non-fatal */ }
+        }
+
+        /// <summary>Applies a <see cref="PathSettings"/> record to the UI controls.</summary>
+        private void ApplyPathSettings(PathSettings settings)
+        {
+            if (!string.IsNullOrWhiteSpace(settings.DS1Path)) DS1PathBox.Text = settings.DS1Path;
+            if (!string.IsNullOrWhiteSpace(settings.DS2Path)) DS2PathBox.Text = settings.DS2Path;
+            if (!string.IsNullOrWhiteSpace(settings.DS3Path)) DS3PathBox.Text = settings.DS3Path;
+
+            DS1EnabledCheckBox.IsChecked = settings.DS1Enabled;
+            DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
+            DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
+            ApplyGameEnabledState();
         }
 
         public void SaveSettings()
@@ -90,6 +119,27 @@ namespace DarkSoulsSeriesComboRandomizer
                     DS2EnabledCheckBox.IsChecked == true,
                     DS3EnabledCheckBox.IsChecked == true);
                 File.WriteAllText(AppViewModel.SettingsFilePath, JsonSerializer.Serialize(settings));
+            }
+            catch { /* Non-fatal */ }
+        }
+
+        /// <summary>
+        /// Writes game paths and enabled state into the save folder so they can be restored
+        /// when the user selects this save in a future session. Call this after the save folder
+        /// has been created (i.e. from <c>MainWindow.OnPlayRequested</c>).
+        /// </summary>
+        public void SaveSettingsToSaveFolder(string saveFolder)
+        {
+            try
+            {
+                var settings = new PathSettings(
+                    DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text,
+                    DS1EnabledCheckBox.IsChecked == true,
+                    DS2EnabledCheckBox.IsChecked == true,
+                    DS3EnabledCheckBox.IsChecked == true);
+                File.WriteAllText(
+                    Path.Combine(saveFolder, "settings.json"),
+                    JsonSerializer.Serialize(settings));
             }
             catch { /* Non-fatal */ }
         }
@@ -290,9 +340,13 @@ namespace DarkSoulsSeriesComboRandomizer
 
             SaveNameBox.Text = saveName;
 
-            var seedFilePath = Path.Combine(AppViewModel.AppDataFolder, saveName, "seed.txt");
+            var saveFolder = Path.Combine(AppViewModel.AppDataFolder, saveName);
+
+            var seedFilePath = Path.Combine(saveFolder, "seed.txt");
             if (File.Exists(seedFilePath))
                 SeedBox.Text = File.ReadAllText(seedFilePath).Trim();
+
+            LoadSaveSettings(saveFolder);
         }
 
         private void BonfireConnections_Click(object sender, RoutedEventArgs e)
