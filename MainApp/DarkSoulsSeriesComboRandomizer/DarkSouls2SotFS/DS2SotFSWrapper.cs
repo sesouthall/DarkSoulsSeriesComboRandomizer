@@ -3,9 +3,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
     public class DS2SotFSWrapper : SoulsGameWrapper, IDisposable
     {
         private readonly DS2SotFSHook hook;
-        private readonly Thread itemWatchThread;
+        private readonly Task itemWatchTask;
 
-        private bool shutdown = false;
+        private readonly CancellationTokenSource shutdownTokenSource = new();
         private bool disposedValue;
 
         public override event ItemReactor? OnModItemPickUp;
@@ -15,21 +15,18 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public DS2SotFSWrapper(string exePath) : base(exePath)
         {
             hook = new DS2SotFSHook(5000, 5000);
-            itemWatchThread = new Thread(WatchItems);
+            itemWatchTask = new Task(async () => await WatchItems());
         }
 
-        public override void Start()
+        public override async Task Start()
         {
-            base.Start();
+            await base.Start();
             hook.Start();
 
-            while (!hook.CharacterLoaded)
-            {
-                Thread.Sleep(1000);
-            }
+            await hook.WaitForCharacterLoaded(shutdownTokenSource.Token);
             RefreshProcess("DarkSoulsII"); // DS2 has a weird system where the initial process closes almost immediately, but spawns a new one that is the actual game
 
-            itemWatchThread.Start();
+            itemWatchTask.Start();
         }
 
         public override void Warp(int bonfireId) => hook.Warp((ushort)bonfireId);
@@ -38,9 +35,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public override bool ContainsBonfireId(int bonfireId) => bonfireId >= 2650 && bonfireId <= 37685;
 
-        private void WatchItems()
+        private async Task WatchItems()
         {
-            while (!shutdown)
+            while (!shutdownTokenSource.IsCancellationRequested)
             {
                 var inventory = hook.GetCurrentInventory();
                 var modItems = inventory.Where(item => item.id >= 66000000 && item.id <= 66005540);
@@ -49,7 +46,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                     hook.RemoveItem(item.inventoryIndex);
                     OnModItemPickUp?.Invoke(SoulsGame.DS2S, item.id, item.quantityOrDurability < 10 ? item.quantityOrDurability : 1);
                 }
-                Thread.Sleep(1000);
+                await Task.Delay(1000, shutdownTokenSource.Token).ContinueWith(task => { /*suppress cancellation exception*/ });
             }
         }
 
@@ -59,9 +56,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
             {
                 if (disposing)
                 {
-                    shutdown = true;
-                    itemWatchThread.Join();
+                    shutdownTokenSource.Cancel();
+                    itemWatchTask.Wait();
                     hook.Stop();
+                    shutdownTokenSource.Dispose();
                 }
 
                 base.Dispose(disposing);

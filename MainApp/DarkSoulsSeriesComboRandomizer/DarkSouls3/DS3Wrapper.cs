@@ -3,9 +3,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
     public class DS3Wrapper : SoulsGameWrapper, IDisposable
     {
         private readonly DS3Hook hook;
-        private readonly Thread itemWatchThread;
+        private readonly Task itemWatchTask;
 
-        private bool shutdown = false;
+        private readonly CancellationTokenSource shutdownTokenSource = new();
         private bool disposedValue;
 
         public override event ItemReactor? OnModItemPickUp;
@@ -21,20 +21,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         public DS3Wrapper(string exePath) : base(exePath)
         {
             hook = new DS3Hook(5000, 5000);
-            itemWatchThread = new Thread(WatchItems);
+            itemWatchTask = new Task(async () => await WatchItems());
         }
 
-        public override void Start()
+        public override async Task Start()
         {
-            base.Start();
+            await base.Start();
             hook.Start();
 
-            while (!hook.CharacterLoaded)
-            {
-                Thread.Sleep(1000);
-            }
+            await hook.WaitForCharacterLoaded(shutdownTokenSource.Token);
 
-            itemWatchThread.Start();
+            itemWatchTask.Start();
         }
 
         public override void Warp(int bonfireId) => hook.Warp(bonfireId);
@@ -43,9 +40,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public override bool ContainsBonfireId(int bonfireId) => bonfireId >= 3002950 && bonfireId <= 5112951;
 
-        private void WatchItems()
+        private async Task WatchItems()
         {
-            while (!shutdown)
+            while (!shutdownTokenSource.IsCancellationRequested)
             {
                 var inventory = hook.GetCurrentInventory();
                 var modItems = inventory.Where(item => item.id >= 0x403D0900 && item.id <= 0x403D1552);
@@ -54,7 +51,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                     hook.RemoveItem(item.inventoryIndex);
                     OnModItemPickUp?.Invoke(SoulsGame.DS3, (int)item.id - 0x40000000, (int)item.quantity);
                 }
-                Thread.Sleep(1000);
+                await Task.Delay(1000, shutdownTokenSource.Token).ContinueWith(task => { /*suppress cancellation exception*/ });
             }
         }
 
@@ -64,9 +61,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             {
                 if (disposing)
                 {
-                    shutdown = true;
-                    itemWatchThread.Join();
+                    shutdownTokenSource.Cancel();
+                    itemWatchTask.Wait();
                     hook.Stop();
+                    shutdownTokenSource.Dispose();
                 }
 
                 base.Dispose(disposing);

@@ -7,16 +7,17 @@ namespace DarkSoulsSeriesComboRandomizer
     {
         private bool disposedValue;
         private readonly List<Task> warpTasks = [];
+        private readonly CancellationTokenSource cancellationTokenSource = new();
 
         public SoulsGameWrapper ActiveGame { get; private set; } = gameWrappers[0];
 
-        public void Start(SoulsGame firstGame)
+        public async Task Start(SoulsGame firstGame)
         {
             StartPipeServers();
 
             foreach (var game in gameWrappers)
             {
-                game.Start();
+                await game.Start();
                 game.Pause();
             }
 
@@ -49,14 +50,14 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             foreach(var gameWrapper in gameWrappers)
             {
-                warpTasks.Add(Task.Factory.StartNew(() =>
+                warpTasks.Add(Task.Factory.StartNew(async () =>
                 {
                     var server = new NamedPipeServerStream(
                         $"DarkSoulsSeriesComboRandomizer{gameWrapper.Game}",
                         PipeDirection.InOut,
                         NamedPipeServerStream.MaxAllowedServerInstances,
                         PipeTransmissionMode.Message);
-                    server.WaitForConnection();
+                    await server.WaitForConnectionAsync(cancellationTokenSource.Token);
                     StreamReader reader = new(server);
                     while (server.IsConnected)
                     {
@@ -100,6 +101,7 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     foreach (var task in warpTasks)
                     {
+                        cancellationTokenSource.Cancel();
                         task.Wait();
                         task.Dispose();
                     }

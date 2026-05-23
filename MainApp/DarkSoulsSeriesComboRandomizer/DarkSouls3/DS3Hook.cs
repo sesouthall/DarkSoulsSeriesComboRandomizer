@@ -46,6 +46,29 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
             CharacterLoaded = true;
         }
 
+        public async Task WaitForCharacterLoaded(CancellationToken cancellationToken)
+        {
+            // PHook fires OnUnhooked when the process disappears
+            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            void unhooked(object? s, PHEventArgs e)
+            {
+                tcs.TrySetCanceled(CancellationToken.None);
+                base.OnUnhooked -= unhooked;
+            }
+
+            base.OnUnhooked += unhooked;
+
+            using var ctReg = cancellationToken.Register(() => tcs.TrySetCanceled(cancellationToken));
+
+            while (!CharacterLoaded)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (tcs.Task.IsCanceled) throw new OperationCanceledException("Dark Souls III exited before character loaded.");
+                await Task.Delay(1000, cancellationToken);
+            }
+        }
+
         public List<DS3InventoryItem> GetCurrentInventory()
         {
             var inventorySize = PlayerDataPtr.ReadInt32((int)DS3Offsets.PlayerGameData.InventoryCount);

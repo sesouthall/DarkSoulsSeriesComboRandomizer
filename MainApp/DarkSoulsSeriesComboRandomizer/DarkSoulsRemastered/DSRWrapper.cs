@@ -3,9 +3,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
     public class DSRWrapper : SoulsGameWrapper, IDisposable
     {
         private readonly DSRHook hook;
-        private readonly Thread itemWatchThread;
+        private readonly Task itemWatchTask;
 
-        private bool shutdown = false;
+        private readonly CancellationTokenSource shutdownTokenSource = new();
         private bool disposedValue;
 
         public override event ItemReactor? OnModItemPickUp;
@@ -15,20 +15,17 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         public DSRWrapper(string exePath) : base(exePath)
         {
             hook = new DSRHook(5000, 5000);
-            itemWatchThread = new Thread(WatchItems);
+            itemWatchTask = new Task(async () => await WatchItems());
         }
 
-        public override void Start()
+        public override async Task Start()
         {
-            base.Start();
+            await base.Start();
             hook.Start();
 
-            while (!hook.CharacterLoaded)
-            {
-                Thread.Sleep(1000);
-            }
+            await hook.WaitForCharacterLoaded(shutdownTokenSource.Token);
 
-            itemWatchThread.Start();
+            itemWatchTask.Start();
         }
 
         public override void Warp(int bonfireId) => hook.Warp(bonfireId);
@@ -37,9 +34,9 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public override bool ContainsBonfireId(int bonfireId) => bonfireId >= 1002960 && bonfireId <= 1812961;
 
-        private void WatchItems()
+        private async Task WatchItems()
         {
-            while (!shutdown)
+            while (!shutdownTokenSource.IsCancellationRequested)
             {
                 var inventory = hook.GetCurrentInventory();
                 var modItems = inventory.Where(item => item.category == 0x40000000 && item.id >= 10000 && item.id <= 14931);
@@ -48,7 +45,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                     hook.RemoveItem(item.category, item.id);
                     OnModItemPickUp?.Invoke(SoulsGame.DSR, (int)item.id, (int)item.quantity);
                 }
-                Thread.Sleep(1000);
+                await Task.Delay(1000, shutdownTokenSource.Token).ContinueWith(task => { /*suppress cancellation exception*/ });
             }
         }
 
@@ -58,9 +55,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             {
                 if (disposing)
                 {
-                    shutdown = true;
-                    itemWatchThread.Join();
+                    shutdownTokenSource.Cancel();
+                    itemWatchTask.Wait();
                     hook.Stop();
+                    shutdownTokenSource.Dispose();
                 }
 
                 base.Dispose(disposing);

@@ -49,7 +49,7 @@ namespace DarkSoulsSeriesComboRandomizer
             };
         }
 
-        public virtual void Start()
+        public virtual async Task Start()
         {
             gameProcess.Start();
         }
@@ -71,6 +71,10 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void Pause()
         {
+            if (gameProcess.HasExited)
+            {
+                return;
+            }
             ShowWindow(gameProcess.MainWindowHandle, 7);
             Thread.Sleep(500);
             foreach (ProcessThread pT in gameProcess.Threads)
@@ -90,6 +94,10 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void Resume()
         {
+            if (gameProcess.HasExited)
+            {
+                return;
+            }
             foreach (ProcessThread pT in gameProcess.Threads)
             {
                 IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);

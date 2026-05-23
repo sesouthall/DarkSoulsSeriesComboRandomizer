@@ -179,7 +179,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 _vm.Server = new GameCoordinationServer(games, crossGameMappings);
-                _vm.Server.Start(_vm.Installer.GetLastGame());
+                await _vm.Server.Start(_vm.Installer.GetLastGame());
 
                 Dispatcher.Invoke(() =>
                 {
