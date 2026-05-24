@@ -36,6 +36,7 @@ namespace DarkSoulsSeriesComboRandomizer
         public static extern bool ShowWindow(IntPtr handle, int nCmdShow);
 
         private Process gameProcess;
+        private bool processRunning = false;
         private bool disposedValue;
 
         public WindowsGameWrapper(string exePath, string args = "")
@@ -52,12 +53,26 @@ namespace DarkSoulsSeriesComboRandomizer
         public virtual async Task Start()
         {
             gameProcess.Start();
+            processRunning = true;
         }
 
         public async Task WaitForShutdown()
         {
+            if (!processRunning)
+            {
+                return;
+            }
+
             Resume();
-            await gameProcess.WaitForExitAsync();
+            try
+            {
+                await gameProcess.WaitForExitAsync();
+            }
+            catch (InvalidOperationException)
+            {
+                // The game isn't running
+                processRunning = false;
+            }
         }
 
         protected void RefreshProcess(string MainWindowTitle)
@@ -71,53 +86,71 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public void Pause()
         {
-            if (gameProcess.HasExited)
+            if (!processRunning)
             {
                 return;
             }
-            ShowWindow(gameProcess.MainWindowHandle, 7);
-            Thread.Sleep(500);
-            foreach (ProcessThread pT in gameProcess.Threads)
+
+            try
             {
-                IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
-
-                if (pOpenThread == IntPtr.Zero)
+                ShowWindow(gameProcess.MainWindowHandle, 7);
+                Thread.Sleep(500);
+                foreach (ProcessThread pT in gameProcess.Threads)
                 {
-                    continue;
+                    IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
+
+                    if (pOpenThread == IntPtr.Zero)
+                    {
+                        continue;
+                    }
+
+                    SuspendThread(pOpenThread);
+
+                    CloseHandle(pOpenThread);
                 }
-
-                SuspendThread(pOpenThread);
-
-                CloseHandle(pOpenThread);
+            }
+            catch (InvalidOperationException)
+            {
+                // The game isn't running.
+                processRunning = false;
             }
         }
 
         public void Resume()
         {
-            if (gameProcess.HasExited)
+            if (!processRunning)
             {
                 return;
             }
-            foreach (ProcessThread pT in gameProcess.Threads)
-            {
-                IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
 
-                if (pOpenThread == IntPtr.Zero)
+            try
+            {
+                foreach (ProcessThread pT in gameProcess.Threads)
                 {
-                    continue;
+                    IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
+
+                    if (pOpenThread == IntPtr.Zero)
+                    {
+                        continue;
+                    }
+
+                    var suspendCount = 0;
+                    do
+                    {
+                        suspendCount = ResumeThread(pOpenThread);
+                    } while (suspendCount > 0);
+
+                    CloseHandle(pOpenThread);
                 }
 
-                var suspendCount = 0;
-                do
-                {
-                    suspendCount = ResumeThread(pOpenThread);
-                } while (suspendCount > 0);
-
-                CloseHandle(pOpenThread);
+                ShowWindow(gameProcess.MainWindowHandle, 3);
+                SetForegroundWindow(gameProcess.MainWindowHandle);
             }
-
-            ShowWindow(gameProcess.MainWindowHandle, 3);
-            SetForegroundWindow(gameProcess.MainWindowHandle);
+            catch (InvalidOperationException)
+            {
+                // The game isn't running
+                processRunning = false;
+            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -126,8 +159,10 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 if (disposing)
                 {
-                    Resume();
-                    gameProcess.Close();
+                    if (processRunning)
+                    {
+                        Resume();
+                    }
                     gameProcess.Dispose();
                 }
 

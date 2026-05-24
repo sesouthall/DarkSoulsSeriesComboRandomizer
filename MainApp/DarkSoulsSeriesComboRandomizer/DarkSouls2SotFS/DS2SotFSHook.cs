@@ -41,11 +41,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerData.ReadString((int)DS2SotFSOffsets.PlayerData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MorphemeStates.ReadByte((int)DS2SotFSOffsets.MorphemeStates.IsMenuIdle) != 1)
+            while (base.Hooked &&
+                (PlayerData.ReadString((int)DS2SotFSOffsets.PlayerData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" ||
+                MorphemeStates.ReadByte((int)DS2SotFSOffsets.MorphemeStates.IsMenuIdle) != 1))
             {
                 Thread.Sleep(1000);
             }
-            CharacterLoaded = true;
+            CharacterLoaded = base.Hooked;
         }
 
         public async Task WaitForCharacterLoaded(CancellationToken cancellationToken)

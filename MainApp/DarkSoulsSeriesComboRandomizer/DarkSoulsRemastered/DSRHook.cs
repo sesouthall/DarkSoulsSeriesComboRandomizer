@@ -31,11 +31,14 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerDataPtr.ReadString((int)DSROffsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MenuMan.ReadInt32((int)DSROffsets.MenuMan.StartMenuOpenFlag) != 8)
+            while (base.Hooked && 
+                (PlayerDataPtr.ReadString((int)DSROffsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" ||
+                MenuMan.ReadInt32((int)DSROffsets.MenuMan.StartMenuOpenFlag) != 8))
             {
                 Thread.Sleep(1000);
             }
-            CharacterLoaded = true;
+
+            CharacterLoaded = base.Hooked;
         }
 
         public async Task WaitForCharacterLoaded(CancellationToken cancellationToken)

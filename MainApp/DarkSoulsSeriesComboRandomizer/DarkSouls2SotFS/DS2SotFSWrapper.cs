@@ -57,7 +57,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 if (disposing)
                 {
                     shutdownTokenSource.Cancel();
-                    itemWatchTask.Wait();
+                    if (itemWatchTask.Status == TaskStatus.Running)
+                    {
+                        itemWatchTask.Wait();
+                    }
                     hook.Stop();
                     shutdownTokenSource.Dispose();
                 }

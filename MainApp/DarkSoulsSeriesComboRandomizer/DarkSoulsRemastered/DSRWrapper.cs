@@ -56,7 +56,10 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 if (disposing)
                 {
                     shutdownTokenSource.Cancel();
-                    itemWatchTask.Wait();
+                    if (itemWatchTask.Status == TaskStatus.Running)
+                    {
+                        itemWatchTask.Wait();
+                    }
                     hook.Stop();
                     shutdownTokenSource.Dispose();
                 }

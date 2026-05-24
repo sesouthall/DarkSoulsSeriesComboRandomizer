@@ -70,7 +70,14 @@ Please determine which one you wish to keep and delete the others.";
                 var vanillaFile = Path.Combine(vanillaFolder, subFolder, fileName);
                 var moddedFile = Path.Combine(moddedFolder, subFolder, fileName);
                 Directory.CreateDirectory(Path.Combine(moddedFolder, subFolder));
-                File.Move(vanillaFile, moddedFile, true);
+                // If we partially reverted, this could get called again after restoring the vanilla save file.
+                // In that case, no work is required.
+                // LastWriteTime is an imperfect metric, but short of unpacking the save file, it's the best I've
+                // got right now.
+                if (File.GetLastWriteTime(vanillaFile) > File.GetLastWriteTime(moddedFile))
+                {
+                    File.Move(vanillaFile, moddedFile, true);
+                }
             }
 
             var backupSubFolders = DiscoverSaveSubFolders(backupFolder, fileName);

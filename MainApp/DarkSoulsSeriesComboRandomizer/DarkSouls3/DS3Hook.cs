@@ -39,11 +39,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
 
         public void FinishSetup(object? sender, PHEventArgs pHEventArgs)
         {
-            while (PlayerDataPtr.ReadString((int)DS3Offsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" || MenuMan.ReadInt32((int)DS3Offsets.MenuMan.StartMenuFlag) != 2)
+            while (base.Hooked &&
+                (PlayerDataPtr.ReadString((int)DS3Offsets.PlayerGameData.NameString1, System.Text.Encoding.UTF8, 0x10, trim: true) == "" ||
+                MenuMan.ReadInt32((int)DS3Offsets.MenuMan.StartMenuFlag) != 2))
             {
                 Thread.Sleep(1000);
             }
-            CharacterLoaded = true;
+            CharacterLoaded = base.Hooked;
         }
 
         public async Task WaitForCharacterLoaded(CancellationToken cancellationToken)
