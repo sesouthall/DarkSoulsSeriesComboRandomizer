@@ -19,6 +19,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 await game.Start();
                 game.Pause();
+                await Task.Delay(500);
             }
 
             foreach (var game in gameWrappers)
