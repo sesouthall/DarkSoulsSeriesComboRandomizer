@@ -5,6 +5,8 @@ namespace DarkSoulsSeriesComboRandomizer
 {
     public class SaveFile(string vanillaFolder, string backupFolder, string moddedFolder, string fileName) : IModdedFile
     {
+        private string sentinelFileName = "moddedSaveInstalled.txt";
+
         public bool TryUpdate([NotNullWhen(false)] out string? errorMessage)
         {
             if (Directory.GetFiles(backupFolder, fileName, SearchOption.AllDirectories).Length != 0)
@@ -34,6 +36,7 @@ Please move the backups elsewhere, so this mod can difinitively find your unmodd
                 if (File.Exists(moddedFile))
                 {
                     File.Copy(moddedFile, vanillaFile);
+                    File.WriteAllText(SentinelFile(subFolder), "");
                 }
             }
             else
@@ -74,9 +77,10 @@ Please determine which one you wish to keep and delete the others.";
                 // In that case, no work is required.
                 // LastWriteTime is an imperfect metric, but short of unpacking the save file, it's the best I've
                 // got right now.
-                if (File.GetLastWriteTime(vanillaFile) > File.GetLastWriteTime(moddedFile))
+                if (File.Exists(SentinelFile(subFolder)))
                 {
                     File.Move(vanillaFile, moddedFile, true);
+                    File.Delete(SentinelFile(subFolder));
                 }
             }
 
@@ -90,7 +94,7 @@ Please determine which one you wish to keep and delete the others.";
                 var subFolder = backupSubFolders[0];
                 var vanillaFile = Path.Combine(vanillaFolder, subFolder, fileName);
                 var backupFile = Path.Combine(backupFolder, subFolder, fileName);
-                File.Move(backupFile, vanillaFile);
+                File.Move(backupFile, vanillaFile, true);
             }
         }
 
@@ -104,6 +108,8 @@ Please determine which one you wish to keep and delete the others.";
             return [.. possibleSaveFiles.Select(path => Path.GetFileName(Path.GetDirectoryName(path)!))];
 
         }
+
+        private string SentinelFile(string subFolder) => Path.Combine(vanillaFolder, subFolder, sentinelFileName);
 
         public override string ToString()
         {

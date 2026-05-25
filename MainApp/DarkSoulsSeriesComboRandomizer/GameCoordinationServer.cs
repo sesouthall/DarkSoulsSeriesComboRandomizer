@@ -109,6 +109,9 @@ namespace DarkSoulsSeriesComboRandomizer
                     foreach (var game in gameWrappers)
                     {
                         game.Dispose();
+                        // Give each game a second to shut down.
+                        // Occasionally, DS3 will hang when resuming.
+                        Thread.Sleep(500);
                     }
                 }
 
