@@ -84,7 +84,11 @@ namespace DarkSoulsSeriesComboRandomizer
             if (GameInstallSettings.PreviousBackupsExist())
             {
                 // The last run failed to clean up. Do it now.
-                RevertChanges();
+                var revertFailures = RevertChanges();
+                if (revertFailures.Count > 0)
+                {
+                    return [.. revertFailures.Select(ex => $"{ex.Message}\n{ex.StackTrace}")];
+                }
             }
 
             var errors = new List<string>();
@@ -120,12 +124,21 @@ namespace DarkSoulsSeriesComboRandomizer
             File.WriteAllText(Path.Combine(SaveFolderPath, "LastGame.txt"), activeGame.ToString());
         }
 
-        public void RevertChanges()
+        public List<Exception> RevertChanges()
         {
+            var errors = new List<Exception>();
             foreach (var modFile in filesToModify)
             {
-                modFile.RevertUpdate();
+                try
+                {
+                    modFile.RevertUpdate();
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
+                }
             }
+            return errors;
         }
     }
 }

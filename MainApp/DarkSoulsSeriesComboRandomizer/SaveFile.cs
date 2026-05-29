@@ -36,7 +36,6 @@ Please move the backups elsewhere, so this mod can difinitively find your unmodd
                 if (File.Exists(moddedFile))
                 {
                     File.Copy(moddedFile, vanillaFile);
-                    File.WriteAllText(SentinelFile(subFolder), "");
                 }
             }
             else
@@ -56,6 +55,8 @@ Please determine which one you wish to keep and delete the others.";
                     File.Copy(moddedFile, vanillaFile);
                 }
             }
+
+            File.WriteAllText(SentinelFile(), "");
             errorMessage = null;
             return true;
         }
@@ -77,10 +78,10 @@ Please determine which one you wish to keep and delete the others.";
                 // In that case, no work is required.
                 // LastWriteTime is an imperfect metric, but short of unpacking the save file, it's the best I've
                 // got right now.
-                if (File.Exists(SentinelFile(subFolder)))
+                if (File.Exists(SentinelFile()))
                 {
                     File.Move(vanillaFile, moddedFile, true);
-                    File.Delete(SentinelFile(subFolder));
+                    File.Delete(SentinelFile());
                 }
             }
 
@@ -109,7 +110,7 @@ Please determine which one you wish to keep and delete the others.";
 
         }
 
-        private string SentinelFile(string subFolder) => Path.Combine(vanillaFolder, subFolder, sentinelFileName);
+        private string SentinelFile() => Path.Combine(vanillaFolder, sentinelFileName);
 
         public override string ToString()
         {

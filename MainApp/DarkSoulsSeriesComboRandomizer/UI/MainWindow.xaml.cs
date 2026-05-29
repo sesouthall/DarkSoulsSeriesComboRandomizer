@@ -162,8 +162,8 @@ namespace DarkSoulsSeriesComboRandomizer
                 {
                     await Dispatcher.Invoke(async () =>
                     {
-                        await StopServerAndRevert();
-                        ShowError(string.Join(Environment.NewLine, installErrors));
+                        var revertFailures = await StopServerAndRevert();
+                        ShowError(string.Join(Environment.NewLine, [..installErrors, ..revertFailures.Select(ex => $"{ex.Message}\n{ex.StackTrace}")]));
                     });
                     return;
                 }
@@ -191,10 +191,12 @@ namespace DarkSoulsSeriesComboRandomizer
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "Error while starting the randomizer");
                 await Dispatcher.Invoke(async () =>
                 {
-                    await StopServerAndRevert();
-                    ShowError($"{ex.Message}\n{ex.StackTrace}");
+                    var revertFailures = await StopServerAndRevert();
+                    List<Exception> allExceptions = [ex, ..revertFailures];
+                    ShowError(string.Join("\n", allExceptions.Select(ex => $"{ex.Message}\n{ex.StackTrace}")));
                 });
             }
         }
@@ -222,33 +224,45 @@ namespace DarkSoulsSeriesComboRandomizer
 
                 _vm.Server?.Dispose();
                 _vm.Server = null;
-                _vm.Installer?.RevertChanges();
+                var revertFailures = _vm.Installer?.RevertChanges() ?? [];
                 _vm.Installer = null;
 
-                Dispatcher.Invoke(() =>
+                if (revertFailures.Count == 0)
                 {
-                    _setupPanel.SetControlsEnabled(true);
-                    _setupPanel.PopulateSaveList();
-                    _setupPanel.UpdatePlayButton();
-                    _setupPanel.SetStatusText("");
-                    ShowPanel(_setupPanel);
-                });
+                    Dispatcher.Invoke(() =>
+                    {
+                        _setupPanel.SetControlsEnabled(true);
+                        _setupPanel.PopulateSaveList();
+                        _setupPanel.UpdatePlayButton();
+                        _setupPanel.SetStatusText("");
+                        ShowPanel(_setupPanel);
+                    });
+                }
+                else
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        ShowError(string.Join("\n", revertFailures.Select(ex => $"{ex.Message}\n{ex.StackTrace}")));
+                    });
+                }
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "Error while stopping the randomizer.");
                 Dispatcher.Invoke(() => ShowError($"{ex.Message}\n{ex.StackTrace}"));
             }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────
 
-        private async Task StopServerAndRevert()
+        private async Task<List<Exception>> StopServerAndRevert()
         {
             if (_vm.Server != null) await _vm.Server.Stop();
             _vm.Server?.Dispose();
             _vm.Server = null;
-            _vm.Installer?.RevertChanges();
+            var revertFailures = _vm.Installer?.RevertChanges() ?? [];
             _vm.Installer = null;
+            return revertFailures;
         }
 
         private void ShowError(string message)
