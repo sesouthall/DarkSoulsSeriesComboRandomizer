@@ -28,7 +28,24 @@ namespace DarkSoulsSeriesComboRandomizerTests
                 row[$"lotItemNum0{index}"].Value = slot.Amount;
             }
 
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().BeEquivalentTo(expectedSlots);
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(expectedSlots);
+        }
+
+        [Fact]
+        public void ParseFromRow_ShouldMaintainTheSlotIndexOfAllItems()
+        {
+            var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
+            row[$"lotItemId01"].Value = 0;
+            row[$"lotItemCategory01"].Value = -1;
+            row[$"lotItemBasePoint01"].Value = 0;
+            row[$"lotItemNum01"].Value = 0;
+
+            row[$"lotItemId02"].Value = 1;
+            row[$"lotItemCategory02"].Value = SoulsItemType.Goods;
+            row[$"lotItemBasePoint02"].Value = 1;
+            row[$"lotItemNum02"].Value = 1;
+
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().HaveElementAt(1, new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 1), 100, 1));
         }
 
         [Fact]
@@ -40,19 +57,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"lotItemBasePoint01"].Value = 1;
             row[$"lotItemNum01"].Value = 1;
 
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.Weight.Should().Be(100);
-        }
-
-        [Fact]
-        public void ParseFromRow_ShouldIgnoreItemsWithNoChanceToDrop()
-        {
-            var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
-            row[$"lotItemId01"].Value = 1;
-            row[$"lotItemCategory01"].Value = SoulsItemType.Goods;
-            row[$"lotItemBasePoint01"].Value = 0;
-            row[$"lotItemNum01"].Value = 1;
-
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().BeEmpty();
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 1), 100, 1));
         }
 
         [Fact]
@@ -64,7 +69,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"lotItemBasePoint01"].Value = 1;
             row[$"lotItemNum01"].Value = 0;
 
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 1), 100, 0, true));
         }
 
         [Fact]
@@ -76,7 +81,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"lotItemBasePoint01"].Value = 1;
             row[$"lotItemNum01"].Value = 1;
 
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 0), 100, 1, true));
         }
 
         [Fact]
@@ -88,7 +93,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"lotItemBasePoint01"].Value = 1;
             row[$"lotItemNum01"].Value = 1;
 
-            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DSRLotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DSR, SoulsItemType.Goods, 1), 100, 1, true));
         }
 
         [Fact]

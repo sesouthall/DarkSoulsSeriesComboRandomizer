@@ -21,10 +21,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
                 var category = Convert.ToUInt32(row[string.Format(ItemCategoryFieldPattern, i)].Value);
                 var parsedCategory = category != 0xFFFFFFFF ? (SoulsItemType)category : SoulsItemType.Goods;
 
-                if (weight > 0)
-                {
-                    tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DS3, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == 0xFFFFFFFF));
-                }
+                tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DS3, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || weight == 0 || category == 0xFFFFFFFF));
             }
 
             // normalize all weights to sum to 100 to make translation between games easier

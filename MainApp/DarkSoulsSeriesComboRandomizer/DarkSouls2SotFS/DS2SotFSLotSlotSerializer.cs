@@ -21,10 +21,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
                 var weight = Convert.ToInt32(row[string.Format(ItemWeightFieldPattern, i)].Value);
                 var category = SoulsItemType.Goods;
 
-                if (weight > 0)
-                {
-                    slots.Add(new LotSlot(new SoulsItem(SoulsGame.DS2S, category, itemId), weight, amount, IsEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0));
-                }
+                slots.Add(new LotSlot(new SoulsItem(SoulsGame.DS2S, category, itemId), weight, amount, IsEmptyItem: itemId == 0 || itemId == emptyItemId || amount == 0 || weight == 0));
             }
 
             return slots;

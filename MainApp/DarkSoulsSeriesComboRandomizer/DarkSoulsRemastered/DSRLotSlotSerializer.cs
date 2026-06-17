@@ -20,10 +20,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 var category = Convert.ToInt32(row[string.Format(ItemCategoryFieldPattern, i)].Value);
                 var parsedCategory = category != -1 ? (SoulsItemType)category : SoulsItemType.Goods;
 
-                if (weight > 0)
-                {
-                    tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DSR, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || category == -1));
-                }
+                tempSlots.Add(new LotSlot(new SoulsItem(SoulsGame.DSR, parsedCategory, itemId), weight, amount, IsEmptyItem: itemId == 0 || amount == 0 || weight == 0 || category == -1));
             }
 
             // normalize all weights to sum to 100 to make translation between games easier
@@ -35,7 +32,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
                 // The empty drop is conventionally first, so let it pick up any rounding error
                 for (var i = tempSlots.Count - 1; i >= 0; i--)
                 {
-                    var normalizedWeight = i == 0 ? 100 - accumulatedWeight : Math.Max((int)Math.Round((double)tempSlots[i].Weight * 100 / totalWeight), 1);
+                    var normalizedWeight = i == 0 ? 100 - accumulatedWeight : (int)Math.Round((double)tempSlots[i].Weight * 100 / totalWeight);
                     accumulatedWeight += normalizedWeight;
                     slots.Add(tempSlots[i] with { Weight = normalizedWeight });
                 }

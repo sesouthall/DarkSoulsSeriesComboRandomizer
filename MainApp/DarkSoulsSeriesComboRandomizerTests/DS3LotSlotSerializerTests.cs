@@ -1,5 +1,4 @@
 using DarkSoulsSeriesComboRandomizer;
-using DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS;
 using DarkSoulsSeriesComboRandomizer.DarkSouls3;
 using FluentAssertions;
 using SoulsFormats;
@@ -28,7 +27,24 @@ namespace DarkSoulsSeriesComboRandomizerTests
                 row[$"LotItemNum{index}"].Value = slot.Amount;
             }
 
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().BeEquivalentTo(expectedSlots.Select(slot => slot with { Weight = slot.Weight / 10 }));
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(expectedSlots.Select(slot => slot with { Weight = slot.Weight / 10 }));
+        }
+
+        [Fact]
+        public void ParseFromRow_ShouldMaintainTheSlotIndexOfAllItems()
+        {
+            var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
+            row[$"ItemLotId1"].Value = 0;
+            row[$"LotItemCategory01"].Value = 0xFFFFFFFF;
+            row[$"LotItemBasePoint01"].Value = 0;
+            row[$"LotItemNum1"].Value = 0;
+
+            row[$"ItemLotId2"].Value = 1;
+            row[$"LotItemCategory02"].Value = SoulsItemType.Goods;
+            row[$"LotItemBasePoint02"].Value = 1;
+            row[$"LotItemNum2"].Value = 1;
+
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().HaveElementAt(1, new LotSlot(new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 1), 100, 1));
         }
 
         [Fact]
@@ -40,19 +56,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"LotItemBasePoint01"].Value = 1;
             row[$"LotItemNum1"].Value = 1;
 
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.Weight.Should().Be(100);
-        }
-
-        [Fact]
-        public void ParseFromRow_ShouldIgnoreItemsWithNoChanceToDrop()
-        {
-            var row = new PARAM.Row(1, "itemLot", itemLotParamDef);
-            row[$"ItemLotId1"].Value = 1;
-            row[$"LotItemCategory01"].Value = SoulsItemType.Goods;
-            row[$"LotItemBasePoint01"].Value = 0;
-            row[$"LotItemNum1"].Value = 1;
-
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().BeEmpty();
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 1), 100, 1));
         }
 
         [Fact]
@@ -64,7 +68,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"LotItemBasePoint01"].Value = 1;
             row[$"LotItemNum1"].Value = 0;
 
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 1), 100, 0, true));
         }
 
         [Fact]
@@ -76,7 +80,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"LotItemBasePoint01"].Value = 1;
             row[$"LotItemNum1"].Value = 1;
 
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 0), 100, 1, true));
         }
 
         [Fact]
@@ -88,7 +92,7 @@ namespace DarkSoulsSeriesComboRandomizerTests
             row[$"LotItemBasePoint01"].Value = 1;
             row[$"LotItemNum1"].Value = 1;
 
-            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().ContainSingle().Which.IsEmptyItem.Should().BeTrue();
+            new DS3LotSlotSerializer(new CrossGameMappings([], [], [])).ParseFromRow(row, LotType.Treasure).Should().StartWith(new LotSlot(new SoulsItem(SoulsGame.DS3, SoulsItemType.Goods, 1), 100, 1, true));
         }
 
         [Fact]
