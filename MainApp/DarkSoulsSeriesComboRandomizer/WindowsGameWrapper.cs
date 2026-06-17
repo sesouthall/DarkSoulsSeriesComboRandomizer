@@ -4,8 +4,6 @@ using System.Runtime.InteropServices;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public delegate void ItemReactor(SoulsGame game, int itemId, int quantity);
-
     public abstract class WindowsGameWrapper : IDisposable
     {
         [Flags]
@@ -35,6 +33,8 @@ namespace DarkSoulsSeriesComboRandomizer
         [DllImport("User32.dll")]
         public static extern bool ShowWindow(IntPtr handle, int nCmdShow);
 
+        public event EventHandler? Exited;
+
         private Process gameProcess;
         private bool processRunning = false;
         private bool disposedValue;
@@ -53,7 +53,13 @@ namespace DarkSoulsSeriesComboRandomizer
         public virtual async Task Start()
         {
             gameProcess.Start();
+            gameProcess.Exited += OnExited;
             processRunning = true;
+        }
+
+        private void OnExited(object? sender, EventArgs e)
+        {
+            Exited?.Invoke(this, e);
         }
 
         public async Task WaitForShutdown()

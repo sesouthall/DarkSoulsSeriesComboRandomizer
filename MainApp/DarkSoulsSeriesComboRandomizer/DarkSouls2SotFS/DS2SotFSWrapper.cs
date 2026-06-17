@@ -21,6 +21,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public override async Task Start()
         {
             await base.Start();
+            base.Exited += (wrapper) => shutdownTokenSource.Cancel();
             hook.Start();
 
             await hook.WaitForCharacterLoaded(shutdownTokenSource.Token);

@@ -3,12 +3,14 @@ using System.IO.Pipes;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings) : IDisposable
+    public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings, Action<string> sendMessageToPlayer) : IDisposable
     {
         private bool disposedValue;
         private readonly List<Task> warpTasks = [];
         private readonly CancellationTokenSource cancellationTokenSource = new();
+        private bool allGamesStarted = false;
 
+        public event EventHandler<EventArgs>? GameClosed;
         public SoulsGameWrapper ActiveGame { get; private set; } = gameWrappers[0];
 
         public async Task Start(SoulsGame firstGame)
@@ -18,6 +20,7 @@ namespace DarkSoulsSeriesComboRandomizer
             foreach (var game in gameWrappers)
             {
                 await game.Start();
+                game.Exited += OnGameClosed;
                 game.Pause();
                 await Task.Delay(500);
             }
@@ -32,10 +35,13 @@ namespace DarkSoulsSeriesComboRandomizer
                 throw new ArgumentOutOfRangeException(nameof(firstGame), $"{firstGame} is not a known SoulsGame");
             firstGameWrapper.Resume();
             ActiveGame = firstGameWrapper;
+            allGamesStarted = true;
         }
 
         public async Task Stop()
         {
+            allGamesStarted = false;
+
             foreach (var gameWrapper in gameWrappers)
             {
                 gameWrapper.OnModItemPickUp -= SendItemToCorrectGame;
@@ -45,6 +51,11 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 await gameWrapper.WaitForShutdown();
             }
+        }
+
+        private void OnGameClosed(SoulsGameWrapper exitedWrapper)
+        {
+            GameClosed?.Invoke(this, new EventArgs());
         }
 
         private void StartPipeServers()
@@ -63,7 +74,11 @@ namespace DarkSoulsSeriesComboRandomizer
                     while (server.IsConnected)
                     {
                         var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
-                        if (int.TryParse(line, out var destinationBonfire))
+                        if (!allGamesStarted)
+                        {
+                            sendMessageToPlayer("Cannot warp until characters are loaded in all three games and the start menu has been opened for each of them.");
+                        }
+                        else if (int.TryParse(line, out var destinationBonfire))
                         {
                             SwitchGame(destinationBonfire);
                         }
