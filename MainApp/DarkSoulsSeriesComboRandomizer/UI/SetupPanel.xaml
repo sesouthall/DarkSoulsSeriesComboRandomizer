@@ -104,6 +104,17 @@
                 <ComboBoxItem Content="— New Run —" IsSelected="True"/>
             </ComboBox>
 
+            <!-- Game Switch Delay -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Game switch delay (ms)" Style="{StaticResource FieldLabel}"/>
+                    <TextBox x:Name="GameSwitchDelayBox" Style="{StaticResource DarkTextBox}" Height="30" Text="1500"/>
+                </StackPanel>
+            </Grid>
+
             <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>
 
             <!-- Bonfire Connections Link -->

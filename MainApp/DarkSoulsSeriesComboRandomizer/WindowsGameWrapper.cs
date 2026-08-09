@@ -1,11 +1,19 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Linq;
+using System.Threading;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
     public abstract class WindowsGameWrapper : IDisposable
     {
+        // How long to Sleep in Pause() before suspending threads. Default kept at original 500ms.
+        public int PauseSleepMs { get; set; } = 500;
+
+        // How long to Sleep in Resume() after resuming threads but before restoring/maximizing the window.
+        public int ResumeAfterThreadsSleepMs { get; set; } = 0;
+
         [Flags]
         public enum ThreadAccess : int
         {
@@ -100,7 +108,7 @@ namespace DarkSoulsSeriesComboRandomizer
             try
             {
                 ShowWindow(gameProcess.MainWindowHandle, 7);
-                Thread.Sleep(500);
+                Thread.Sleep(PauseSleepMs);
                 foreach (ProcessThread pT in gameProcess.Threads)
                 {
                     IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
@@ -148,6 +156,11 @@ namespace DarkSoulsSeriesComboRandomizer
 
                     CloseHandle(pOpenThread);
                 }
+
+                // Allow a short pause after threads have been resumed before restoring/maximizing
+                // the window to improve reliability when switching between games.
+                if (ResumeAfterThreadsSleepMs > 0)
+                    Thread.Sleep(ResumeAfterThreadsSleepMs);
 
                 ShowWindow(gameProcess.MainWindowHandle, 3);
                 SetForegroundWindow(gameProcess.MainWindowHandle);

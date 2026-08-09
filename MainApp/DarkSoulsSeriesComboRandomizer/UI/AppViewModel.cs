@@ -37,6 +37,10 @@ namespace DarkSoulsSeriesComboRandomizer.UI
         public string Seed { get; set; } = string.Empty;
         public string SaveName { get; set; } = string.Empty;
 
+        // How long (ms) to wait when switching between games; divided by three across
+        // the pause/switch/resume points. Default chosen to preserve existing behaviour.
+        public int GameSwitchDelayMs { get; set; } = 1500;
+
         // ── Bonfire connections ───────────────────────────────────────────────────
 
         public static readonly List<BonfireTriple> DefaultBonfireConnections =

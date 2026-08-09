@@ -178,7 +178,11 @@ namespace DarkSoulsSeriesComboRandomizer
                     "Once all three games have loaded characters, DS1 will be resumed for new saves, or the last game you were in for existing saves.",
                     "Start Info", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                _vm.Server = new GameCoordinationServer(games, crossGameMappings, (message) => { MessageBox.Show(message, "Randomizer Alert", MessageBoxButton.OK, MessageBoxImage.Warning); });
+                _vm.Server = new GameCoordinationServer(
+                    games,
+                    crossGameMappings,
+                    (message) => { MessageBox.Show(message, "Randomizer Alert", MessageBoxButton.OK, MessageBoxImage.Warning); },
+                    _vm.GameSwitchDelayMs);
                 _vm.Server.GameClosed += OnStopRequested;
                 await _vm.Server.Start(_vm.Installer.GetLastGame());
 

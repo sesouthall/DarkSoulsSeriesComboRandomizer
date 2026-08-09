@@ -1,14 +1,20 @@
+using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace DarkSoulsSeriesComboRandomizer
 {
-    public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings, Action<string> sendMessageToPlayer) : IDisposable
+    public class GameCoordinationServer(List<SoulsGameWrapper> gameWrappers, CrossGameMappings crossGameMappings, Action<string> sendMessageToPlayer, int gameSwitchDelayMs = 1500) : IDisposable
     {
         private bool disposedValue;
         private readonly List<Task> warpTasks = [];
         private readonly CancellationTokenSource cancellationTokenSource = new();
         private bool allGamesStarted = false;
+        private readonly int gameSwitchDelayPartMs = Math.Max(0, gameSwitchDelayMs / 3);
 
         public event EventHandler<EventArgs>? GameClosed;
         public SoulsGameWrapper ActiveGame { get; private set; } = gameWrappers[0];
@@ -16,6 +22,13 @@ namespace DarkSoulsSeriesComboRandomizer
         public async Task Start(SoulsGame firstGame)
         {
             StartPipeServers();
+
+            // Propagate calculated delay part to each game wrapper so Pause/Resume use the same timing.
+            foreach (var gw in gameWrappers)
+            {
+                gw.PauseSleepMs = gameSwitchDelayPartMs;
+                gw.ResumeAfterThreadsSleepMs = gameSwitchDelayPartMs;
+            }
 
             foreach (var game in gameWrappers)
             {
@@ -92,7 +105,8 @@ namespace DarkSoulsSeriesComboRandomizer
         {
             ActiveGame.Pause();
 
-            Thread.Sleep(500);
+            // Pause here is the portion assigned to the server; use the same part as assigned to wrappers.
+            Thread.Sleep(gameSwitchDelayPartMs);
 
             ActiveGame = gameWrappers.FirstOrDefault(game => game.ContainsBonfireId(destinationBonfire)) ??
                 throw new ArgumentOutOfRangeException(nameof(destinationBonfire), $"{destinationBonfire} is not recognized as a bonfire id in any running game");

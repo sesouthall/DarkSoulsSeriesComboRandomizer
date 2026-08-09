@@ -25,6 +25,11 @@ namespace DarkSoulsSeriesComboRandomizer
             InitializeComponent();
             _vm = vm;
             LoadSavedSettings();
+            if (!loadedSettings)
+            {
+                // Ensure the UI reflects the viewmodel default
+                GameSwitchDelayBox.Text = _vm.GameSwitchDelayMs.ToString();
+            }
             InitializeSeed();
             PopulateSaveList();
             UpdatePlayButton();
@@ -44,7 +49,8 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private record PathSettings(
             string DS1Path, string DS2Path, string DS3Path,
-            bool DS1Enabled = true, bool DS2Enabled = true, bool DS3Enabled = true);
+            bool DS1Enabled = true, bool DS2Enabled = true, bool DS3Enabled = true,
+            int GameSwitchDelayMs = 1500);
 
         private void LoadSavedSettings()
         {
@@ -99,7 +105,7 @@ namespace DarkSoulsSeriesComboRandomizer
             if (!string.IsNullOrWhiteSpace(settings.DS1Path)) DS1PathBox.Text = settings.DS1Path;
             if (!string.IsNullOrWhiteSpace(settings.DS2Path)) DS2PathBox.Text = settings.DS2Path;
             if (!string.IsNullOrWhiteSpace(settings.DS3Path)) DS3PathBox.Text = settings.DS3Path;
-
+            GameSwitchDelayBox.Text = settings.GameSwitchDelayMs.ToString();
             DS1EnabledCheckBox.IsChecked = settings.DS1Enabled;
             DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
             DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
@@ -117,7 +123,8 @@ namespace DarkSoulsSeriesComboRandomizer
                     DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text,
                     DS1EnabledCheckBox.IsChecked == true,
                     DS2EnabledCheckBox.IsChecked == true,
-                    DS3EnabledCheckBox.IsChecked == true);
+                    DS3EnabledCheckBox.IsChecked == true,
+                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500);
                 File.WriteAllText(AppViewModel.SettingsFilePath, JsonSerializer.Serialize(settings));
             }
             catch { /* Non-fatal */ }
@@ -136,10 +143,9 @@ namespace DarkSoulsSeriesComboRandomizer
                     DS1PathBox.Text, DS2PathBox.Text, DS3PathBox.Text,
                     DS1EnabledCheckBox.IsChecked == true,
                     DS2EnabledCheckBox.IsChecked == true,
-                    DS3EnabledCheckBox.IsChecked == true);
-                File.WriteAllText(
-                    Path.Combine(saveFolder, "settings.json"),
-                    JsonSerializer.Serialize(settings));
+                    DS3EnabledCheckBox.IsChecked == true,
+                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500);
+                File.WriteAllText(Path.Combine(saveFolder, "settings.json"), JsonSerializer.Serialize(settings));
             }
             catch { /* Non-fatal */ }
         }
@@ -188,7 +194,7 @@ namespace DarkSoulsSeriesComboRandomizer
             bool ds1 = DS1EnabledCheckBox?.IsChecked == true;
             bool ds2 = DS2EnabledCheckBox?.IsChecked == true;
             bool ds3 = DS3EnabledCheckBox?.IsChecked == true;
-            bool valid = GamePathsAreValid();
+            bool valid = GamePathsAreValid() && int.TryParse(GameSwitchDelayBox.Text, out _);
 
             PlayButton.IsEnabled = valid;
             StatusText.Text = valid ? "" :
@@ -257,6 +263,7 @@ namespace DarkSoulsSeriesComboRandomizer
             _vm.DS3Enabled = DS3EnabledCheckBox.IsChecked == true;
             _vm.Seed = SeedBox.Text.Trim();
             _vm.SaveName = SaveNameBox.Text.Trim();
+            _vm.GameSwitchDelayMs = int.TryParse(GameSwitchDelayBox.Text.Trim(), out var d) ? d : _vm.GameSwitchDelayMs;
         }
 
         // ── Browse handlers ───────────────────────────────────────────────────────
