@@ -56,6 +56,7 @@ Please determine which one you wish to keep and delete the others.";
                 }
             }
 
+            Directory.CreateDirectory(vanillaFolder);
             File.WriteAllText(SentinelFile(), "");
             errorMessage = null;
             return true;

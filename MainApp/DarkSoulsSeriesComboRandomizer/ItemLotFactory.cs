@@ -33,7 +33,7 @@ namespace DarkSoulsSeriesComboRandomizer
             var slots = lotSerializer.ParseFromRow(linkedItemLots.First(), lotTypeGuess);
 
             var actualLotType = lotTypeGuess == LotType.UnspecifiedEnemy ?
-                (slots.Count(slot => slot.Weight < 100) > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop) :
+                (slots.Count(slot => slot.Weight > 0 && slot.Weight < 100) > 1 ? LotType.RandomEnemyDrop : LotType.GuaranteedEnemyDrop) :
                 lotTypeGuess;
             var parsed = new ItemLot(slots, linkedItemLots, actualLotType, lotSerializer);
             foreach (var linkedLot in linkedItemLots)
