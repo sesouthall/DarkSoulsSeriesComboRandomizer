@@ -34,7 +34,7 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 await game.Start();
                 game.Exited += OnGameClosed;
-                game.Pause();
+                game.Minimize();
                 await Task.Delay(500);
             }
 
@@ -103,7 +103,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private void SwitchGame(int destinationBonfire)
         {
-            ActiveGame.Pause();
+            ActiveGame.Minimize();
 
             // Pause here is the portion assigned to the server; use the same part as assigned to wrappers.
             Thread.Sleep(gameSwitchDelayPartMs);

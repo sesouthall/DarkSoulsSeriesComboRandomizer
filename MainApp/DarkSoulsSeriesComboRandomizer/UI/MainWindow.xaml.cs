@@ -127,17 +127,17 @@ namespace DarkSoulsSeriesComboRandomizer
                 if (_vm.DS1Enabled)
                 {
                     gameConfigs.Add(new DSRInstallSettings(ds1Dir));
-                    games.Add(new DSRWrapper(_vm.DS1Path));
+                    games.Add(new DSRWrapper(_vm.DS1Path, _vm.PauseMinimizedGames));
                 }
                 if (_vm.DS2Enabled)
                 {
                     gameConfigs.Add(new DS2SotFSInstallSettings(ds2Dir));
-                    games.Add(new DS2SotFSWrapper(_vm.DS2Path));
+                    games.Add(new DS2SotFSWrapper(_vm.DS2Path, _vm.PauseMinimizedGames));
                 }
                 if (_vm.DS3Enabled)
                 {
                     gameConfigs.Add(new DS3InstallSettings(ds3Dir));
-                    games.Add(new DS3Wrapper(_vm.DS3Path));
+                    games.Add(new DS3Wrapper(_vm.DS3Path, _vm.PauseMinimizedGames));
                 }
 
                 _vm.ErrorDs1Dir = ds1Dir;

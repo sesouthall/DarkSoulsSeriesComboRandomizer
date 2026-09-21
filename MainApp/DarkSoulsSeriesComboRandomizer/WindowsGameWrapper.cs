@@ -44,10 +44,14 @@ namespace DarkSoulsSeriesComboRandomizer
         public event EventHandler? Exited;
 
         private Process gameProcess;
+        
         private bool processRunning = false;
+
+        private bool pauseOnMinimize = true;
+
         private bool disposedValue;
 
-        public WindowsGameWrapper(string exePath, string args = "")
+        public WindowsGameWrapper(string exePath, string args = "", bool pauseOnMinimize = true)
         {
             gameProcess = new Process()
             {
@@ -56,6 +60,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     WorkingDirectory = Path.GetDirectoryName(exePath)
                 }
             };
+            this.pauseOnMinimize = pauseOnMinimize;
         }
 
         public virtual async Task Start()
@@ -98,7 +103,7 @@ namespace DarkSoulsSeriesComboRandomizer
             }
         }
 
-        public void Pause()
+        public void Minimize()
         {
             if (!processRunning)
             {
@@ -108,19 +113,22 @@ namespace DarkSoulsSeriesComboRandomizer
             try
             {
                 ShowWindow(gameProcess.MainWindowHandle, 7);
-                Thread.Sleep(PauseSleepMs);
-                foreach (ProcessThread pT in gameProcess.Threads)
+                if (pauseOnMinimize)
                 {
-                    IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
-
-                    if (pOpenThread == IntPtr.Zero)
+                    Thread.Sleep(PauseSleepMs);
+                    foreach (ProcessThread pT in gameProcess.Threads)
                     {
-                        continue;
+                        IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
+
+                        if (pOpenThread == IntPtr.Zero)
+                        {
+                            continue;
+                        }
+
+                        SuspendThread(pOpenThread);
+
+                        CloseHandle(pOpenThread);
                     }
-
-                    SuspendThread(pOpenThread);
-
-                    CloseHandle(pOpenThread);
                 }
             }
             catch (InvalidOperationException)
@@ -139,28 +147,31 @@ namespace DarkSoulsSeriesComboRandomizer
 
             try
             {
-                foreach (ProcessThread pT in gameProcess.Threads)
+                if (pauseOnMinimize)
                 {
-                    IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
-
-                    if (pOpenThread == IntPtr.Zero)
+                    foreach (ProcessThread pT in gameProcess.Threads)
                     {
-                        continue;
+                        IntPtr pOpenThread = OpenThread(ThreadAccess.SUSPEND_RESUME, false, (uint)pT.Id);
+
+                        if (pOpenThread == IntPtr.Zero)
+                        {
+                            continue;
+                        }
+
+                        var suspendCount = 0;
+                        do
+                        {
+                            suspendCount = ResumeThread(pOpenThread);
+                        } while (suspendCount > 0);
+
+                        CloseHandle(pOpenThread);
                     }
 
-                    var suspendCount = 0;
-                    do
-                    {
-                        suspendCount = ResumeThread(pOpenThread);
-                    } while (suspendCount > 0);
-
-                    CloseHandle(pOpenThread);
+                    // Allow a short pause after threads have been resumed before restoring/maximizing
+                    // the window to improve reliability when switching between games.
+                    if (ResumeAfterThreadsSleepMs > 0)
+                        Thread.Sleep(ResumeAfterThreadsSleepMs);
                 }
-
-                // Allow a short pause after threads have been resumed before restoring/maximizing
-                // the window to improve reliability when switching between games.
-                if (ResumeAfterThreadsSleepMs > 0)
-                    Thread.Sleep(ResumeAfterThreadsSleepMs);
 
                 ShowWindow(gameProcess.MainWindowHandle, 3);
                 SetForegroundWindow(gameProcess.MainWindowHandle);

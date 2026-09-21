@@ -41,6 +41,9 @@ namespace DarkSoulsSeriesComboRandomizer.UI
         // the pause/switch/resume points. Default chosen to preserve existing behaviour.
         public int GameSwitchDelayMs { get; set; } = 1500;
 
+        // Whether games should be paused when minimized. Default true.
+        public bool PauseMinimizedGames { get; set; } = true;
+
         // ── Bonfire connections ───────────────────────────────────────────────────
 
         public static readonly List<BonfireTriple> DefaultBonfireConnections =

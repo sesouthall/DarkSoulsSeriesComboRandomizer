@@ -12,7 +12,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
 
         public override SoulsGame Game => SoulsGame.DSR;
 
-        public DSRWrapper(string exePath) : base(exePath)
+        public DSRWrapper(string exePath, bool pauseOnMinimize = true) : base(exePath, "", pauseOnMinimize)
         {
             hook = new DSRHook(5000, 5000);
             itemWatchTask = new Task(async () => await WatchItems());

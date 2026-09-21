@@ -18,7 +18,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls3
         /// </summary>
         /// <param name="me3ExePath">The full path to me3.exe</param>
         /// <param name="me3ProfilePath">The full path to the profile to launch</param>
-        public DS3Wrapper(string exePath) : base(exePath)
+        public DS3Wrapper(string exePath, bool pauseOnMinimize = true) : base(exePath, "", pauseOnMinimize)
         {
             hook = new DS3Hook(5000, 5000);
             itemWatchTask = new Task(async () => await WatchItems());

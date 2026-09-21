@@ -59,7 +59,8 @@ namespace DarkSoulsSeriesComboRandomizer
             Map.HandleDS3FirelinkRoofSkip(options.AllowFirelinkRoofSkip, allMaps);
 
             Log.Information("Starting item randomization");
-            ItemRandomizer.Randomize(allMaps[MapName.DS1StartingCell], allMaps, allKeys, new Random(options.Seed));
+            var startingMap = allMaps.ContainsKey(MapName.DS1StartingCell) ? allMaps[MapName.DS1StartingCell] : allMaps[MapName.ThingsBetwixt];
+            ItemRandomizer.Randomize(startingMap, allMaps, allKeys, new Random(options.Seed));
             Log.Information("Done");
 
             foreach (var gameConfig in gameConfigs)

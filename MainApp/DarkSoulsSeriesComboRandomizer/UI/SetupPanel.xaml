@@ -106,13 +106,26 @@
 
             <!-- Game Switch Delay -->
             <Grid Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Text="Game switch delay (ms)" Style="{StaticResource FieldLabel}"/>
-                    <TextBox x:Name="GameSwitchDelayBox" Style="{StaticResource DarkTextBox}" Height="30" Text="1500"/>
-                </StackPanel>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Game switch delay (ms)" Style="{StaticResource FieldLabel}"/>
+                <Grid Grid.Row="1" Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="120" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="GameSwitchDelayBox" Style="{StaticResource DarkTextBox}" Height="30" Width="120" Grid.Column="0" Text="1500"/>
+                    <CheckBox x:Name="PauseMinimizedCheckBox"
+                              Style="{StaticResource GameCheckBox}"
+                              Content="Pause minimized games"
+                              IsChecked="True"
+                              VerticalAlignment="Center"
+                              Margin="8,0,0,0"
+                              Grid.Column="1"/>
+                </Grid>
             </Grid>
 
             <Rectangle Height="1" Fill="#3A2E14" Margin="0,0,0,16"/>

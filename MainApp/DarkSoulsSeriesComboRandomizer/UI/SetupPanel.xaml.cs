@@ -50,7 +50,8 @@ namespace DarkSoulsSeriesComboRandomizer
         private record PathSettings(
             string DS1Path, string DS2Path, string DS3Path,
             bool DS1Enabled = true, bool DS2Enabled = true, bool DS3Enabled = true,
-            int GameSwitchDelayMs = 1500);
+            int GameSwitchDelayMs = 1500,
+            bool PauseMinimizedGames = true);
 
         private void LoadSavedSettings()
         {
@@ -106,6 +107,7 @@ namespace DarkSoulsSeriesComboRandomizer
             if (!string.IsNullOrWhiteSpace(settings.DS2Path)) DS2PathBox.Text = settings.DS2Path;
             if (!string.IsNullOrWhiteSpace(settings.DS3Path)) DS3PathBox.Text = settings.DS3Path;
             GameSwitchDelayBox.Text = settings.GameSwitchDelayMs.ToString();
+            PauseMinimizedCheckBox.IsChecked = settings.PauseMinimizedGames;
             DS1EnabledCheckBox.IsChecked = settings.DS1Enabled;
             DS2EnabledCheckBox.IsChecked = settings.DS2Enabled;
             DS3EnabledCheckBox.IsChecked = settings.DS3Enabled;
@@ -124,7 +126,8 @@ namespace DarkSoulsSeriesComboRandomizer
                     DS1EnabledCheckBox.IsChecked == true,
                     DS2EnabledCheckBox.IsChecked == true,
                     DS3EnabledCheckBox.IsChecked == true,
-                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500);
+                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500,
+                    PauseMinimizedCheckBox.IsChecked == true);
                 File.WriteAllText(AppViewModel.SettingsFilePath, JsonSerializer.Serialize(settings));
             }
             catch { /* Non-fatal */ }
@@ -144,7 +147,8 @@ namespace DarkSoulsSeriesComboRandomizer
                     DS1EnabledCheckBox.IsChecked == true,
                     DS2EnabledCheckBox.IsChecked == true,
                     DS3EnabledCheckBox.IsChecked == true,
-                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500);
+                    int.TryParse(GameSwitchDelayBox.Text, out var d) ? d : 1500,
+                    (this.FindName("PauseMinimizedCheckBox") as CheckBox)?.IsChecked == true);
                 File.WriteAllText(Path.Combine(saveFolder, "settings.json"), JsonSerializer.Serialize(settings));
             }
             catch { /* Non-fatal */ }
@@ -264,6 +268,7 @@ namespace DarkSoulsSeriesComboRandomizer
             _vm.Seed = SeedBox.Text.Trim();
             _vm.SaveName = SaveNameBox.Text.Trim();
             _vm.GameSwitchDelayMs = int.TryParse(GameSwitchDelayBox.Text.Trim(), out var d) ? d : _vm.GameSwitchDelayMs;
+            _vm.PauseMinimizedGames = PauseMinimizedCheckBox.IsChecked == true;
         }
 
         // ── Browse handlers ───────────────────────────────────────────────────────

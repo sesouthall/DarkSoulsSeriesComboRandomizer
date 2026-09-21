@@ -2,7 +2,7 @@ namespace DarkSoulsSeriesComboRandomizer
 {
     public delegate void ItemReactor(SoulsGame game, int itemId, int quantity);
     public delegate void ExitReactor(SoulsGameWrapper exitedWrapper);
-    public abstract class SoulsGameWrapper(string exePath, string args = "") : WindowsGameWrapper(exePath, args)
+    public abstract class SoulsGameWrapper(string exePath, string args = "", bool pauseOnMinimize = true) : WindowsGameWrapper(exePath, args, pauseOnMinimize)
     {
         public abstract event ItemReactor? OnModItemPickUp;
         public new event ExitReactor? Exited;

@@ -12,7 +12,7 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 
         public override SoulsGame Game => SoulsGame.DS2S;
 
-        public DS2SotFSWrapper(string exePath) : base(exePath)
+        public DS2SotFSWrapper(string exePath, bool pauseOnMinimize = true) : base(exePath, "", pauseOnMinimize)
         {
             hook = new DS2SotFSHook(5000, 5000);
             itemWatchTask = new Task(async () => await WatchItems());
