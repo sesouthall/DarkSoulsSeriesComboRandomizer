@@ -1,4 +1,5 @@
 using PropertyHook;
+using Serilog;
 
 namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
 {
@@ -76,6 +77,15 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSouls2SotFS
         public List<DS2SotFSInventoryItem> GetCurrentInventory()
         {
             var currentInventory = new List<DS2SotFSInventoryItem>();
+
+            if (InventoryList.Resolve() == IntPtr.Zero)
+            {
+                Log.Warning("InventoryList pointer is null. Cannot read inventory.");
+                Log.Information($"GameDataManager is: {GameDataManager.Resolve()}");
+                Log.Information($"Intermediate object is: {CreateChildPointer(GameDataManager, 0x10)}");
+                Log.Information($"ItemBag is: {ItemBag.Resolve()}");
+                return currentInventory;
+            }
 
             for (int i = 1; i < 0xEFF; i++)
             {
