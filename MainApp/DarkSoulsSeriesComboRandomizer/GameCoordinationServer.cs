@@ -13,6 +13,7 @@ namespace DarkSoulsSeriesComboRandomizer
         private bool disposedValue;
         private readonly List<Task> warpTasks = [];
         private readonly CancellationTokenSource cancellationTokenSource = new();
+        private bool serverStarted = false;
         private bool allGamesStarted = false;
         private readonly int gameSwitchDelayPartMs = Math.Max(0, gameSwitchDelayMs / 3);
 
@@ -21,6 +22,7 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public async Task Start(SoulsGame firstGame)
         {
+            serverStarted = true;
             StartPipeServers();
 
             // Propagate calculated delay part to each game wrapper so Pause/Resume use the same timing.
@@ -53,8 +55,6 @@ namespace DarkSoulsSeriesComboRandomizer
 
         public async Task Stop()
         {
-            allGamesStarted = false;
-
             foreach (var gameWrapper in gameWrappers)
             {
                 gameWrapper.OnModItemPickUp -= SendItemToCorrectGame;
@@ -64,6 +64,9 @@ namespace DarkSoulsSeriesComboRandomizer
             {
                 await gameWrapper.WaitForShutdown();
             }
+
+            serverStarted = false;
+            allGamesStarted = false;
         }
 
         private void OnGameClosed(SoulsGameWrapper exitedWrapper)
@@ -87,7 +90,7 @@ namespace DarkSoulsSeriesComboRandomizer
                     while (server.IsConnected)
                     {
                         var line = reader.ReadLine()?.Trim()?.Trim('\0', '\v', '\b');
-                        if (!allGamesStarted)
+                        if (serverStarted && !allGamesStarted)
                         {
                             sendMessageToPlayer("Cannot warp until characters are loaded in all three games and the start menu has been opened for each of them.");
                         }

@@ -284,10 +284,8 @@ bool Begin(uint64_t qModuleHandle)
 #ifdef DS3
     void* warpInfo_sp = sp::mem::aob_scan("48 8B xx xx xx xx 04 89 48 28 C3");
     warpInfo = sp::mem::pointer<ChrClassWarp*>((void*)((uint64_t)warpInfo_sp + *(uint32_t*)((uint64_t)warpInfo_sp + 3) + 7)).resolve();
-    void* talkEventQueryFunction = sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 68 FC FF FF");
-    int EzStateTalkEventQueryFunctionOffset = (uint64_t)talkEventQueryFunction - Game::base_address;
-    void* talkEventCommandFunction = sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 90 48 81 EC 70 01 00 00 48 C7 45 88 FE FF FF FF 48 89 58 18");
-    int EzStateTalkEventCommandFunctionOffset = (uint64_t)talkEventCommandFunction - Game::base_address;
+    void* talkEventQueryFunction = (uint64_t)sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 68 FC FF FF");
+    void* talkEventCommandFunction = (uint64_t)sp::mem::aob_scan("48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 90 48 81 EC 70 01 00 00 48 C7 45 88 FE FF FF FF 48 89 58 18");
     /*ContinueTextureLoadingAtAddress = Game::base_address + 0xe5e480;
     AtomicIncrementAddress = Game::base_address + 0x17a35d0;
     FUN_140e60160Address = Game::base_address + 0xe60160;
@@ -319,8 +317,8 @@ bool Begin(uint64_t qModuleHandle)
 #ifdef DS3
     Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
     pHookManager->Initialize();
-    pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
-    pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
+    pHookManager->CreateHook<EzStateTalkQueryFunction*>(talkEventQueryFunction, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
+    pHookManager->CreateHook<EzStateTalkCommandFunction*>(talkEventCommandFunction, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
 #endif
 
     return true;
@@ -368,12 +366,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                     if (result.status() == dearxan::DearxanStatus::DearxanSuccess)
                     {
                         printf_s("Arxan disabled\n");
-                        int EzStateTalkEventQueryFunctionOffset = 0x4d8ab0;
-                        int EzStateTalkEventCommandFunctionOffset = 0x4db340;
+                        uint64_t talkEventQueryFunction = (uint64_t)sp::mem::aob_scan("0A B7 02 48 8B C4 55 56") + 0x3;
+                        uint64_t talkEventCommandFunction = (uint64_t)sp::mem::aob_scan("54 48 8B C4 55 56") + 0x1;
                         Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
                         pHookManager->Initialize();
-                        pHookManager->CreateHook<EzStateTalkQueryFunction*>(Game::base_address + EzStateTalkEventQueryFunctionOffset, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
-                        pHookManager->CreateHook<EzStateTalkCommandFunction*>(Game::base_address + EzStateTalkEventCommandFunctionOffset, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
+                        pHookManager->CreateHook<EzStateTalkQueryFunction*>(talkEventQueryFunction, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
+                        pHookManager->CreateHook<EzStateTalkCommandFunction*>(talkEventCommandFunction, &OriginalEzStateTalkEventCommandFunction, &AdditionalEzStateTalkEventsCommandFunctions, &OriginalEzStateTalkEventCommandFunctionTrampoline, "EzStateTalkEventCommandFunction");
                     }
                     else
                     {

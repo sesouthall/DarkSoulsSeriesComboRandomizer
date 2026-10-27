@@ -13,6 +13,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         public const int EventFlagsOffset1 = 0;
         public const int EventFlagsOffset2 = 0;
 
+        public const string RemoveItem_CallAOB = "01 44 89 44 24 18 89";
+        public const string DbgEvent_Global_objAOB = "48 8B 0D 59 F2 8A 01";
         public const int RemoveItemFunctionOffset = 0x48cdc0;
         public const int DbgEvent_Global_objOffset = 0x1c7b1b0;
 

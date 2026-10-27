@@ -208,22 +208,26 @@ namespace DarkSoulsSeriesComboRandomizer
 
         private async void OnStopRequested(object? sender, EventArgs e)
         {
-            _runningPanel.SetStopButtonEnabled(false);
-            _runningPanel.SetStatusText("Saving progress...");
+            if (_vm.Server != null)
+            {
+                _vm.Server.GameClosed -= OnStopRequested;
+            }
+            Dispatcher.Invoke(() => _runningPanel.SetStopButtonEnabled(false));
+            Dispatcher.Invoke(() => _runningPanel.SetStatusText("Saving progress..."));
 
             try
             {
                 _vm.Installer?.SaveLastGame(_vm.Server?.ActiveGame.Game ?? SoulsGame.DSR);
 
-                _runningPanel.SetStatusText("Stopping coordination server...");
+                Dispatcher.Invoke(() => _runningPanel.SetStatusText("Stopping coordination server..."));
 
                 if (_vm.Server != null)
                 {
-                    MessageBox.Show(
+                    Dispatcher.Invoke(() => MessageBox.Show(
                         "The mod will now resume each game, one at a time.\n" +
                         "Please close them as they come up.\n" +
                         "This ensures no data is lost from the save file and avoids the annoying start up notice.",
-                        "Shutdown Info", MessageBoxButton.OK, MessageBoxImage.Information);
+                        "Shutdown Info", MessageBoxButton.OK, MessageBoxImage.Information));
                     await _vm.Server.Stop();
                 }
 

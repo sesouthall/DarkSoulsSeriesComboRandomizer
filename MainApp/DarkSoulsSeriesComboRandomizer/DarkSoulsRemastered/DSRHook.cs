@@ -12,6 +12,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         private readonly PHPointer ChrClassWarp;
         private readonly PHPointer BonfireWarp_Call;
         private readonly PHPointer EventFlags;
+        private readonly PHPointer RemoveItem_Call;
+        private readonly PHPointer DbgEvent_Global_Obj;
 
         public bool CharacterLoaded { get; private set; } = false;
 
@@ -26,6 +28,8 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
             ChrClassWarp = RegisterRelativeAOB(DSROffsets.ChrClassWarpAOB, 3, 7, DSROffsets.ChrClassWarpOffset1);
             BonfireWarp_Call = RegisterAbsoluteAOB(DSROffsets.BonfireWarpAOB);
             EventFlags = RegisterRelativeAOB(DSROffsets.EventFlagsAOB, 3, 7, DSROffsets.EventFlagsOffset1, DSROffsets.EventFlagsOffset2);
+            RemoveItem_Call = RegisterAbsoluteAOB(DSROffsets.RemoveItem_CallAOB);
+            DbgEvent_Global_Obj = RegisterRelativeAOB(DSROffsets.DbgEvent_Global_objAOB, 3, 7);
             base.OnHooked += FinishSetup;
         }
 
@@ -113,14 +117,13 @@ namespace DarkSoulsSeriesComboRandomizer.DarkSoulsRemastered
         {
             byte[] asm = (byte[])DSRAssembly.RemoveItem.Clone();
 
-            var dbgEvent_Global_objAddress = this.Process.MainModule!.BaseAddress + DSROffsets.DbgEvent_Global_objOffset;
-            byte[] bytes = BitConverter.GetBytes((ulong)dbgEvent_Global_objAddress);
+            byte[] bytes = BitConverter.GetBytes((ulong)DbgEvent_Global_Obj.Resolve());
             Array.Copy(bytes, 0, asm, 0x6, 8);
             bytes = BitConverter.GetBytes((ulong)category);
             Array.Copy(bytes, 0, asm, 0x10, 8);
             bytes = BitConverter.GetBytes((ulong)id);
             Array.Copy(bytes, 0, asm, 0x1A, 8);
-            var removeItemFunctionAddress = this.Process.MainModule.BaseAddress + DSROffsets.RemoveItemFunctionOffset;
+            var removeItemFunctionAddress = RemoveItem_Call.Resolve() + 0x1;
             bytes = BitConverter.GetBytes((ulong)removeItemFunctionAddress);
             Array.Copy(bytes, 0, asm, 0x2E, 8);
 
