@@ -48,6 +48,24 @@ EzStateTalkQueryFunction* OriginalEzStateTalkEventQueryFunctionTrampoline;
 EzStateTalkCommandFunction* OriginalEzStateTalkEventCommandFunction;
 EzStateTalkCommandFunction* OriginalEzStateTalkEventCommandFunctionTrampoline;
 
+void WriteToLog(string message)
+{
+#ifdef DSR
+	char logFilePath[MAX_PATH] = "%LOCALAPPDATA%\\DarkSoulsSeriesComboRandomizer\\dsrlog.txt";
+#endif
+#ifdef DS3
+    char logFilePath[MAX_PATH] = "%LOCALAPPDATA%\\DarkSoulsSeriesComboRandomizer\\ds3log.txt";
+#endif
+	DoEnvironmentSubstA(logFilePath, MAX_PATH);
+	FILE* logFile;
+	fopen_s(&logFile, logFilePath, "a");
+	if (logFile != NULL)
+	{
+		fprintf(logFile, "%s\n", message.c_str());
+		fclose(logFile);
+	}
+}
+
 void InsertJMP(BYTE* address, uint64_t jumpTo, DWORD length)
 {
     DWORD oldProtect, backup, relativeAddress;
@@ -102,14 +120,17 @@ void AdditionalEzStateTalkEventsQueryFunctions(int64_t param_1, float* param_2, 
         if (warpInfo == NULL || *warpInfo == NULL)
         {
             printf_s("malformed warp info\n");
+            WriteToLog("malformed warp info");
         }
         else if ((*warpInfo)->LastBonfire == NULL)
         {
             printf_s("no last bonfire\n");
+            WriteToLog("no last bonfire");
         }
         else if (!parsedMappings->ContainsDS1BonfireId((*warpInfo)->LastBonfire))
         {
             printf_s("%d isn't in warp list\n", (*warpInfo)->LastBonfire);
+            WriteToLog("bonfire not in warp list");
         }
         if (warpInfo != NULL && *warpInfo != NULL && (*warpInfo)->LastBonfire != NULL && parsedMappings->ContainsDS1BonfireId((*warpInfo)->LastBonfire))
         {
@@ -204,14 +225,17 @@ void AdditionalEzStateTalkEventsCommandFunctions(int64_t param_1, EzStateExterna
         else if (warpInfo == NULL)
         {
             printf_s("Could not find pointer to warp info\n");
+            WriteToLog("Could not find pointer to warp info");
         }
         else if (*warpInfo == NULL)
         {
             printf_s("Warp info object is not initialized\n");
+            WriteToLog("Warp info object is not initialized");
         }
         else
         {
             printf_s("Last bonfire (%d) is not found in bonfire mappings\n", (*warpInfo)->LastBonfire);
+            WriteToLog("Last bonfire is not found in bonfire mappings");
         }
 
         if (mapping == NULL)
@@ -340,12 +364,14 @@ bool BlockNetworkConnection()
     if (MH_CreateHookApi(L"ws2_32", "WSAStartup", &tWSAStartup, reinterpret_cast<LPVOID*>(&fpWsaStartup)) != MH_OK)
     {
         printf_s("Failed to create network block hook\n");
+		WriteToLog("Failed to create network block hook");
         return false;
     }
 
     if (MH_EnableHook((LPVOID)GetProcAddress(GetModuleHandleW(L"ws2_32"), "WSAStartup")) != MH_OK)
     {
         printf_s("Failed to enable network block hook\n");
+		WriteToLog("Failed to enable network block hook");
         return false;
     }
 
@@ -366,8 +392,20 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                     if (result.status() == dearxan::DearxanStatus::DearxanSuccess)
                     {
                         printf_s("Arxan disabled\n");
-                        uint64_t talkEventQueryFunction = (uint64_t)sp::mem::aob_scan("0A B7 02 48 8B C4 55 56") + 0x3;
-                        uint64_t talkEventCommandFunction = (uint64_t)sp::mem::aob_scan("54 48 8B C4 55 56") + 0x1;
+                        uint64_t talkEventQueryFunction = (uint64_t)sp::mem::aob_scan("48 8B 4D 30 E9 14 0A B7 02 48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D 68 A1") + 0x9;
+						if (sp::err::get() != SP_ERR_SUCCESS)
+						{
+							printf_s("Failed to find talkEventQueryFunction address! Error: %d\n", sp::err::get());
+							WriteToLog("Failed to find talkEventQueryFunction address!");
+							return;
+						}
+                        uint64_t talkEventCommandFunction = (uint64_t)sp::mem::aob_scan("18 7B 54 48 8B C4 55 56 57 41 54 41 55 41 56 41 57 48 8D A8 D8 FD FF FF") + 0x3;
+                        if (sp::err::get() != SP_ERR_SUCCESS)
+                        {
+                            printf_s("Failed to find talkEventQueryFunction address! Error: %d\n", sp::err::get());
+                            WriteToLog("Failed to find talkEventQueryFunction address!");
+                            return;
+                        }
                         Hook::HookManager* pHookManager = Hook::HookManager::GetInstance();
                         pHookManager->Initialize();
                         pHookManager->CreateHook<EzStateTalkQueryFunction*>(talkEventQueryFunction, &OriginalEzStateTalkEventQueryFunction, &AdditionalEzStateTalkEventsQueryFunctions, &OriginalEzStateTalkEventQueryFunctionTrampoline, "EzStateTalkEventQueryFunction");
@@ -376,6 +414,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
                     else
                     {
                         printf_s("Failed to disable Arxan! Error: %s\n", result.error_msg().c_str());
+                        WriteToLog("Failed to disable Arxan!");
                     }
                 });
 
@@ -385,6 +424,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             if (!BlockNetworkConnection())
             {
                 printf_s("Failed to block network\n");
+                WriteToLog("Failed to block network!");
             }
 #endif // DSR
             DisableThreadLibraryCalls(hinstDLL);
